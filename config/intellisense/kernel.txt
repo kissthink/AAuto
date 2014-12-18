@@ -1,0 +1,623 @@
+配置文件格式：关键字 等号 代码说明(不含等号作为注释行）。
+^关键字：表示系统参数,请勿修改。
+@代码说明：声明一个代码模板。在输入时自动删除模板中以 //开始的注释行
+.代码说明: 表示名字空间重定向。
+关键字中.为名字空间分隔符。或者将.前面的标点解析为名字空间分隔符,例如::.全局常量成员,
+functionname(.(参数一,参数二)表示函数的形参说明。
+使用__指示光标插入位置
+------------------------------------------
+^MAXTIER = 36
+^IGNORECASE_NODE_KEY = 1
+
+_AAUTO_VERSION = AAuto编程语言版本号
+_HAPPICON = 应用程序图标句柄，可在工程属性中自定义该图标，\n图标在不再使用时会自动释放,不要手动释放该图标
+_STUDIO_INVOKED = 判断是否在快手开发环境中运行AAuto程序
+_CMDLINE = 在EXE启动线程中获取命令行参数的原始文本\n也可以使用 _ARGV 获取解析后的命令行参数数组\n而_ARGV已解析双引号、转义符并转换为数组\n这两个属性仅发布为EXE有效,开发环境中为null\n可使用#操作符检测参数是否为空
+_ARGV = @if( #_ARGV ){\n    for( i=1;#_ARGV ){\n        var s = _ARGV[i];\n        if( s[1] == '/'# ||  s[1] == '-'# ){\n            _ARGV[ s ] = _ARGV[i+1];__/*解析命令行参数*/\n            i++;\n        } \n    }\n}
+
+intellisense代码模式 = @/*intellisense(__/*请输入名字空间*/)*/\n\n/*end intellisense*/\n
+intellisense注释模式 = @/**intellisense(__/*请输入名字空间*/)\n\nend intellisense**/\n
+
+this = 类对象内部指针
+owner=  拥有该成员函数的当前对象,\n执行语句 对象.成员函数(参数),函数名前面的对象即成员函数的owner对象,\n\n在迭代器函数中的owner表示集合对象,\n在独立运行的aau文件或库文件中,owner表示当前文件路径,\n在对象的元方法中,owner表示当前对象(或左操作数)
+global = 全局名字空间\nglobal.x 等价于 ..x 
+self = 当前名字空间
+
+//基础函数
+rget(2,__) = rget(2,函数() ) \n丢弃函数的第一个返回值
+rget(-1,__) = rget(-1,函数() )  \n仅保留函数的最后一个返回值
+rget(__, ) = 从参数1指定的位置,向右截取参数2的n个返回值
+loadcode(__) = 参数可以是aau文件,或者aau代码,或者指定的loader函数
+dumpcode(__) = 将函数输出为字节码,\n参数一可以是AAuto代码，AAu源文件路私，或函数对象,\n可选用参数2指定源文件名
+assert(__) = 断言函数\n第一个参数为真则返回此参数\n否则将第二个参数作为异常抛出
+assertf(__) = 反断言函数\n第一个参数为假则返回第二个参数)\n否则返回第一个参数并抛出异常
+error("__") = 抛出一个错误
+error("__",2) = 抛出一个错误、并指定调用级别。
+call(.(调用函数,owner,其他参数) = 调用函数,可自定义owner对象,\n返回值一表示调用是否成功,其他返回值为函数返回值
+invoke(.(调用函数,owner,其他参数) = 调用函数,可自定义owner对象,\n返回值为函数返回值,失败则直接抛出异常
+eval("__") = 将字符串转换为代码执行,并返回一个或多个值\n失败抛出异常
+ 
+execute("color F0__/*输入颜色*/") = 两位0到F十六进制数,\n前面一位设置背景色,后面一位设置文字颜色\n0=黑色 1=蓝色  2=绿色  3=湖蓝色  4=红色  5=紫色 6=黄色  7=白色 8=灰色  \n9=淡蓝色  A=淡绿色 B=淡浅绿色  C=淡红色  D=淡紫色 E=淡黄色  F=亮白色 
+execute("cls") = 清屏
+execute("title  __/*输入标题*/") = 自定义控制台窗口标题 
+execute("pause") = 控制台输出按任意键继续
+
+import = 导入外部名字空间
+
+type.eq(__, ) = 比较两个对象类型是否相同
+type.rget(__) = 调用type函数检测对象类型\n并返回最后一个类型描述
+type.null = 空值：基本数据类型
+type.pointer = 指针值：基本数据类型
+type.boolean = 布尔值：基本数据类型
+type.string = 字符串：基本数据类型 
+type.number = 数值：基本数据类型
+type.table = 表：基本数据类型
+type.cdata = 内核对象：基本数据类型  
+type.fiber = 纤程：基本数据类型
+type.function = 函数：基本数据类型 
+type.class = 类：基本数据类型 
+type.file = 扩展数据类型\n使用io.open打开的文件对象 
+type(.(__需要返回数据类型的变量) = 检测数据类型,返回值1为基本数据类型\n如果返回两个或三个值，最后的返回值为无表中_type的值,\n结构体返回三个值，第二个返回值为结构体声明
+tostring(__) = 转换为字符串
+tostring(__,16) = 将数值转换为字符串\n可选使用第二个参数指定进制
+topointer(.(内存地址) = 将数值转换为指针
+topointer(.(指针,偏移值) = 指针必须是pointer类型原始指针\n偏移值以字节为单位,可以为负数
+tonumber(__) = 强制转换变量为数值类型,自动识别进制\n如果参数是一个字符串,tonumber同时返回数值在字符串中的长度。
+tonumber(__,10) = 强制转换变量为数值类型\n参数二指定进制
+
+sleep(__/*毫秒*/) = 延时(cpu休眠)  
+execute("__") =  调用系统命令行,成功返回0
+
+setlocale(."all") = 返回当前区域设置
+setlocale(."all","__") =  修改当前区域设置为默认设置\n返回区域设置全称
+setlocale(."all","chs") = 简体中文语言区域设置\n返回区域设置全称
+setlocale(."all","enu") = 英文语言区域设置\n返回区域设置全称
+setlocale(."collate","__") =  设置当前程序字符串比较使用的本地化信息\n返回区域设置全称
+setlocale(."ctype","__" ) =  设置当前程序字符类别及转换使用的本地化信息\n返回区域设置全称
+setlocale(."monetary","__" ) =  设置当前程序金融货币使用的本地化信息\n返回区域设置全称
+setlocale(."numeric","__" ) = 设置当前程序使用的本地化信息,小数点后的位数\n返回区域设置全称
+setlocale(."time","__" ) = 设置当前程序时间日期格式使用的本地化信息\n返回区域设置全称  
+setlocale(."time","chs") = 时间日期格式使用简体中文语言区域设置\n返回区域设置全称
+setlocale(."time","enu") = 时间日期格式使用英文语言区域设置 \n返回区域设置全称
+setprivilege('SeDebugPrivilege',true) = 设置指定进程权限
+and =  逻辑与运算符
+not =  逻辑非运算符
+or = 逻辑或运算符
+true =  逻辑值：真(true,所有非null、非零值) 
+false = 逻辑值：假(false,null、零)
+null = 空值
+ 
+
+with= @with __/*请指定名字空间变量*/{\n//定义变量的默认名字空间\n//使用..操作符访问顶层名字空间\n\n	\n}\n 
+namespace = @namespace __/*请指定名字空间*/{\n//定义变量的默认名字空间\n//使用..操作符访问顶层名字空间\n\n	\n}\n 
+
+//语句块
+begin =  @begin\n    __/*语句块限定局部变量作用域*/\n\nend;\n 
+end =  @end;//表示语句块结束
+function = @function(__/*请输入函数形参*/){\n	\n}\n
+function_begin_end = @function(__) begin//定义函数\n\nend;\n
+class = @class __/*输入类名字*/{\n	ctor( /*输入构造函数所需要的参数*/ ){\n	\n	};\n	type=me;\n	/*对象的所有成员必须用分号分隔*/\n}\n
+
+//条件语句 
+if =  @if(__/*条件判断*/){\n	\n}
+else =  @else {\n__\n}\n
+elseif = @elseif(__){//否则判断条件\n\n\n}\n
+select = @select(__/*选择条件*/) {\n	case 2 {\n	}\n	case 1,9,10 {\n	}\n	case 10;20 {\n	}\n	case !=0 {\n	}\n	else {\n	}\n}
+
+//循环语句
+while = @while(__/*请在这里输入循环条件*/){//如果条件符合,则循环执行下面的代码\n\n\n}\n 
+while_var = @while( \n    var i,j = 0,0;\n    i++; \n    i < 10 \n) {\n	__/*循环执行代码*/\n}
+while_标记 = @while(__) { 标记://在循环语句块开始可以指定标记,以冒号结束。\n\n\n}\n 
+do = @do{//首先无条件进入循环语句块并执行\n\n\n}while(__)//如果条件符合,继续执行循环语句块\n 
+do_标记 = @do{标记://在循环语句块开始可以指定标记,以冒号结束。\n\n\n}while(__ )//如果条件符合,继续执行循环语句块\n 
+do_while_false = @do{\n	__\n}//while(false)\n 
+for = @for(i=1;__;1){\n	\n\n}\n 
+forin = @for(k,v in __/*table对象、或迭代器*/){\n	\n\n}\n
+
+//容错语句
+trycatch = @try{\n	__\n}\ncatch(e){\n	\n}\n//注意只有return;语句可以退出try或catch语句
+try = @try{\n	__//注意只有return;语句可以退出try语句\n\n}\n
+
+//其他常用语句
+var =  @var __/*局部变量名*/ = ; //局部变量作用仅限于当前语句块内部。
+return = @return __; //返回一个或多个值.
+break =  @break __;//中断循环,或指定要中断的循环级别。 
+continue = @continue __;//跳过本次循环并继续下一次,或指定要跳过的循环级别。
+ 
+
+collectgarbage(."stop") = 禁用垃圾收集器
+collectgarbage(."restart") = 重启垃圾收集器
+collectgarbage(."count") = 查询内存占用(Kb)
+collectgarbage(."steppause",1) = 垃圾收集中断量(1-100)
+collectgarbage(."setstepmul",2) = 垃圾收集工作量(1-100)
+collectgarbage(."collect") = 完全垃圾收集
+collectgarbage(."step",1) = 垃圾收集
+ 
+table = table表操作函数库
+table.next(.(__tab) = 获取table的第一个键值对元素
+table.next(.(__tab,key ) = 迭代获取table的下一个键值对元素
+table.tostring(__) = 获取table的字符串表达式
+table.concat(.(__tab,tab2 ) = 拼接多个table对象
+table.insert(.(__要插入的表,要插入的值,要插入的位置 ) = 插入元素到数组指定位置,\n可使用负数表示右侧反向计数
+table.insert(.(__要插入的表,要插入的值 ) = 插入元素到数组头部
+table.remove(.(__要移除元素的表,位置 ) = 在表中指定位置移除元素,\n可使用负数表示右侧反向计数
+table.remove(.(__要移除元素的表 ) = 在数组头部移除元素
+table.push(.(tab,__) = 在顺序数组尾部压入一个或多个元素,返回数组大小
+table.push(.(tab,__v1,v2,v3,...) = 在顺序数组尾部压入多个元素,返回数组大小
+table.pop(tab,__) = 在数组尾部弹出一个或多个元素并作为返回值\n如果第二个参数为负数,弹出元素从后向前反向排列\n空数组不返回任何元素
+table.unshift(.(数组,要插入的一个或多个元素) = 插入一个或多个元素到数组头部,返回数组长度
+table.shift(.(数组,移除数目) = 自数组头部移除并返回指定个数成员,\n参数2可选,默认为1
+table.splice(.(数组,位置,删除长度,要插入的一个或多个元素) = 在数组指定位置删除指定长度元素，替换为不定个数的插入元素,\n如果删除了元素,该函数返回包含删除元素的数组
+table.sort(.( tab__) = 排序
+table.sort(.( tab__, comProc ) = 排序,comProc指定用于比较元素大小的函数\n该函数比较owner参数与第一个参数,如果应排序在前面返回true\n注意数值使用<或>比较,不能使用<=或>=
+table.reverse(__) =  table数组倒序排列。
+table.range(__) =  返回table数组的最小索引,最大索引\nmin,max=table.range(tab);
+table.unpack(.(tab,i,j)  =  返回数组中自i到j的元素,\n省略i,j参数则返回数组中的所有元素,\n如果i,j都不小于零,则不检测数组长度,不存在的元素在对应位置返回null值.
+table.left(.(__tab,len) = 返回table对象左侧开始返回指定个数的元素。
+table.right(.(__tab,len) = 返回table对象右侧开始返回指定个数的元素。
+table.clone(__) = 返回一个克隆后的新table对象,保持元表不变。\n使用深拷贝,( 混入函数table.mixin() 使用浅拷贝复制表 ).\n而table.delegate使用写时拷贝复制表
+table.count(__) = 获取table成员总数
+
+string =  string字符串函数库 
+string.fromto(.(字符串,源编码,目标编码) = 源编码为可选参数,默认为UTF8编码\n如果参数@1为'\0\0'结尾的Unicode字符串，则忽略源编码参数.\n目标编码默认为系统内码
+string.fromto(.(内存指针,源编码,目标编码,true) = 源编码可选参数,默认为UTF8编码\n目标编码默认为系统内码,\n参数@4为true指明参数1为指针类型，不允许使用cdata指针
+string.escape(str__) = 如果包含不可见字符,则转换为转义字符串,返回字符串,\n如果使用了转义,返回值2为单引号,否则为双引号\n使用eval('转义字符串')可以还原转义
+string.cmp(.(字符串,字符串2,比较长度) =　比较字符串前n个字符串大小(不区分字母大小写)\n\n从第一个字符开始比较,不相等则立即返回,相等返回0\n比较长度是可选参数,默认为字符串长度
+按指定长度比较两个字符串,忽略大小写.\n相等返回0\n 比较长度是可选参数,
+string.load(.("文件路径") = 读取文件或内嵌资源文件\n路径以斜杠开始表示应用程序根目录(开发时为工程目录)
+string.load(.(资源名,资源类型,dll句柄) = 读取文件或内嵌资源文件\n参数一可以是文件路径,也可以是内嵌资源名、资源ID\n参数二可以是资源类型名,类型ID\n参数三是dll句柄,默认为_HINSTANSE\n除参数一以外,其他参数可选
+string.save("__/*请输入文件路径*/", ) = 保存字符串到文件
+string.save("__/*请输入文件路径*/", ,true) = 追加字符串到文件
+string.crc32(.(字符串,crc32,长度) = 计算字符串的CRC32校验值\n参数一也可以是raw.malloc()函数创建的缓冲区指针\n可选使用参数2指定前面字符串的校验值,以返回总的校验值\n长度为可选参数 
+string.repeat(.(n__) = 创建长度为n的字符串,默认填充\0
+string.repeat(.(n__," ") = 将参数2重复n次并创建新的字符串返回。
+string.repeat(.(n__,' ') = 将参数2重复n次并创建新的字符串返回。
+string.split(.(字符串,分隔符,返回数组最大长度) = string.split(str,'A'); //按单个字符拆分\nstring.split(str,"abc")//按多个分隔符拆分\nstring.split(str,"<文本>")//置于<>内的字符串作为分隔符,支持中文宽字符\n如果不指定任何参数则拆分所有字符,自动识别中文宽字符
+string.join(.(str__,sep) = 将字符串数组使用指定的分隔符合并为一个字符串
+string.concat(.(str__,str2) = 拼接字符串\n允许参数中有null值\n所有参数为null或无参数时无返回值。
+string.reverse(__) = 将字符串倒序排列
+string.unpack(.(str__,i,j) = 取字符串的第i个到第j个字符的ascii码数值并返回。
+string.unpack(.(str__,i) = 取字符串的第i个字符的ascii码数值。
+string.pack(.(chr__,chr2) = 参数为零个或多个字符的ascii码数值\nstr = string.pack('A'#,'B'#,'C'#)\n也可以是一个包含字节码的数组,例如:\nstring.pack( {'A'#,'B'#,'C'# } )
+string.lower(__) = 字符串转换为小写
+string.upper(__) =  字符串转换为大写
+string.random(.(len__) = 生成随机字符串（字母、数字）
+string.random(.(len__,"中文字符集") = 生成随机字符串,并指定随机字符集
+string.random(.(str__,str2,str3) = 参数为多个字符串,函数随机返回其中一个字符串
+string.sub(.(str__,i,j ) =  从字符串中截取位置i到j的字符串,\n如果i,j为负数则从右侧倒数计数\n按字节计数,汉字为两个字节
+string.sub(.(str__,i,j,true ) =  从字符串中截取位置i开始的字符串,\n如果i为负数则从右侧倒数计数\n按字符计数,汉字为一个字符
+string.left(.(str__,n ) =  从字符串左侧截取n个字符\n按字节计数,汉字为两个字节
+string.right(.(str__,n ) =  从字符串右侧截取n个字符\n按字节计数,汉字为两个字节
+string.left(.(str__,n,true) =  从字符串左侧截取n个字符\n按字符计数,汉字为一个字符
+string.right(.(str__,n,true ) =  从字符串右侧截取n个字符\n按字符计数,汉字为一个字符
+string.trim(.(str__,' ') = 从字符串首尾清除指定的一个或多个字符
+string.trim(.(str__) = 从字符串首尾清除所有空白字符
+string.trimleft(.(str__,' ') = 从字符串首尾清除指定的一个或多个字符
+string.trimleft(.(str__) = 从字符串首尾清除所有空白字符
+string.trimright(.(str__,' ') = 从字符串首尾清除指定的一个或多个字符
+string.trimright(.(str__) = 从字符串首尾清除所有空白字符
+string.format("%__", ) = 首参数内每个%符号后是一个格式化字符,每个格式化字符按对应顺序格式后续参数。
+string.toUnicode(.(字符串,编码, ,true) = 允许第一个参数为原始指针类型.
+string.toUnicode(.(字符串,编码,false) = 将字符串转换从指定编码转换为unicode编码。\n第三个参数显示指定false,则禁止在字符串尾部添加'\0\0'
+string.toUnicode(.(字符串,编码) = 将字符串转换从指定编码转换为unicode编码。\n自动在字符串尾部添加'\0\0',以标记为UNICODE字符串
+string.toUnicode(.(字符串) = 将字符串转换从ANSI编码转换为unicode编码。\n自动在字符串尾部添加'\0\0',以标记为UNICODE字符串
+string.fromUnicode(.(字符串,编码,true) = 允许第一个参数为原始指针类型.
+string.fromUnicode(.(字符串,编码) = 从unicode编码还原到指定编码。 \n字符串尾部必须存在'\0\0'标记
+string.fromUnicode(.(字符串) = 从unicode编码还原到ANSI编码。 \n字符串尾部必须存在'\0\0'标记
+string.fromUnicodeIf(.(字符串) = 如果是Unicode转换为ANSI，否则直接返回\nUnicode字符串尾部必须存在'\0\0'标记
+string.indexAny(.(字符串,查找字符串) = 查找参数@2指定的字符串中的任意一个字节,\n参数@2可以是数值字节码。\n查找宽字符请使用mbs支持库中的同名函数替代
+string.indexAny(.(字符串,查找字符串,开始位置) = 查找参数@2指定的字符串中的任意一个字节,\n参数@2可以是数值字节码。\n查找宽字符请使用mbs支持库中的同名函数替代
+string.lastIndexAny(.(字符串,查找字符串) = 自尾部向前查找参数@2指定的字符串中的任意一个字节,\n参数@2可以是数值字节码。\n查找宽字符请使用mbs支持库中的同名函数替代
+string.lastIndexAny(.(字符串,查找字符串,开始位置) = 自尾部向前查找参数@2指定的字符串中的任意一个字节,\n参数@2可以是数值字节码。\n查找宽字符请使用mbs支持库中的同名函数替代
+string.startWith(.("字符串","开始串") = 判断开始串是否位于字符串开始处\n基于二进制模式
+string.endWith(.("字符串","结束串") = 判断结束串是否位于字符串结束处\n基于二进制模式
+string.startWith(.("字符串","开始串",true) = 判断开始串是否位于字符串开始处。\n基于文本模式,忽略大小写,不会截断双字节字符
+string.endWith(.("字符串","结束串",true) = 判断结束串是否位于字符串结束处。\n基于文本模式,忽略大小写,不会截断双字节字符
+string.find( = 使用模式表达式在字符串中查找子串，\n如果有多个捕获分组,将附加为多个返回值。\n如果只是查找普通文本建议使用string.indexOf函数
+string.find(.("字符串","模式",开始位置,是否使用字符单位) =  开始位置为可选参数,默认为1\n参数@4为可选参数,默认返回字节位置\n使用字符单位参数为true时一个英汉字符都是一个计数单位\n函数返回匹配结果的起始,结束位置,以及所有捕获分组
+string.replace(.("字符串","模式表达式",替换对象,替换次数) = 使用模式匹配在字符串中查找替换\n替换对象可以使用以下类型参数:\n1、普通字符串,可使用\1至\9引用匹配分组\n2、可以是一个table对象,用键值对指定多个替换规则\n3、替换回调函数，有几个匹配分组就有几个回调参数,\n替换次数省略则全局替换\n返回值告知替换结果
+string.replace(.("字符串","@@查换字符串","替换字符串",替换次数) = 基于文本模式进行替换,不会截断双字节字符\n注意模式匹配是基于二进制模式的,"@@"前缀表示禁用模式匹配\n替换次数省略则全局替换
+string.match(.("字符串","模式串",开始位置) = 参数@1指定目标字符串,参数@2指定查找模式串。\n参数@3可选,用于指定起始位置,负数表示尾部倒计数,\n返回匹配字符串,如果使用了匹配分组则返回多个对应的匹配串,\n返回值的顺序对应模式串中左圆括号的开始顺序
+string.str(.(字符串) = 转换为普通文本(去掉尾部多余'\0')
+string.str(.(字符串,true) = 转换为普通Unicode文本(去掉尾部多余'\0')\n如果原文本尾部包含'\0\0'则保留之。
+string.gmatch  = @for m,m2,m3 in string.gmatch( __,".") { \n\n} 
+string.indexOf(.("字符串","查找文本",开始位置) = 返回查找文本所在起始索引,结束索引\n普通文本查找,不支持模式匹配,支持宽字符\n开始位置为可选参数
+string.len(.(字符串,起始字节位置,结束字节位置) = 计算中英文字符个数\n参数@2,@3都是可选参数,以字节而非字符为单位\n起始位置默认为1\n结束位置默认为-1
+raw = 静态编程支持库
+raw.loadDll( =  加载dll\n有API有关DLL、API函数名字约定首字母大写\n例\nUser32 := raw.loadDll("User32.dll")
+raw.loadDll(.("dll路径","共享名字","调用约定") = 第一个参数可以是DLL路径或DLL内存数据,\n载入内存DLL数据时,可使用第二个参数指定共享模块名称以启用共享模式,\n如果DLL本身是库文件,则共享名称应使用库名字空间路径.\n参数@3可选指定调用约定,默认为"stdcall,microsoft"
+raw.loadDll() = !dllModule.
+raw.tofastcall(.(函数,"int()",owner) = 创建ms-fastcall调用约定回调函数\n注意前两个参数不能大于32位,返回值类型不能为void或浮点数\n并保持回调发生在回调函数有效作用域内
+raw.tostdcall(.(函数,"int()",owner) = 创建stdcall调用约定回调函数\n注意返回值类型不能为void或浮点数\n并保持回调发生在回调函数有效作用域内
+raw.tocdecl(.(函数,"int()",owner) = 创建cdecl调用约定回调函数\n注意返回值类型不能为void或浮点数\n并保持回调发生在回调函数有效作用域内
+raw.convert(.( from__, to) = API结构体类型转换函数\n将结构体struct_from转换为struct_to
+raw.convert(.( from__, to,offset) = API结构体类型转换函数\n将结构体struct_from转换为struct_to
+raw.sizeof(.(__ /*输入结构体或API数据类型*/ ) = 调用c语言中sizeof并返回API数据类型长度。
+raw.remoteApi(__/*输入进程ID*/,"void()",) = 参数(进程ID,函数原型,CALL地址)
+raw.remoteApi(__/*输入进程ID*/,"void()", ,"cdecl") = 参数(进程ID,函数原型,CALL地址,调用约定)
+raw.remoteApi(__/*输入进程ID*/,"void()","dll","api") =  参数(进程ID,函数原型,加载DLL模块名,函数名)
+raw.remoteApi(__/*输入进程ID*/,"void()","dll","api","cdecl,borland") =  参数(进程ID,函数原型,加载DLL模块名,函数名,调用约定) 
+raw.remoteApi(__/*输入进程ID*/,"void(INT thisAddr)", ,"thiscall") =  参数(进程ID,函数原型,加载DLL模块名,函数名,调用约定)\nthiscall使用第一个参数指定this指针地址
+raw.malloc(.(结构体) = 参数是一个结构体table,\n分配内存并复制结构体数据,返回cdata指针,\n通常用来替代可能被外部API修改的普通指针参数（string、或pointer)\n不适用于输出参数(&标记的参数)、不适用于数组类型([]指定的类型),
+raw.malloc(.(长度,初始值) = 参数一指定需要分配的内存大小,\n分配的内存是可读写的自由存储区\n通常用来替代可能被外部API修改的普通指针参数（string、或pointer)\n不适用于输出参数(&标记的参数)、不适用于数组类型([]指定的类型),\n参数二是初始值,可是指定所有字节的默认字节码数值,或者是一个结构体对象. \n如果初始值是结构体,则复制结构体到内存开始段,其余字节初始化为0.\n默认值也可以是一个字符串对象
+raw.tostring(.(__ ) = 将结构体(table)、指针(pointer)、或raw.malloc分配的内存数据(cdata)转换为string对象
+raw.tostring(.(__  , start,end) = 将结构体(table)、指针(pointer)、\n或raw.malloc分配的内存数据(cdata)转换为string对象\nstart指定开始位置,end指定结束位置
+raw.str(__/*字符串指针*/) = 转换为ANSI文本字符串(去掉尾部多余'\0'),\n参数一可以是pointer或cdata指针.
+raw.str(__/*字符串指针*/,true) = 转换为unicode文本字符串(去掉尾部多余'\0'),\n参数一可以是pointer或cdata指针.\n如果原文本尾部包含'\0\0'则保留之
+raw.toarray( __ ) = 创建API函数中的动态数组\n参数可以是一个指定长度的数值,也可以是一个AAuto table数组 
+raw.toarray( __,"struct" ) = 创建API函数中的动态数组\n第一个参数可以是一个指定长度的数值,也可以是一个AAuto table数组\n第二个参数指定API数据类型
+raw.toarray( __,"struct","array" ) = 创建API函数中的动态数组\n第一个参数可以是一个指定长度的数值,也可以是一个AAuto table数组\n第三个参数指定数组成员的字段名字
+raw.toarray().array = 结构体中的静态数组成员,\n名字array可以在raw.toarray()函数的第三个参数中修改
+raw._release(.(托管对象) = 释放cdata托管对象,慎用.\n不可用于raw.malloc()分配的内存对象
+raw.closehandle(__) = 关闭句柄资源
+!dllModule.api("__/*输入函数名字*/","void()" ) = 声明API函数,参数(函数名,函数原型,调用约定="stdcall")\n可选使用参数3指定调用约定,默认值为"stdcall",
+!dllModule.api("__/*输入函数名字*/","void(INT addrThis )" ,"thiscall") = 声明API函数,参数(函数名,函数原型,调用约定)\nthiscall调定在第一个参数中指定this对象指针地址
+!dllModule.api("__/*输入函数名字*/","void()" ,"cdecl,borland") = 声明API函数,参数(函数名,函数原型,调用约定)\n参数3使用一个字符串指定调用约定,逗号后面可选指定开发工具厂商
+!dllModule.gethandle() = 返回模块句柄
+!dllModule.API函数名__() = 直接调用未声明的API函数,注意:\n1、调用前有责任保证参数正确性,\n2、使用raw.loadDll加载DLL时第三个参数指定的默认调用约定,\n3、数值参数处理为int整型,除结构体以外的参数都处理为输入参数\n4、结构体处理为输出参数,其他类型输出参数可以结构体形式传入即可\n5、null参数切记不可省略不写\n6、返回值为int整型
+
+com = com组件对象支持库\n注意com函数首字母大写
+com.DoObjectVerb(.(OLE对象,-1) = 执行OLE对象的动词,\n参数2可使用_OLEIVERB_前缀常量
+com.CreateEmbed(.(控制对象,窗体对象,progId) = 创建控件对象并嵌入web窗体\n控制对象应当是一个table对象\n创建成功在控制对象中添加成员_host,_object,_form
+!embedObject._form = 容器窗口\n!static.
+!embedObject._object = 控件对象
+!embedObject._host = 控件容器
+!embedObject._host.close() = 关闭 
+!embedObject._host._adjust() = 自动调整控件窗口大小
+!embedObject._host.tranacc(.(MSG消息对象) = 解析快捷键,\n如果是快捷键返回真值
+!embedObject._host.doObjectVerb( _OLEIVERB__ ) = 执行指定的动词命令
+com.CreateEmbed() = !embedObject.
+com.AddConnection(.(com对象,事件接口) = 事件接口用com.ImplInterface创建
+com.CreateEmbed(.(控制对象,窗体对象) = 创建web窗体
+com.CreateObject("__") = 创建com.IDispatch对象
+com.GetObject("__") = 从已运行的实例获取com.IDispatch对象\n参数也可以是本地文件路径,例如doc文件
+com.QueryObject(__/*IUnknown指针*/ )  = 查询IDispatch接口、并创建com.IDispatch对象
+com.IsObject(__/*IDispatch对象*/) = 检测参数是否一个动态接口对象 
+com.GetPointer(.(com对象) = 获取原生指针\n该指针必须自行管理引用计数,\n不再使用时必须调用com.Release释放
+com.GetPointer(.(com对象或指针,GUID) = 使用GUID指定接口获取原生指针,GUID可用文本格式表示\n该指针必须自行管理引用计数,\n不再使用时必须调用com.Release释放
+com.GetIUnknown(.(com对象或指针,GUID) = 使用GUID指定接口获取com.IUnknown托管指针\n可选在参数@2使用字符串或GUID指定接口\n该指针自动管理引用计数，无须手动释放
+com.IsIUnknown(.(任意参数)  = 检测参数是否一个托管com.IUnknown指针
+com.GetEnumerator(__) = 获取枚举对象
+com.each = @for index,obj in com.each(__) {\n\n} //迭代遍历com集合对象 
+com.ShowHelp(__/*com对象*/) = 显示帮助
+com.Connect(__/*com对象*/, table对象) = 将普通table注册为默认事件接口（IDispatch接口）\n如果需要显式指定接口类型请使用com.AddConnection。
+com.ImplInterface(.(impl_table__) = 将table对象转换为IDispatch接口对象
+com.ImplInterface(.(impl_table__,ProgID,interface_name ) = 使用一个table表实现dispinterface接口对象\n例如：com.ImplInterface( flash.callevent ,"ShockwaveFlash.ShockwaveFlash","_IShockwaveFlashEvents")
+com.ImplInterfaceFromTypelib(.(impl_table,typelib_path,interface_name,coclass_name) = 使用类型库实现com接口
+com.NewObject(.(impl_table,ProgID) = 创建com对象
+com.NewControl(.(impl_table,ProgID) = 创建com对象 
+com.ReleaseConnection(.(com对象, 事件接口, cookie) = 释放事件接口,cookie来自com.AddConnection的返回值\n即使不调用此函数,所有事件接口会自动释放
+com.ReleaseConnection(.(com对象) = 释放默认事件接口\n指释放com.Connect挂接的事件\n即使不调用此函数,所有事件接口会自动释放
+com.Release(__) = 释放com对象或IUnknown指针\n直接释放pointer类型指针时请严格遵守com引用计数规则 
+com.DumpTypeInfo(__/*com对象*/) = 返回com对象类型信息,函数成员列表,例:\nio.print( com.DumpTypeInfo( comobj ) )
+com.GetTypeInfo(__/*com对象*/) = 返回类型库
+com.Variant(.(初始值) = 创建VARIANT指针对象,\n可选指定一个初始值,\n如果参数@2为true,则参数@1必须为VARIANT指针\n可用于API中VARIANT*指针参数、API类型应声明为pointer
+com.Variant() = !comVariant.
+!comVariant.clear() = 清空值
+!comVariant.bstrVal = 只读属性,获取BSTR指针
+!comVariant.parray = 只读属性,获取SAFEARRAY指针
+!comVariant.pdispVal = 只读属性,获取IDispatch指针
+!comVariant.punkVal = 只读属性,获取IUnknown指针 
+!comVariant.value = 读写值 
+
+com.LoadTypeLibrary(.("->tlb") = 加载类型库\n参数可以是类型库路径或者CLSID
+com.LoadTypeLibrary() = !typelib.
+!typeinfo.GetTypeLib() = 返回类型库\n!typelib.
+!typeinfo.GetFuncDesc(__/*索引*/) = 返回函数描述
+!typeinfo.GetVarDesc(__/*索引*/) = 返回值描述 
+!typeinfo.GetTypeAttr() = 返回类型属性\n!typeattr.
+!typeinfo.GetImplType(__/*索引*/) = 返回实现接口
+!typeinfo.GetImplTypeFlags(__/*索引*/) = 实现接口类型 
+!typeinfo.GetDocumentation() = 返回文档信息\n!com_type_doc.
+!com_type_doc.helpstring = 对象的描述
+!com_type_doc.name = 对象接口名称
+com.GetTypeInfo() = !typeinfo.
+!typelib.ShowHelp() = 显示帮助
+!typelib.GetTypeInfo(__/*索引*/) = 返回类型信息
+!typelib.GetTypeInfoCount() = 类型信息总数
+!typelib.ExportConstants() = 导出常量
+!typelib.ExportEnumerations() =  导出全部迭代器
+!typelib.GetDocumentation() = 返回文档信息\n!com_type_doc.
+
+!typeattr.Funcs = 函数总数
+!typeattr.Vars = 属性值总数
+!typeattr.typekind = 类型
+!typeattr.ImplTypes = 实现接口总数
+!typeattr.flags.cancreate = cancreate
+!typeattr.flags.dispatchable = dispatchable
+!typeattr.flags.control = control
+!typeattr.flags.appobject = appobject
+!typeattr.flags.hidden = hidden
+!typeattr.flags.oleautomation = oleautomation
+!typeattr.GUID = GUID  
+
+!file.readBuffer(.(缓冲区指针,读取长度) = 参数必须是使用raw.malloc()函数创建的缓冲区指针\n长度参数可选,默认为缓冲区长度,成功返回读取的字节长度\n建议设置合理的缓冲区大小(建议大于1MB),\n该函数比read()函数快很多。
+!file.writeBuffer(.(缓冲区指针,写入长度) = 参数一必须是使用raw.malloc()函数创建的缓冲区指针\n长度参数可选,默认为缓冲区长度.\n此函数一般结合readBuffer()函数用于快速复制文件数据.
+!file.write(.(__, ) = 写数据,支持一个或多个参数\n参数可以是字符串,数值,或结构体
+
+!file.read() = 从当前位置,向后读取下一行
+!file.read("%s") = 从当前位置,向后读取下一行\n支持多参数
+!file.read("%d") = 从当前位置,向后读取下一个数值\n支持多参数
+!file.read(-1) = 向后读取到文件尾部\n负数表示从文件尾部倒计数位置,支持多参数\n读取普通文件全部数据使用 string.load() 函数更快。\nreadBuffer() 函数则拥有最快的读取速度。
+!file.read(0) = 检测是否读取到文件尾
+!file.read(__) = 正数参数表示从当前位置向后读取n个字节\n支持多参数
+
+!file.readback() = 从当前位置,向前读取上一行  
+!file.readback(-1) = 向前读取到文件头部\n负数表示从文件头部倒计数位置
+!file.readback(0) = 检测是否读取到文件头
+!file.readback(__) = 正数参数表示从当前位置向前读取n个字节
+!file.size64() = 自当前位置计算到文件尾的大小,返回math.size64正整数对象\n该函数不会改变文件指针当前位置\n!math_size64.
+!file.size() = 返回文件指针当前位置到文件尾的大小,该函数不会改变文件指针当前位置，\n可选参数一指定单位大小(默认自动选择),\n可选用参数二指定小数精度,默认为2\n返回文件大小,单位大小,单位名("Bytes","KB","MB","GB"等)  
+!file.seek("end") = 移动指针至结束处,并返回文件长度\n注意该长度超过2GB则为负值,\n获取文件大小推荐使用 size() 函数
+!file.seek("end",__) = 移动至相对结束处的指定偏移量
+!file.seek() = 得到当前位置
+!file.seek("cur",__) = 移动至相对当前位置的指定偏移量
+!file.seek("set") = 移动指针到开始
+!file.seek("set",__) = 移动至相对开始处的指定偏移量
+!file.reopen("__/*文件路径*/","w+") = 重定向文件流
+!file.reopen("conout$","w__") = 重定向控制台文件流
+!file.flush() = 输出缓冲区数据
+!file.close() = 关闭文件流
+!file.setvbuf("no") = 禁用缓冲
+!file.setvbuf("full",__) = 完全缓冲
+!file.setvbuf("line",) = 行缓冲 
+io = 控制台,文件流操作
+io.popen() = !file.
+io.open() = 打开控制台窗口\n!file.
+io.lines = @for line in io.lines("\__/*请输入文件路径*/") { \n\n} //逐行迭代读取文件
+io.popen("","w") = 创建一个进程打开目标程序并绑定目标进程输入流
+io.popen("","r") = 创建一个进程打开目标程序并绑定目标进程输出流
+io.popen("") = 等价于io.popen("","r")例：\nfile=io.popen("ipconfig /all")
+io.open( =  打开文件,成功返回文件对象,\n失败返回空值,错误信息
+io.open(.("/文件路径","读写模式",共享模式) = 参数@1指定路径,首字符可用斜杠表示应用程序根目录\n参数@2指定打开文件的读写模式，支持以下选项:\n\nw+ 可读写模式，创建新文件清空源文件\nw 只写模式，清空原文件\nr+ 可读写模式,文件必须存在,不清空文件内容\nr 只读模式,文件必须存在\na+ 可读写追加模式，并移动指针到文件尾,创建新文件保留原文件\na 只写追加模式，创建新文件保留原文件\nb 二进制模式，不转换回车换行\nt 文本模式，自动转换回车换行\nR 随机优化 S 连续优化\nD 创建临时文件,关闭对象后删除文件\n注意: r,w,a只能且必须选择其中一个作为读写模式的第一个字符\n\n参数@3 可选以 _SH_前缀常量指定共享模式 
+io.close() = 关闭控制台窗口
+io.stderr = 标准错误输出\n!file.
+io.stdin =  标准输入\n!file.
+io.stdout = 标准输出\n!file.
+io._exepath = 主程序文件路径
+io._exefile = 主程序文件名
+io._exedir = 主程序所在目录,\n目录路径以反斜杠结束.
+io.localpath("__") = 如果是\或/开头表示的程序根目录、或~开头表示的EXE根目录下的相对路径\n返回绝对路径,否则返回空值
+io.libpath("__") = 将库路径转换为文件路径;\n如果库存在则返回三个值:库文件路径,库文件所在目录,是否DLL组件,\n否则库路径返回null空值,按用户库合法格式返回目录路径,\n返回的库目录路径以反斜杠结束.
+io.fullpath("__") = 将相对路径转换为绝对路径;\n开始表示AAuto执行程序根目录
+io.remove("__") = 删除指定的文件\n成功返回true,失败返回null
+io.rename("__","") = 重命名\n成功返回true,失败返回null 
+io.tmpname() = 生成系统临时文件目录下的临时文件名,\n可使用参数@1指定临时文件名前缀
+io.fullpath("__") = 将相对路径转换为绝对路径;\n\开始表示AAuto执行程序根目录
+io.remove("__") = 删除指定的文件\n成功返回true,失败返回null
+io.rename("__","") = 重命名\n成功返回true,失败返回null 
+io.splitpath(__) = 拆分文件路径为目录、文件名、后缀名、分区号等
+io.print(.( __ , ... ) = 在控制台窗口以字符串形式输出变量的值 
+io.print(."__") = 在控制台窗口输出信息 
+io.exist(.("文件路径") = 判断文件路径是否存在\n存在则转换为绝对路径并返回该路径,不存在返回null\n参数为空返回null
+io.exist(.("文件路径",2) = 判断文件是否可写\n成功则转换为绝对路径并返回该路径,失败返回空
+io.exist(.("文件路径",4) = 判断文件是否可读\n成功则转换为绝对路径并返回该路径,失败返回空
+io.exist(.("文件路径",6) = 判断文件是否可读写\n成功则转换为绝对路径并返回该路径,失败返回空
+io.getText(__/*可选指定缓冲区大小*/) = 读取控制台文本\n不包含尾部的回车换行
+
+
+!filepath.dir = 目录
+!filepath.file = 文件名（含后缀）
+!filepath.name = 文件名
+!filepath.ext = 文件后缀名\n包含后缀名前面的圆点,例如".aau"
+!filepath.drive = 文件所在分区
+io.splitpath() = !filepath.
+
+?::LOGFONT = !logfont.
+LOGFONT() = 创建字体对象\n!logfont.
+LOGFONT( name="Tahoma";point=12 ) = 创建字体对象\npoint指定字体大小,单位pt(磅)
+?LOGFONT() = !logfont.
+!logfont.h = 指定字符的高度(像素)
+!logfont.w = 指定字符的宽度(像素)\n一般不建议指定此参数
+!logfont.esc = 字符串相对页面底端角度
+!logfont.ori = 单个字符相对页面底端角度
+!logfont.weight = 重量,0到1000\n0为默认值,标准字体为400\n粗体为700
+!logfont.bold = 是否为粗体
+!logfont.italic = 斜体
+!logfont.underline = 添加下划线
+!logfont.strike = 添加删除线
+!logfont.charset = 字符集
+!logfont.out = 输出精度
+!logfont.clip = 剪辑精度
+!logfont.quality = 输出质量
+!logfont.family = 字符间距和族
+!logfont.name = 字体名称
+!logfont.color = 字体颜色
+!logfont.point = 指定字体大小(pt、磅)\n如果指定了此参数,h属性将被忽略
+!logfont.createIndirect( = 创建可用于GDI设备的逻辑字体\n并返回字体句柄
+!logfont.createIndirect(.(hdc,hwnd,own) = 创建可用于绘图设备的逻辑字体,并返回对象句柄\nhdc,hwnd为可选参数用于转换point单位,默认为屏幕dc\n参数@3指定是否由当前对象是否持有该字体句柄
+!logfont.deleteIndirect() = 删除createIndirect函数创建并管理生存期的字体\n必须确认该字体确实不再被使用
+!logfont.detach() = 分离字体句柄\n并将对象的字体句柄置为空
+!logfont.handle = createIndirect函数创建并管理生存期的字体句柄
+
+math.size64( = 创建无符号64位正整数\n适用于API中LONG类型无符号整数\n该对象可使用tostring函数转换为字符串,\n也可以使用tonumber函数转换为64位浮点数\n相同类型支持大于,小于,等于运算符
+math.size64(.("数值") = 参数使用字符串指定无符号64位正整数
+math.size64(.(低32位,高32位) = 参数使用两个32位数值指定无符号64位正整数
+math.size64(.(math->size64对象) = 复制无符号64位正整数
+math.size64() = !math_size64.
+!math_size64.reset(.(低32位,高32位) = 重新设置值\n支持构造math.size64的所有构造参数
+!math_size64.format() = 转换字节长度到适合的最大单位表示的文本,\n单位使用 bytes,KB,MB,GB等
+!math_size64.add(.(数值) = 加法运算,函数修改并返回自身,\n使用+运算符替代此函数可返回新值不改变自身\n参数可以是math.size64对象,\n或者是普通数值,允许使用负数
+!math_size64.sub(.(数值) = 减法运算,函数修改并返回自身,\n使用-运算符替代此函数可返回新值不改变自身\n参数可以是math.size64对象,\n或者是普通正整数
+!math_size64.mul(.(数值) = 乘法运算,函数修改并返回自身,\n使用*运算符替代此函数可返回新值不改变自身\n参数可以是math.size64对象,\n或者是普通正整数
+!math_size64.div(.(数值) = 除法运算,函数修改并返回自身,\n使用/运算符替代此函数可返回新值不改变自身\n参数可以是math.size64对象,\n或者是普通正整数,注意运算结果不是浮点数
+!math_size64.mod(.(数值) = 取模运算,函数修改并返回自身,\n使用%运算符替代此函数可返回新值不改变自身\n参数可以是math.size64对象,\n或者是普通正整数
+!math_size64.split32() = 返回低32位,高32位数值 
+!math_size64.add() = !math_size64.
+!math_size64.sub() = !math_size64.
+!math_size64.mul() = !math_size64.
+!math_size64.div() = !math_size64.
+!math_size64.mod() = !math_size64.
+
+math.abs(__/*输入数值*/) = 计算绝对值
+math.acos(__/*输入数值*/) = 计算反余弦值
+math.asin(__/*输入数值*/) = 计算反正弦值
+math.atan(__/*输入数值*/) = 计算反正切值
+math.atan2(.(x__,y) = x/y的反正切值
+math.ceil(__/*输入数值*/) = 上取整为最接近的整数
+math.floor(__/*输入数值*/) = 下取整为最接近的整数
+math.cos(__/*输入数值*/) = 计算余弦值
+math.deg(__/*输入弧度*/)= 弧度转换为角度
+math.exp(__/*输入数值*/) = 计算以e为底x次方值
+math.cosh(__/*输入数值*/) = 双曲线余弦函数
+math.frexp(__/*输入数值*/)  = 把双精度数val分解为数字部分（尾数）和以2为底的指数n,即val=x*2n
+math.ldexp(.(value__,n) = 计算value * 2的n次方
+math.log10(__/*输入数值*/)= 计算以10为基数的对数
+math.log(__/*输入数值*/) = 计算自然对数
+math.max(__/*输入数值*/, ) = 返回两个数值中较大的一个
+math.min(__/*输入数值*/, ) = 返回两个数值中较小的一个
+math.random(x__, y) = 生成从x到y范围的随机数 
+math.random() = 生成0到1之间的随机数(小数)
+math.randomize() = 设置随机数发生器的种子\n默认参数为time.tick()
+math.modf(__/*输入数值*/) =  把数拆分为整数、小数\n返回两个值。 
+math.rad(__/*输入角度*/) = 角度转换为弧度
+math.sinh(__/*输入数值*/) = 正弦值(角度) 
+math.sin(__/*输入数值*/) = 计算正弦值
+math.sqrt(__/*输入数值*/) = 计算平方根
+math.tanh(__/*输入数值*/) = 计算正切值(角度)
+math.tan(__/*输入数值*/) = 计算正切值 
+math.pi = 圆周与直径的比值常数 
+math = 数学计算库 
+
+
+time.now() = 获取当前时间\n!time.
+time.tick() = 获取系统启动时间(毫秒) 
+time.istime(__) = 判断对象是否time对象
+time(.(__,"%Y/%m/%d %H:%M:%S") = 返回时间\n参数一可以是表示时间的数值、字符串、参数表、或time,time.ole 对象\n第二个参数指定格式化串,首字符为!表示GMT时间.\n\n如果时间需要按特定区域语言格式化,请先设置区域,例如:\nsetlocale("time","enu") 指定月份、星期等使用英文语言格式化,\nsetlocale("time","chs") 恢复中文语言格式
+!time = class datetime{\nWORD year; //年\nWORD month; //月\nWORD dayofweek; //星期\nWORD day; //日期\nWORD hour; //小时\nWORD minute; //分钟\nWORD second; //秒\nWORD milliseconds; //这个字段正常情况下为0,只有在WINAPI函数中会起作用\nformat; //时间格式字符串\nisdst //是否夏令时\n}
+!time.year= 年
+!time.dayofweek = 星期
+!time.day = 日
+!time.month= 月
+!time.hour= 小时
+!time.minute= 分钟
+!time.second= 秒
+!time.milliseconds= 毫秒
+!time.format = @.format="%Y年%m月%d日 %H时%M分%S秒";\n//指定格式化串,首字符为!表示GMT时间
+!time.local() = 将UTC时间转换为本地时间\n格式化串必须以!作为首字符\n转换失败返回空值,转换成功返回自身
+!time.local(true) = 当参数为true,\n将UTC时间转换为本地时间\n并创建一个新的时间对象返回\n不修改自身
+!time.update() = 重新计算时间并更新dayOfWeek字段.\n!time.
+!time.addmonth(__/*输入数值*/) = 增加月份数,返回自身
+!time.addday(__/*输入数值*/) = 增加天数,可以为负数,返回自身
+!time.addsecond(__/*输入数值*/) = 增加秒数,可以为负数,返回自身
+!time.addminute(__/*输入数值*/) = 增加分钟数,可以为负数,返回自身
+!time.addhour(__/*输入数值*/) = 增加小时数,可以为负数,返回自身
+!time.addmonth() = !time.
+!time.addday() = !time.
+!time.addsecond() = !time.
+!time.addminute() = !time.
+!time.addhour() = !time.
+!time.diffmonth(__/*指定datetime对象*/) = 计算两个time对象相差月份
+!time.diffday(__/*指定datetime对象*/) = 计算两个time对象相差天数
+!time.diffsecond(__/*指定datetime对象*/) = 计算两个time对象相差秒数
+!time.diffminute(__/*指定datetime对象*/) = 计算两个time对象相差分钟数
+!time.diffhour(__/*指定datetime对象*/) = 计算两个time对象相差小时数 
+time() = 获取当前时间\n!time.
+ 
+thread.call("__/*请输入函数名字*/","owner", ) = 在线程安全模式下执行线程共享区函数\n如果线程共享区函数中调用thread.call(),则替换为普通函数调用.
+thread.getMainId() = 返回当前进程主线程ID\n开发环境中返回IDE主线程
+thread.getId() = 返回当前线程ID
+thread.open(.(线程ID,权限,句柄是否可继承) = 打开线程句柄，失败请使用 ..lasterr() 获取错误信息.\n参数二可省略，默认为_THREAD_ALL_ACCESS\n参数三默认为false\n返回的句柄必须使用 raw.closehandle()关闭
+thread.getHandle() = 返回当前线程伪句柄\n该句柄仅可在当前线程使用、可复制。
+thread.create(.(线程函数,调用参数) = @\n	function( ... ){\n		import win; //线程需要独立引用库\n		\n		\n	},\n	__/*传入线程函数的实参写到这里*/\n)
+thread.create(.(aau文件路径,调用参数) = 创建线程运行 *.aau 文件,\n该文件所在目录将被设定为此线程的应用程序根目录,\n该目录下的"\lib\"目录将被设定为用户库目录.
+thread.create( = 创建线程,返回句柄、线程ID\n线程句柄不再使用时,应调用raw.closehandle()函数关闭。\n第一个参数是启动线程的函数,其余参数传递给线程函数。\n注意线程函数必须使用独立的线程环境,import等语句应置于函数内部。
+thread.stop(__/*退出代码*/) = 终止当前线程。
+thread.set("标志键", ) = 写入一个值到进程共享内存区\n标志键可以是数值、字符串等常量、赋值为null则删除该共享键值对\n此函数禁止在任何元方法中使用。
+thread.get("标志键") = 从进程共享内存区读取一个值\n此函数禁止在任何元方法中使用\n标志键可以是数值、字符串等常量\n此函数禁止在任何元方法中使用。
+thread.lock("临界区名称") =  加锁\n用以避免多个线程同时执行加锁范围内的代码。
+thread.unlock("临界区名称") = 解锁
+thread.lock() =  加锁\n等效于thread.lock("default")
+thread.unlock()  = 解锁\n等效于thread.unlock("default")
+thread.create_suspended=true = 设置创建线程时是否暂停执行
+thread.terminate(__/*线程句柄*/,0) = 强制终制线程,不推荐使用\n参数二设定返回值,可通过thread.getExitCode获取。
+thread.resume(__/*线程句柄*/) = 继续执行
+thread.suspend(__/*线程句柄*/) = 暂停执行\n注意线程是否正在使用互斥锁
+thread.getExitCode(__/*线程句柄*/) = 获取线程函数返回代码
+thread.tofastcall(.(函数对象,"int()") = 创建跨线程回调函数,使用ms-fastcall调用约定\n回调线程不是当前线程应使用此函数替换raw.tostdcall\n回调函数使用独立的线程环境,所有import语句必须放在函数体内部
+thread.tostdcall(.(函数对象,"int()") = 创建跨线程回调函数,使用stdcall调用约定\n回调线程不是当前线程应使用此函数替换raw.tostdcall\n回调函数使用独立的线程环境,所有import语句必须放在函数体内部
+thread.tocdecl(.(函数对象,"int()") = 创建跨线程回调函数,使用cdecl调用约定\n回调线程不是当前线程应使用此函数替换raw.tocdecl\n回调函数使用独立的线程环境,所有import语句必须放在函数体内部
+debug = 调试支持库
+debug.call_count() = 函数调用栈深度
+debug.getnamespace(__/*对象*/) =  返回对象的名字空间
+debug.getfunction(__/*调用级*/) =  返回函数对象
+debug.getlocalvar(.(调用级,索引) = 返回局部变量名
+debug.getlocalvar(.(纤程,调用级,索引) = 返回局部变量名
+debug.setlocalvar(.(调用级,索引,新值) = 修改局部变量名
+debug.setlocalvar(.(纤程,调用级,索引,新值) = 修改局部变量名 
+debug.getupvar(.(函数对象,索引) =  返回函数闭包局部变量
+debug.setupvar(.(函数对象,索引,值)  =  设置函数闭包局部变量
+debug.hook(__/*可选参数：可在此输入协程对象*/)  = 创建调试钩子
+debug.traceback(.(纤程,"附加说明") = 返回活动框跟踪信息\n所有参数为可选参数
+!debughook.line = @.line=function(line){\nio.print( "line",line )\n}
+!debughook.call = @.call=function(){\nio.print( "call" )\n}
+!debughook.return = @.return=function(line){\nio.print( "return" )\n}
+!debughook.tailreturn = @.tailreturn=function(line){\nio.print( "tailreturn" )\n}
+?debug.hook = !debughook.
+
+debug.queryinfo(2,"select source,function,upvars,name,currentline,activelines") = 查询调用椎栈信息\n参数一可以是函数名、或调用级别\n1表示当前函数,2表示调用当前函数的函数
+debug.queryinfo(2,"select source") =  = 查询调用椎栈源码相关信息\n参数一可以是函数名、或调用级别\n1表示当前函数,2表示调用当前函数的函数
+!debuginfo.source = 源码相关信息
+!debuginfo.source.file = 文件名
+!debuginfo.source.code = 源码
+!debuginfo.source.src = 源码或文件名缩略信息
+!debuginfo.source.beginline = 开始定义行
+!debuginfo.source.endline = 结束;定义行
+!debuginfo.source.kind = 类型\n"kernel"表示内核函数\n"function"\n表示普通函数\n"main"主函数\n"tail"尾调用
+!debuginfo.name =  函数名字
+!debuginfo.name_where =  global(全局变量)、\nself(当前名字空间成员变量)、\nvar(局部变量)、\nupvar(上层语句块局部闭包变量)
+!debuginfo.activelines =  调用堆栈信息
+!debuginfo.function =   
+!debuginfo.upvars = 
+!debuginfo.currentline =   
+debug.queryinfo() = !debuginfo.
+
+fiber.create(.(函数对象,应用程序根目录) = 创建纤程\n调用fiber.resume()函数启动纤程,\n参数2为可选参数
+fiber.resume (__/*纤程*/,) = 继续运行纤程\n成功返回true以及fiber.yield()传入的参数\n错误返回false以及错误信息.
+fiber.yield (__/*一个或多个返回值*/) = 暂停纤程,\n此函数传入参数将会作为fiber.resume()的返回值。\下次调用fiber.resume()的参数即为本次调用的返回值。
+fiber.status(__/*纤程*/) = 获取纤程状态
+fiber.status.current = 当前正在运行的纤程
+fiber.status.running = 正在调用其他纤程
+fiber.status.suspended = 等待中
+fiber.status.dead = 纤程已完成或已出错
+fiber.current() = 返回当前正在运行的纤程\n非纤程内调用则返回null
+
+_struct_aligned = 用于结构体中自定义对齐\n指定为1按按照实际字节数对齐
+__messageGet(msg) = 等待并获取窗口消息,\n可选传入一个空表接收返回值,\n成功返回消息对象,失败返回false,\n程序退出返回null
+__messagePeek(msg) = 检查并获取窗口消息,\n可选传入一个空表接收返回值,\n成功返回消息对象,无消息返回false,\n程序退出返回null
+__messageTranslateDispatch(msg) = 分发处理窗口消息,\n参数为消息对象.
+
+win.form.loadForm() = !winform.
+?.loadForm = !winform.
+?.getForm = !winform.
+win.form() = !winform.
+
+global.onError = @global.onError= function( e ){ \n	__/*自定义错误处理*/\n	return true; \n} 
+beforeUnload = @import util;\nutil.connect( ,"beforeUnload",function(){\n	__\n} );
+com = 组件对象
+console = 控制台窗口
+coroutine = 协程
+crypt = 加密解密
+debug = 调试
+fsys = 文件操作
+gdi = GDI绘图,\n声明了常用绘图WINAPI
+gdip = GDI+绘图
+inet = 网络
+key = 键盘模拟
+mouse = 鼠标模拟
+preload = 预处理
+process = 进程操作
+protobuf = 序列化协议
+raw = 静态类型
+sqlite = 内存数据库
+string = 字符串操作
+sys = 系统相关
+thread = 线程管理
+time = 日期时间
+util = 语言扩展
+web = 网页编程
+win = 窗口操作,\n声明了常用WINAPI函数
+winex = 外部窗口控制
+wsock = 套接字
+zeromq = 消息通讯
+zlib =  压缩解压

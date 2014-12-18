@@ -1,0 +1,37 @@
+//线程共享表对象
+io.open() 
+
+import thread.table;
+var tab = thread.table("线程共享表名称",true/*清空*/ )
+
+handle = thread.create(
+	function(){
+		import thread.table; 
+		tab = thread.table("线程共享表名称")
+		tab.push( "线程ID:" + thread.getId() )
+	} 
+)
+
+handle2 = thread.create(
+	function(){
+		import thread.table; 
+		tab = thread.table("线程共享表名称")
+		tab.a = 12; //线程共享表也可以象普通表一样访问
+		tab.b = 34;
+		tab.c = 56;
+		
+		tab.push( "线程ID:" + thread.getId() )
+	} 
+)
+
+thread.waitClose( handle,handle2)
+
+
+io.print( tab.pop(2) )
+io.print( tab.a ); //线程共享表也可以象普通表一样访问
+io.print("--------------")
+
+//遍历共享表
+for( k,v in tab.each() ){
+	io.print(k,v) 
+}

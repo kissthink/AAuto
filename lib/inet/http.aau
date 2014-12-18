@@ -1,0 +1,706 @@
+//http 网络传输协议
+import inet;
+import web;
+import inet.url;
+import inet.file;
+namespace inet
+
+class http{
+		
+	/* 
+	HTTP=HTTP://proxyserver:port    
+	FTP=FTP://proxyserver:port   
+	GOPHER=HTTP://proxyserver:port   
+	SOCKS=proxyserver:port 
+	多个代理请以空格分开,空字符串表示使用默认代理设置，null表示不使用代理 
+	*/ 
+    ctor( agent = "Mozilla/4.0", proxy,proxyBypass="",flags=0,shareName ){ 
+    	if( type(agent) != type.pointer ){ 
+			var accessType = (!proxy)? 0x1/*_INTERNET_OPEN_TYPE_DIRECT*/:0x0/*_INTERNET_OPEN_TYPE_PRECONFIG*/ 
+	    	if( #proxy ){
+	    		accessType = 0x3/*_INTERNET_OPEN_TYPE_PROXY*/;
+	    	}
+	    	
+	    	if(shareName){
+	    		shareName += "{6D36619B-AC69-4570-BF75-EE3677A879E6}"
+	    		this.session = thread.shareHandle.create(shareName,::InternetOpen,agent,accessType,proxy,proxyBypass,flags);
+	    	}
+	    	else{
+	   			this.session = ::InternetOpen(agent,accessType,proxy,proxyBypass,flags);
+	   		}
+	   		
+	    	if(!this.session)
+				error("inet.http初始化失败",2) 
+			 	
+			..table.gc(this,"close");  
+		}
+		else {
+			this.session = agent;
+		} 
+	};  
+	beginRequest = function(url,method="GET",referer,accept,flags=0,openFlags=0){
+		
+		
+		if( ! (#url) )
+	    	return null,"未指定网址"
+	 
+		//分析网址
+		var tUrl = ..inet.url.split(url);  
+		if(!tUrl)
+			return null,"地址格式不正确";
+		
+		//开启HTTPS支持					
+	    if( tUrl.schemeNum == 0x4/*_INTERNET_SCHEME_HTTPS*/){
+	    	flags |=  0x800000/*_INTERNET_FLAG_SECURE*/;
+	    	tUrl.schemeNum = 0x3/*_INTERNET_SCHEME_HTTP*/
+		}
+			 
+		if( this.request ){ this.endRequest() }
+		this.connect = ::InternetConnect(this.session,tUrl.host,tUrl.port,this.username,this.password,tUrl.schemeNum,openFlags,0) 
+			
+        if( ! this.connect ) 
+        	return null,..lasterr( ,"beginRequest->InternetConnect")
+	    
+	    accept = accept||this.accept;
+	    var lplpszAcceptTypes = {};
+	    if(accept){
+	    	var tAccept = ..string.split(accept,",");
+	    	lplpszAcceptTypes = ..raw.toarray( #tAccept+1,"pointer","array" );
+	    	lplpszAcceptTypes.array = tAccept;
+	    }  
+	    this.request = HttpOpenRequest(this.connect,method,..string.concat(tUrl.path ,tUrl.extraInfo),null,referer||this.referer, lplpszAcceptTypes, flags||this.flags||0 ,0);
+		
+		if( ! this.request ){ 
+			return null,..lasterr(,"beginRequest->HttpOpenRequest");
+		}
+		this.referer = url;
+		this.lastReuestUrl = url;
+		return true;
+	};
+	queryNumber = function(flag=0){
+		if(!this.request)
+			error("无效调用",2)
+		var ok,num = QueryInfoByInt( this.request,0x20000000/*_HTTP_QUERY_FLAG_NUMBER*/ | flag,0,4,0)
+		if(ok)return num;
+	};
+	securityFlagIgnoreUnknownCa = true ;
+	securityFlagIgnoreCertCnInvalid = true;
+	securityFlagIgnoreCertDateInvalid = true;
+	securityFlagIgnoreWrongUsage = true;
+	securityFlagIgnoreRevocation = true;
+	_defaultRequestErrHandle = {  
+		[ 0x2F0D/*_ERROR_INTERNET_INVALID_CA*/ ] = function() {
+	 		var flag = {INT feature};
+	 		if (! ::InternetQueryOption(this.request,0x1F/*_INTERNET_OPTION_SECURITY_FLAGS*/,flag,4) ){
+	 			return null,..lasterr(,"_defaultRequestErrHandle->12175->InternetQueryOption")
+	 		}
+	 		var security_flags = flag.feature & ( 0x100/*_SECURITY_FLAG_IGNORE_UNKNOWN_CA*/ |
+                   0x2000/*_SECURITY_FLAG_IGNORE_CERT_DATE_INVALID*/ |
+                   0x1000/*_SECURITY_FLAG_IGNORE_CERT_CN_INVALID*/ |
+                   0x200/*_SECURITY_FLAG_IGNORE_CERT_WRONG_USAGE*/ );
+
+    		if ( this.securityFlagIgnoreCertCnInvalid)
+      		security_flags |= 0x1000/*_SECURITY_FLAG_IGNORE_CERT_CN_INVALID*/;
+		 
+    		if ( this.securityFlagIgnoreCertDateInvalid )
+      		security_flags |= 0x2000/*_SECURITY_FLAG_IGNORE_CERT_DATE_INVALID*/;
+		
+    		if ( this.securityFlagIgnoreUnknownCa )
+      		security_flags |= 0x100/*_SECURITY_FLAG_IGNORE_UNKNOWN_CA*/;
+		
+    		if ( this.securityFlagIgnoreWrongUsage )
+      		security_flags |= 0x200/*_SECURITY_FLAG_IGNORE_CERT_WRONG_USAGE*/;
+      		
+      		if ( this.securityFlagIgnoreRevocation )
+      		security_flags |= 0x80/*_SECURITY_FLAG_IGNORE_REVOCATION*/;  
+
+			flag.feature = security_flags;
+	 		if( ! ::InternetSetOption(this.request,0x1F/*_WINHTTP_OPTION_SECURITY_FLAGS*/,flag,4) ){
+	 			return null,..lasterr(,"_defaultRequestErrHandle->12175->SetOption")
+	 		} 
+	 		return true; 
+	 	}
+	 	[ 0x2F06/*_ERROR_INTERNET_SEC_CERT_CN_INVALID*/ ] =  function(){
+	 		return this._defaultRequestErrHandle[0x2F0D/*_ERROR_INTERNET_INVALID_CA*/]()
+	 	} 
+	 	[ 0x2F05/*_ERROR_INTERNET_SEC_CERT_DATE_INVALID*/ ] =  function(){
+	 		return this._defaultRequestErrHandle[0x2F0D/*_ERROR_INTERNET_INVALID_CA*/]()
+	 	} 
+	 	[ 0x2f19/*_ERROR_INTERNET_SEC_CERT_REV_FAILED*/ ] =  function(){
+	 		return this._defaultRequestErrHandle[0x2F0D/*_ERROR_INTERNET_INVALID_CA*/]()
+	 	}
+	}; 
+	beginSendData = function(bufferTotal=0){
+		if(!this.request) error("无效调用",2)
+		
+		this.statusCode = null;
+		this.responseHeaders = null; 
+		this.responseContentType = null;
+		this.lastResponseData = null;
+		if( this.beforeSend) this.beforeSend();
+		
+		var headers = this.headers;
+		headers = ..web.joinHeaders(headers,this.addHeaders);
+		   
+		var intBuf = INTERNET_BUFFERS();
+    	intBuf.header = headers;
+    	intBuf.headersLength = #headers;
+    	intBuf.headersTotal = #headers;
+        intBuf.bufferTotal = bufferTotal;  
+		this.bufferTotal = bufferTotal;
+		
+		var sendstat;
+		if( bufferTotal  )
+			sendstat = HttpSendRequestEx( this.request,intBuf, ,0)
+		else 
+			sendstat = HttpSendRequest(this.request,headers,#headers, ,0 );
+		
+	 	if( !sendstat) { 
+			var err,code = ..lasterr(,"beginSendData");
+	 		var handle = this._defaultRequestErrHandle[code];
+	 		if( handle ){ 
+	 			var ok,err,code = handle();
+	 			if(!ok)
+	 				return null,err,code;
+	 				
+	 			if( bufferTotal  )
+					sendstat = HttpSendRequestEx( this.request,intBuf, ,0)
+				else 
+					sendstat = HttpSendRequest(this.request,headers,#headers, ,0 );
+			
+	 			if( !sendstat) { 
+	 				return null,..lasterr(,"beginSendData->retry");
+	 			} 
+	 		}
+	 		else {
+	 			return null,err,code;
+	 		} 
+		}  
+		return true;  
+	};
+	writeData = function(str,...){
+		if(!this.request) error("无效调用",2);
+		return writeFile( this.request,str,... ); 
+	};
+	writeBuffer = function(buffer,l){
+		if(l===null)l=#buffer;
+		if(!this.request) error("无效调用",2);
+		var len = writeFileBuffer( this.request,buffer,l ); 
+		return len;
+	};
+	endSendData = function(){
+		if(!this.request) error("无效调用",2);
+		this.headers = null;
+		
+		if( this.bufferTotal && ( !HttpEndRequest(this.request, ,0) ) ){
+			return null,..lasterr(,"endSendData");
+		};
+		
+		this.statusCode = this.queryNumber( 0x13/*_HTTP_QUERY_STATUS_CODE*/)
+		if(!this.statusCode){ 
+			return null,..lasterr(,"queryStatus");
+		}
+		this.contentLength = this.queryNumber( 0x5/*_HTTP_QUERY_CONTENT_LENGTH*/ )
+		this.responseContentType = this.readHeader("Content-Type:");
+		if( this.afterSend) this.afterSend(this.statusCode,this.contentLength);
+		return true,this.statusCode,this.contentLength;
+	};   
+	send = function(postData){
+		if(!this.request) error("无效调用",2);
+		 
+		if( this.onSend ) { 
+			var size = this.onSendBegin();
+			 
+			var ok,err,code = this.beginSendData(size);
+			if(!ok)return null,err,code;
+			
+			if(size){
+				while( 
+			    	var str,len;
+			    	str,len = this.onSend(size); 
+			    	str 
+				) {
+					len = this.writeData(str,len); 
+					size -= len;
+					if(!len) return null,"上传数据出错";
+				}
+				if(size) return null,"上传数据出错";
+			}
+		}
+		else {
+			var ok,err,code = this.beginSendData(#postData);
+			if(!ok)return null,err,code;
+			
+			if( #postData ){ 
+				if ( ! this.writeData( postData )  )  {
+					return null,..lasterr(,"send->writeData");;
+				} 
+			}
+		}
+		
+		 
+		return this.endSendData(); 
+	};
+	setAuth = function(user,pwd){
+		if(!this.request) error("无效调用",2);
+			return ..inet.setAuth(user,pwd,this.request);
+	};
+	writeHeader = function(header,modifiers = -1610612736/*_WINHTTP_ADDREQ_FLAG_REPLACE | _WINHTTP_ADDREQ_FLAG_ADD*/ ){
+		if(!this.request)
+			error("无效调用",2) 
+			
+		return AddRequestHeaders(this.request,header,#header,modifiers);	 
+	};
+	replaceHeader = function(header){
+		this.writeHeader(header,0x80000000/*_WINHTTP_ADDREQ_FLAG_REPLACE*/);
+	}; 
+	mergeHeader = function(header,sep=","){
+		this.writeHeader( header,sep=="," ? 0x40000000/*_WINHTTP_ADDREQ_FLAG_COALESCE_WITH_COMMA*/ : 0x1000000/*_WINHTTP_ADDREQ_FLAG_COALESCE_WITH_SEMICOLON*/ );
+	}; 
+	readHeaderRange = function(){
+		if(!this.request)
+			error("无效调用",2)
+			
+		return {
+			acceptRanges = owner.readHeader("Accept-Ranges:");
+			eTag = owner.readHeader("ETag:");
+			lastModified = owner.readHeader("Last-Modified:"); 
+			buildRequestHeaders = function(from=0,to){
+				return ..string.concat("If-Range:",owner.eTag,
+					'\r\nIf-Match:',owner.eTag, 
+					'\r\nUnless-Modified-Since:',owner.lastModified,
+					'\r\nIf-Unmodified-Since:',owner.lastModified, 
+					'\r\nRange:bytes=',from , "-",to
+				) 
+			}  
+		}
+	}; 
+	writeHeaderRange = function(rangeInfo,from=0,to){
+		if(!this.request)
+			error("无效调用",2);
+			
+		owner.writeHeader( ..string.concat("If-Range:",rangeInfo.eTag,
+					'\r\nIf-Match:',rangeInfo.eTag, 
+					'\r\nUnless-Modified-Since:',rangeInfo.lastModified,
+					'\r\nIf-Unmodified-Since:',rangeInfo.lastModified, 
+					'\r\nRange:bytes=',from , "-",to
+				) 
+		)
+	};
+	getTime = function( ){ 
+    	var ok,tm  = QueryInfo( this.request , 0xB/*_HTTP_QUERY_LAST_MODIFIED*/|0x40000000/*_HTTP_QUERY_FLAG_SYSTEMTIME*/,..time() ,256,0)
+    	if(!ok) 
+    		return null,..lasterr(,"getTime"); 
+    		
+    	tm.format="!%c";//说明这是一个UTC时间 
+		return tm.local(); //转换为本地时间并返回
+	};
+	readHeader = function(name,index=1){
+		if(!this.request){
+			if( !this.responseHeaders ) error("无效调用",2);
+			if(!name) return this.responseHeaders;
+			for line in ..string.lines(this.responseHeaders) { 
+				if( ..string.cmp(line,name,#name) == 0 ){
+					return ..string.match( line,".+?\:\s*(.+)");
+				}
+			}
+			return;
+		}
+			
+		var lev = 0x16
+		var buf = 0;
+		if(name ){
+			lev = 65535
+			buf = name;
+		}  
+		
+		var ok,headers,len,next = QueryInfoByString( this.request,lev,buf,#name,index-1) 
+		
+		if(name){
+			buf = name + ..string.repeat(len,'\0') 
+			len = #name + len;
+		}
+		else {
+			buf = len;
+		} 
+		ok,headers,len = QueryInfoByString( this.request ,lev,buf ,len,index-1) 
+		
+		if(!ok) 
+			return null,..lasterr();   
+			
+		var h,n = ..string.left(headers,len) ,next!=12150?next+1:null; 
+		if(!name) this.responseHeaders = h;
+		return h,n; 
+	};
+	readHeaderContent = function(){
+		if(! (this.request || this.responseHeaders ) ) error("无效调用",2);
+		
+		var ret = {
+			type = owner.readHeader("Content-Type"); 
+		}
+		var disposition = owner.readHeader("Content-disposition")
+		if( disposition[["filename"]] ){
+			var _type,filename = ..string.match(disposition,"([^;\s]+)\s*\;\s*filename\s*=\s*(.+)");
+			ret.disposition ={ type = _type;filename=filename} 
+		} 
+		else {
+			var location = this.location() || this.lastReuestUrl; 
+			var filename = ..string.match(  ..inet.url.split(location).path : "","[^/\\]+\.[^.]+$") ;
+			if( !#filename  && ret.type && ..string.indexOf( ret.type,"text/html" ) ) filename =  "index.html";
+			ret.disposition ={ filename = filename }; 	
+		} 
+		return ret;
+	};
+	endRequest =  function(){ 
+		if(this.connect){
+			::InternetCloseHandle(this.connect);
+			this.connect = null;
+		}
+		if(this.request){
+			::InternetCloseHandle(this.request); 
+			this.request = null;
+		}
+	}; 
+	close = function(){  
+	    if(this.session){
+	    	this.endRequest();
+	    	
+	    	if( shareName ){ 
+				thread.shareHandle.delete( shareName,::InternetCloseHandle )
+			}
+			else{
+				::InternetCloseHandle( this.session );
+			} 
+	    	this.session = null;  
+	    }
+	};
+	post = function(url,postdata,headers,referer,accept,flags,openFlags){
+		headers = ..web.joinHeaders(headers);
+		if(  !( headers  &&  ..string.find( headers,"@Content-Type:") ) ){  
+			headers = ..web.joinHeaders( headers
+		    	, ( postdata[1]=='{'# or  postdata[1]=='['#) 
+		    	? '\r\nContent-Type:application/json; charset=utf-8' : '\r\nContent-Type:application/x-www-form-urlencoded'
+		    	);
+		} 
+		
+		return this.down(url,postdata,headers ,referer,accept,"POST",flags,openFlags)
+	};
+	get = function(url,headers,referer,accept,flags,openFlags){
+		return this.down(url, ,headers,referer,accept,"GET",flags,openFlags)
+	};
+	head = function(url,headers,referer,accept,flags,openFlags){
+		return this.down(url, ,headers,referer,accept,"HEAD",flags,openFlags); 
+	};
+	headEx = function(url,method,postdata,headers,referer,accept,flags,openFlags){ 
+	    return this.down(url,postdata,headers,referer,accept,method,flags,openFlags,true)
+	};
+	location = function(url,method,postdata,headers,referer,accept,flags,openFlags){
+		if(!this.down(url || this.lastReuestUrl,postdata,headers,referer,accept,method:"GET",(flags : 0 ) | 0x200000/*_INTERNET_FLAG_NO_AUTO_REDIRECT*/,openFlags,true)) return; 
+		if( this.statusCode >= 300 && this.statusCode < 400 ) return this.readHeader("Location:"),this.statusCode ; 
+		return url,this.statusCode;
+	};
+	down = function(url,postdata,headers,referer,accept,method,flags,openFlags,noReceiveData){  
+		if( method == "GET" && postdata ){
+			url = ..inet.url.appendExtraInfo(url,postdata);
+			postdata = null;
+		}
+		
+	    var ok,err,code = this.beginRequest(url,method,referer,accept,flags,openFlags); 
+	    if(!ok) return null,err,code;
+	    
+	    this.headers = ..web.joinHeaders(headers,this.headers);
+	    var ok,status,total = this.send( postdata );
+	  	if(!ok) {
+	  		this.endRequest();
+	  		return null,status/*err*/,total/*code*/;
+    	}
+    	
+    	if( ( status < 200 ) || ( status >= 300 ) ){  
+		
+    		if( status == 401 && this.username && this.password ){
+      			if( this.setAuth(this.username,this.password) ){ 
+					ok,status,total = this.send( postdata );
+					if( !ok ||  ( status < 200 ) || ( status >= 300 ) ){
+						if( method == "HEAD" || noReceiveData ){
+							this.readHeader();
+							this.endRequest();
+							return true;
+						}
+						var html = this.readAll();
+						this.endRequest()
+						return false,html,status;
+					}
+      			}
+      		}
+      		else{
+      			if( method == "HEAD" || noReceiveData ){
+					this.readHeader();
+					this.endRequest();
+					return true;
+				}
+    			var html = this.readAll();
+    			this.endRequest()
+				return false,html,status;
+			}  
+		} 
+		
+		if( method == "HEAD" || noReceiveData ){
+			this.readHeader();
+			this.endRequest();
+			return true;
+		}  
+    	
+    	if( this.onReciveBegin ) this.onReceiveBegin = this.onReciveBegin; 
+    	if( this.onReceiveBegin )
+    	    this.onReceiveBegin( status,total );
+    			 
+    	var ret;
+    	if( this.onRecive ) this.onReceive = this.onRecive; 
+    	if( this.onReceive ){
+    		for(str,size in this.eachRead() ){
+    			if( this.onReceive( str,size,total ) === false )
+    				break;
+    		}
+    		ret = true;
+    	}
+    	else{
+    		ret =  this.readAll();
+		}
+		this.endRequest();  
+		return ret;
+	 
+	};
+	read = function(bufferSize){
+		return readFile(this.request,bufferSize);  
+	};
+	eachRead = function(bufferSize){
+		return function(){
+			return readFile(this.request,bufferSize) ; 
+		};
+	}; 
+	readBuffer = function(buffer,len){
+		return readFileBuffer(this.request,buffer,len);  
+	};
+	eachReadBuffer = function(buffer,len){
+		return function(){
+			return  readFileBuffer(this.request,buffer,len);
+		} 
+	};
+	readAll = function(){
+		if(!this.request) error("无效调用",2) 
+		var tbuffer = {};  
+		for(str,size in this.eachRead(this.bufferSize) ){ 
+			..table.push(tbuffer,str ) ; 
+		}  
+		this.lastResponseData = ..string.join(tbuffer);
+		return this.lastResponseData;
+	};
+	lastResponse = function(){
+		if( this.statusCode ){
+			return this.lastResponseData;
+		}
+	};
+	setTimeouts = function(connect=60000,send=30000,receive=30000){
+		::InternetSetOption( this.session ,2,{int tm=connect},4);
+		::InternetSetOption( this.session ,5,{int tm=send},4);
+		::InternetSetOption( this.session ,6,{int tm=receive},4); 
+	};
+	setSessionOption = function(opt,value){
+		if( type(opt) != type.number ) error("参数@1必须是数值",2);
+		if( !opt[["_struct"]] ) {
+			if( type(value) == type.number ) value = {int v = value }
+			else error("参数@2必须是结构体",2);
+		}
+		::InternetSetOption(this.session,opt,value,..raw.sizeof(value) ) 
+	};
+	setRequestOption = function(opt,value){
+		if(!this.request) error("无效调用",2) 
+		if( type(opt) != type.number ) error("参数@1必须是数值",2);
+		if( !opt[["_struct"]] ) {
+			if( type(value) == type.number ) value = {int v = value }
+			else error("参数@2必须是结构体",2);
+		}
+		::InternetSetOption(this.request,opt,value,..raw.sizeof(value) ) 
+	};
+}
+
+namespace http{ 
+	import thread.shareHandle;
+	
+	HttpOpenRequest = ::Wininet.api("HttpOpenRequestA","pointer(POINTER hConnect,string lpszVerb,string lpszObjectName,string lpszVersion,string lpszReferrer,struct lplpszAcceptTypes,INT dwFlags,INT dwContext)")
+	AddRequestHeaders = Wininet.api("HttpAddRequestHeaders","bool(POINTER hRequest,string headers,INT length,INT modifiers)")
+	QueryInfo = Wininet.api("HttpQueryInfoA","int(POINTER hRequest, INT dwInfoLevel,struct& lpBuffer,INT &lpdwBufferLength, INT & lpdwIndex)")
+	QueryInfoByString = Wininet.api("HttpQueryInfoA","int(POINTER hRequest, INT dwInfoLevel,string& lpBuffer,INT &lpdwBufferLength, INT & lpdwIndex)")
+	QueryInfoByInt = Wininet.api("HttpQueryInfoA","int(POINTER hRequest, INT dwInfoLevel,int& lpBuffer,INT &lpdwBufferLength, INT & lpdwIndex)")
+ 
+ 	HttpSendRequest = Wininet.api("HttpSendRequestA","bool(POINTER hRequest,string  lpszHeaders,INT dwHeadersLength,pointer lpOptional,INT dwOptionalLength)")
+	HttpSendRequestEx = Wininet.api("HttpSendRequestEx","bool(POINTER hRequest,struct lpBuffersIn,pointer resrverBuffersOut,INT flags,pointer content)")
+	HttpEndRequest = Wininet.api("HttpEndRequest","bool(POINTER hRequest,pointer buffersOut,INT flags,pointer content)")
+	
+	class INTERNET_BUFFERS {
+    	INT cbSize = 40;
+    	pointer next;
+    	string header; 
+    	INT headersLength;
+    	INT headersTotal;
+    	pointer Buffer; 
+    	INT bufferLength; 
+    	INT bufferTotal;
+    	INT offsetLow;
+    	INT offsetHigh;
+	}   
+	
+	readFile = ..inet.file.read;
+	writeFile = ..inet.file.write;
+	readFileBuffer = ..inet.file.readBuffer;
+	writeFileBuffer = ..inet.file.writeBuffer;
+}
+
+/**intellisense()
+inet.http() = !http.
+!http.setSessionOption( _INTERNET_OPTION__, ) = 设置会话选项,\n参数可以是数值或结构体\n用法参数MSDN
+!http.setRequestOption( _INTERNET_OPTION__, ) = 设置会话选项,\n参数可以是数值或结构体\n用法参数MSDN
+!http.lastReuestUrl = 最后一次请求成功的URL
+!http.setTimeouts(.(连接超时,请示超时,接收超收) = 设置超时,以亳秒为单位(1秒为1000毫秒)
+!http.flags = @.flags = _INTERNET_FLAG___  
+!http.accept = 指定可选择的文件类型,多个类型使用逗号分隔\n默认无需指定,也可以在参数中指定
+!http.referer = 引用页地址,此属性会自动设置为上次打开的网址\n建议在参数中指定
+!http.addHeaders = 设置所有请求默认添加的HTTP头\n请求结束时不会清空此属性\n该值可以是一个字符串,也可以是键值对组成的table对象
+!http.headers = 设置本次请求的HTTP头\n此属性会在每次发送请求以后，接收数据以前,初始化为空值\n该值可以是一个字符串,也可以是键值对组成的table对象
+!http.queryNumber(_HTTP_QUERY_FLAG__/*指定要返回的头信息*/) = 取HTTP头数值
+!http.responseContentType = 每次发送请求后重置该值为服务器应答Content-Type头\n使用该值获取服务器返回的文档类型
+!http.responseHeaders = 无参数调用 readHeader 函数时会保存HTTP头在该属性中\n调用head函数发送请求时会自动读取所有HTTP头到该属性中\n该属性值每次发送新的请求前会自动清空
+!http.readHeader() = 获取返回的HTTP头\n以回车换行'\r\n'分隔\n该函数在调用send函数以后或afterSend事件中可用\n调用head函数发送请求成功以后,则请求结束后该函数仍然可用
+!http.readHeader("Date") = 获取指定的HTTP头,参数指定HTTP头名字或部份名字,\n该函数在调用send函数以后或afterSend事件中可用\n调用head函数发送请求成功以后,则请求结束后该函数仍然可用
+!http.writeHeader("Name:value__") = 写入请求HTTP头,必须在send发送请求以前调用\n如果存在则覆盖，否则添加\n成功返回true
+!http.replaceHeader("Name:value__") = 写入请求HTTP头,必须在send发送请求以前调用\n如果存在则覆盖，否则忽略
+!http.mergeHeader("Name:value__") = 写入请求HTTP头,必须在send发送请求以前调用\n如果存在同名HTTP头则合并\n可使用第二个参数指定分隔符为逗号或分号\n默认为逗号
+!http.beginRequest(.(url,method,referer,accept,flags) = 除URL以外,所有参数可选\n参数(URL,"GET"或"POST",引用页,MIME,选项)\nflags参数为_INTERNET_FLAG_开头的常量\n不使用UTF8 URLEncode自动编码URL路径中的宽字符
+!http.endRequest() = 关闭请求,与beginRequest配对使用.
+!http.bufferTotal = 上传数据总长度\n即beginSendData()参数传入的数值
+!http.send(.(上传数据) = 参数可选,调用beginSendData(上传数据),然后调用endSendData()\n成功返回: true,状态码,文件长度\n出错返回:null,错误信息,错误代码
+!http.beginSendData(数据长度) = 发送请求,参数为待上传的数据总长度,默认为0\n失败返回:null,错误信息,错误代码
+!http.endSendData() = write()函数写完所有上传数据以后,\n必须调用此函数结束上传,\n成功返回: true,状态码,文件长度\n出错返回:null,错误信息,错误代码\n注意只有在调用此函数以后,才能使用其他读写HTTP头的函数.
+!http.writeData(上传数据) = 上传文件数据,支持一个或多个参数,\n返回写入数据的总长度,失败返回空或0\n调用此函数前必须调用beginSendData()\n写完所有数据后 必须调用 endSendData();
+!http.writeBuffer(.(缓冲区指针,写入长度) = 上传文件数据\n参数一必须是使用raw.malloc()函数创建的缓冲区指针\n长度参数可选，默认为缓冲区长度
+!http.readBuffer(.(缓冲区指针,写入长度) = 下载文件数据\n参数一必须是使用raw.malloc()函数创建的缓冲区指针\n长度参数可选，默认为缓冲区长度
+!whttp.bufferSize = 默认缓冲区大小\n默认为10KB
+!http.eachReadBuffer(缓冲区,长度) = @var buffer = ..raw.malloc( 1024 * 10 );\nfor( size in ??.eachReadBuffer( buffer ) ){ 
+	__ 
+}
+!http.read(.(读取长度) = 长度参数可选\n返回读取字符串,以及长度\n该函数必须在send请求以后调用
+!http.readAll() = 读取所有返回数据\n该函数必须在send请求以后调用
+!http.eachRead = @for(str,size in ??.eachRead() ){ 
+	table.push(__,str ) ; 
+} 
+!http.onSendBegin = @.onSendBegin = function(){
+	return len__/*上传长度*/;
+}
+!http.onSend = @.onSend = function(remainSize){
+	__/*如果不指定上传数据,send函数会自动调用该函数获取数据直至此函数返回空值为止*/
+	return str,len;
+}
+!http.beforeSend = @.beforeSend = function(){
+	__/*已准备向服务器发送数据触发此回调函数*/ 
+}
+!http.afterSend = @.afterSend = function(statusCode,contentLength){
+	__/*向服务器发送数据结束触发此回调函数*/ 
+}
+!http.send(__/*可选输入postdata*/) =  此函数顺序调用 beginSendData() writeData() endSendData() 发送请求\n成功返回: true,状态码,文件长度\n出错返回:null,错误信息,错误代码
+!http.getTime() = 返回目标文件最后修改时间(不支持动态网页)
+!http.statusCode = 最后一次发送请求后服务端返回的HTTP状态码\n100 ~ 101 为信息提示\n200 ~ 206 表示请求成功\n300 ~ 305 表示重定向\n400 ~ 415 表求客户端请求出错\n500 ~ 505 表示服务端错误\n注意每次HTTP请求开始该值初始化为空,服务器应答后才会设置该值
+!http.contentLength = send()函数执行后返回的文件长度 
+!http.onReceive = @.onReceive = function(str,size,contentLength){
+	__/*定义了此函数接收数据,则 get,post函数返回布尔值*/	
+}
+!http.onReceiveBegin = @.onReceiveBegin = function(statusCode,contentLength){
+	if( statusCode == 206/*断点续传*/  ){
+		__/*该事件函数在接收数据以前触发*/
+	}
+}
+!http.location(.(url,请求方法,提交数据,http头,引用网址,MIME) = 获取重定向URL\n如果省略url参数,则取最后一次请求成功的网址\n如果不存在重定向返回原网址
+!http.headEx(.(url,请求方法,提交数据,http头,引用网址,MIME) = 使用指定的请求方法模拟HEAD方法,用于拒绝HEAD请求的网址\n除网址以外所有参数可以省略,默认为使用GET方法
+!http.head(.(url,http头,引用网址,MIME) = 获取HTTP头\n除URL外,其他为可选参数\n默认使用上一次访问的网址作为下一次的引用网址\n本地内部错误返回值为:null,错误信息,错误代码,\n服务端返回HTTP错误时返回值为:false,错误信息,HTTP错误代码\n成功返回字符串对象
+!http.get(.(url,http头,引用网址,MIME) = 除URL外,其他为可选参数\n不使用UTF8 URLEncode自动编码URL路径中的宽字符\n默认使用上一次访问的网址作为下一次的引用网址\n本地内部错误返回值为:null,错误信息,错误代码\n服务端返回HTTP错误时返回值为:false,错误信息,HTTP错误代码\n成功返回字符串对象
+!http.post(.(url,post数据,http头,引用网址,MIME) = 除URL与post数据以外,其他为可选参数\n不使用UTF8 URLEncode自动编码URL路径中的宽字符\n默认使用上一次访问的网址作为下一次的引用网址\n本地内部错误返回值为:null,错误信息,错误代码\n服务端返回HTTP错误时返回值为:false,错误信息,HTTP错误代码\n成功返回字符串对象
+!http.lastResponse() = 获取最后一次服务器返回的原始数据,\n仅在调用了readAll函数、或在get,post函数中间接调用readAll函数时设置该值
+!http.setAuth(.("用户名","密码") = 为当前打开请求设置登录信息\n成功返回true
+!http.username = 默认登录用户名
+!http.password = 默认登录密码
+!http.close(.() =  释放资源\nhttp对象支持自动析构,即使不调用此函数资源也会自动释放
+!http.securityFlagIgnoreUnknownCa = HTTPS请求自动忽略无效CA证书
+!http.securityFlagIgnoreCertCnInvalid = HTTPS请求自动忽略无效CN名称
+!http.securityFlagIgnoreCertDateInvalid = HTTPS请求自动忽略过期证书
+!http.securityFlagIgnoreWrongUsage = HTTPS请求自动忽略错误用法
+!http.securityFlagIgnoreRevocation = 忽略服务器证书吊销
+!http._defaultRequestErrHandle = @._defaultRequestErrHandle[0x2F06/*_ERROR_INTERNET_SEC_CERT_CN_INVALID*/] = function() { 
+	__/*添加 send() 函数错误处理程序*/
+	return false,"错误",错误代码;
+}
+inet.http(.("UserAgent","代理服务器","绕过代理的主机",连接选项,线程共享会话名) = 所有参数可选,例：\ninet.http("Mozilla/4.0", "HTTP=HTTP://proxyserver:port","localhost,127.0.0.*") \n可选仅使用一个session句柄作为构造参数
+inet.http = http支持库
+?inet.http = !http.
+
+!http.readHeaderRange() = 读取HTTP头中断点续传相关验证信息 
+?.readHeaderRange = !httprangeheaders.
+ 
+!httprangeheaders.acceptRanges = 如果值为："bytes" 则表示该文件支持断点续传
+!httprangeheaders.eTag = 该文件唯一的标志值，用于验证
+!httprangeheaders.lastModified = 存放服务端文件的最后修改时间，用于验证 
+!httprangeheaders.buildRequestHeaders(.(起始位置,结束位置) = 生成断点续传请求头,\n参数二为可选参数,默认为文件尾部
+
+!http.readHeaderContent() = 读取HTTP头中文件下载相关信息\n!httpheadercontent.
+!http.writeHeaderRange(.(rangeHeaderInfo,开始位置,结束位置) = rangeHeaderInfo使用readHeaderRange()函数读取,\n其它参数可选,开始位置默认为0,结束位置默认为文件尾
+
+!httpheadercontent.type = 返回MIME类型
+!httpheadercontent.disposition.type = 文件类型,该值可能为空,\ninline表示用于网页显示\nattachment表示需要下载存储的附件
+!httpheadercontent.disposition.filename = 下载文件名
+end intellisense**/
+
+
+ /**intellisense()
+_INTERNET_FLAG_IDN_DIRECT=@0x1/*_INTERNET_FLAG_IDN_DIRECT*/
+_INTERNET_FLAG_IDN_PROXY=@0x2/*_INTERNET_FLAG_IDN_PROXY*/
+_INTERNET_FLAG_RELOAD=@0x80000000/*_INTERNET_FLAG_RELOAD*/
+_INTERNET_FLAG_RAW_DATA=@0x40000000/*_INTERNET_FLAG_RAW_DATA*/
+_INTERNET_FLAG_EXISTING_CONNECT=@0x20000000/*_INTERNET_FLAG_EXISTING_CONNECT*/
+_INTERNET_FLAG_ASYNC=@0x10000000/*_INTERNET_FLAG_ASYNC*/
+_INTERNET_FLAG_PASSIVE=@0x8000000/*_INTERNET_FLAG_PASSIVE*/
+_INTERNET_FLAG_NO_CACHE_WRITE=@0x4000000/*_INTERNET_FLAG_NO_CACHE_WRITE*/
+_INTERNET_FLAG_DONT_CACHE=@0x4000000/*_INTERNET_FLAG_DONT_CACHE*/
+_INTERNET_FLAG_MAKE_PERSISTENT=@0x2000000/*_INTERNET_FLAG_MAKE_PERSISTENT*/
+_INTERNET_FLAG_FROM_CACHE=@0x1000000/*_INTERNET_FLAG_FROM_CACHE*/
+_INTERNET_FLAG_OFFLINE=@0x1000000/*_INTERNET_FLAG_OFFLINE*/
+_INTERNET_FLAG_SECURE=@0x800000/*_INTERNET_FLAG_SECURE*/
+_INTERNET_FLAG_KEEP_CONNECTION=@0x400000/*_INTERNET_FLAG_KEEP_CONNECTION*/
+_INTERNET_FLAG_NO_AUTO_REDIRECT=@0x200000/*_INTERNET_FLAG_NO_AUTO_REDIRECT*/
+_INTERNET_FLAG_READ_PREFETCH=@0x100000/*_INTERNET_FLAG_READ_PREFETCH*/
+_INTERNET_FLAG_NO_COOKIES=@0x80000/*_INTERNET_FLAG_NO_COOKIES*/
+_INTERNET_FLAG_NO_AUTH=@0x40000/*_INTERNET_FLAG_NO_AUTH*/
+_INTERNET_FLAG_RESTRICTED_ZONE=@0x20000/*_INTERNET_FLAG_RESTRICTED_ZONE*/
+_INTERNET_FLAG_CACHE_IF_NET_FAIL=@0x10000/*_INTERNET_FLAG_CACHE_IF_NET_FAIL*/
+_INTERNET_FLAG_IGNORE_REDIRECT_TO_HTTP=@0x8000/*_INTERNET_FLAG_IGNORE_REDIRECT_TO_HTTP*/
+_INTERNET_FLAG_IGNORE_REDIRECT_TO_HTTPS=@0x4000/*_INTERNET_FLAG_IGNORE_REDIRECT_TO_HTTPS*/
+_INTERNET_FLAG_IGNORE_CERT_DATE_INVALID=@0x2000/*_INTERNET_FLAG_IGNORE_CERT_DATE_INVALID*/
+_INTERNET_FLAG_IGNORE_CERT_CN_INVALID=@0x1000/*_INTERNET_FLAG_IGNORE_CERT_CN_INVALID*/
+_INTERNET_FLAG_RESYNCHRONIZE=@0x800/*_INTERNET_FLAG_RESYNCHRONIZE*/
+_INTERNET_FLAG_HYPERLINK=@0x400/*_INTERNET_FLAG_HYPERLINK*/
+_INTERNET_FLAG_NO_UI=@0x200/*_INTERNET_FLAG_NO_UI*/
+_INTERNET_FLAG_PRAGMA_NOCACHE=@0x100/*_INTERNET_FLAG_PRAGMA_NOCACHE*/
+_INTERNET_FLAG_CACHE_ASYNC=@0x80/*_INTERNET_FLAG_CACHE_ASYNC*/
+_INTERNET_FLAG_FORMS_SUBMIT=@0x40/*_INTERNET_FLAG_FORMS_SUBMIT*/
+_INTERNET_FLAG_FWD_BACK=@0x20/*_INTERNET_FLAG_FWD_BACK*/
+_INTERNET_FLAG_NEED_FILE=@0x10/*_INTERNET_FLAG_NEED_FILE*/
+_INTERNET_FLAG_MUST_CACHE_REQUEST=@0x10/*_INTERNET_FLAG_MUST_CACHE_REQUEST*/
+_HTTP_ADDREQ_FLAG_ADD=@0x20000000/*_HTTP_ADDREQ_FLAG_ADD*/
+_HTTP_ADDREQ_FLAG_COALESCE_WITH_COMMA=@0x40000000/*_HTTP_ADDREQ_FLAG_COALESCE_WITH_COMMA*/
+_HTTP_ADDREQ_FLAG_COALESCE_WITH_SEMICOLON=@0x1000000/*_HTTP_ADDREQ_FLAG_COALESCE_WITH_SEMICOLON*/
+_HTTP_ADDREQ_FLAG_REPLACE=@0x80000000/*_HTTP_ADDREQ_FLAG_REPLACE*/
+_HTTP_ADDREQ_INDEX_MASK=@0xFFFF/*_HTTP_ADDREQ_INDEX_MASK*/
+_HTTP_ADDREQ_FLAGS_MASK=@0xFFFF0000/*_HTTP_ADDREQ_FLAGS_MASK*/ 
+end intellisense**/
+
+/*
+http错误代码说明
+http://support.microsoft.com/kb/193625
+*/

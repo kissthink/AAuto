@@ -1,0 +1,52 @@
+//桌面图标排圆圈
+//根据4920614代码修改 http://www.ecranesoft.com/bbs/showtopic-9744.aspx
+
+import winex;
+import win.ui;
+/*DSG{{*/
+var winform = ..win.form( bottom=93;parent=...;right=333;text="桌面图标排圆圈" )
+winform.add( 
+button={ bottom=36;right=315;left=202;top=10;font=LOGFONT( name='宋体' );z=1;text="桌面图标排个圈圈";cls="button" };
+static={ bottom=33;text="圈圈半径(px):";left=33;right=111;top=17;font=LOGFONT( name='宋体' );transparent=1;z=4;cls="static" };
+autoOrder={ bottom=72;right=316;left=203;top=46;font=LOGFONT( name='宋体' );z=2;text="恢复自动排列";cls="button" };
+editR={ text="300";bottom=34;right=170;left=119;top=12;font=LOGFONT( name='宋体' );z=3;edge=1;cls="edit" }
+)
+/*}}*/
+
+import winex.desktop;
+
+winform.button.oncommand = function(id,event){
+
+    //取消桌面右键对齐到网格 
+	winex.desktop.listview.setExtended(0x80000/*_LVS_EX_SNAPTOGRID*/,false)
+    //取消桌面自动排列
+    winex.desktop.listview.modifyStyle(0x100/*_LVS_AUTOARRANGE*/); 
+
+	var scrWidth,scrHeight = win.getScreen()
+    var centerX = scrWidth/2;
+    var centerY = scrHeight/2;
+   	var r =  math.min(
+    	tonumber(winform.editR.text),
+    	math.min(centerX,centerY)
+    ) 
+    
+    var count = winex.desktop.listview.count //桌面图标个数
+    var rad = 2*math.pi/count; //相邻图标间的弧度2π/count   
+    for(i=1;count ){ 
+        var x=centerX+math.floor(r*math.sin(i*rad)); // 图标的X坐标 
+        var y=centerY+math.floor(r*math.cos(i*rad));// 图标的Y坐标 
+        
+        win.delay(10)
+        winex.desktop.listview.setItemPos(i,x,y) 
+    }  
+} 
+
+winform.autoOrder.oncommand = function(id,event){
+	//恢复自动排列
+    winex.desktop.listview.modifyStyle( , 0x100/*_LVS_AUTOARRANGE*/ );
+    winex.desktop.listview.setExtended(0x80000/*_LVS_EX_SNAPTOGRID*/,true)  
+}
+
+winform.show() 
+win.loopMessage();
+return winform;

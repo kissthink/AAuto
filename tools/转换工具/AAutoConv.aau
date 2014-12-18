@@ -1,0 +1,845 @@
+//AAuto代码转换工具
+
+import win.ui; 
+import win.ui.menu; 
+import string.list;
+import win.clip;
+/*DSG{{*/
+var winform = ..win.form( bgcolor=14215660;bottom=513;parent=...;text="AAuto 代码转换工具";left=0;exmode="";top=0;style=0;right=845;cls="AFORM" )
+winform.add( 
+btnJavaScripToAAuto={ dr=1;bottom=508;color=0;right=833;left=607;multiline=1;top=476;text="JavaScript转换为AAuto";tabstop=1;db=1;z=1;transparent=1;cls="button" };
+btnVB2AAuto={ dl=1;bottom=34;text="vb winapi声明转AAuto";left=17;dt=1;top=2;z=5;right=199;cls="button" };
+txtCode={ dr=1;dl=1;vscroll=1;color=0;right=835;left=10;dt=1;db=1;cls="richedit";bottom=467;text="请输入要转换的代码......";multiline=1;top=35;z=3;hscroll=1;edge=1;tabstop=1 };
+btnStruct2AAuto={ dl=1;bottom=34;text="WINAPI\C\C++结构体、函数声明转换为AAuto";left=208;dt=1;top=2;z=2;right=547;cls="button" };
+btnLascriptToAAuto={ dr=1;bottom=508;color=0;text="LAScript转换为AAuto";left=372;multiline=1;top=476;right=598;z=4;db=1;tabstop=1;transparent=1;cls="button" }
+)
+/*}}*/
+
+winform.popmenu = win.ui.popmenu(winform);//创建弹出菜单
+winform.popmenu.add('复制全部',function(id){ win.clip.write(winform.txtCode.text)})
+winform.popmenu.add('粘贴全部',function(id){ winform.txtCode.text = win.clip.read() });
+ 
+winform.txtCode.wndproc = function(hwnd,message,wParam,lParam){
+	if( message= 0x205/*_WM_RBUTTONUP*/ ) {  
+		winform.popmenu.popup( win.getMessagePos(lParam) );//弹出菜单
+	} 
+} 
+   
+VBAPI2AAUTO = function(vbcode){
+var byval=/*
+INT=int
+CHAR=BYTE
+CCHAR=BYTE
+PSZ=string
+PCHAR=string
+PSTR=string
+LPSTR=string
+NPSTR=string
+PCSTR=string
+LPCSTR=string
+WCHAR=WORD
+PWCH=string
+PWCHAR=string
+PWSTR=string
+LPWSTR=string
+NWPSTR=string
+PCWCH=string
+LPCWCH=string
+PCWSTR=string
+LPCWSTR=string
+TCHAR=BYTE
+PTCHAR=string
+PTCH=string
+LPTCH=string
+PTSTR=string
+LPTSTR=string
+PCTSTR=string
+LPCTSTR=string
+UCHAR=string
+PUCHAR=string
+BSTR=string
+OLECHAR=WORD
+LPOLESTR=string
+LPCOLESTR=string
+BYTE=BYTE
+PBYTE=string
+LPBYTE=string
+TBYTE=BYTE
+PTBYTE=string
+BOOL=int
+BOOLEAN=BYTE
+SHORT=word
+USHORT=WORD
+INT32=int
+INT64=long
+INT_PTR=int
+UINT=INT
+UINT32=INT
+UINT64=INT
+UINT_PTR=INT
+LONG=int
+LONG32=int
+LONG64=long
+LONGLONG=long
+__int64=long
+LONG_PTR=int
+ULONG=INT
+ULONG32=INT
+ULONG64=LONG
+ULONGLONG=LONG
+ULONG_PTR=INT
+DWORD32=INT
+DWORD64=LONG
+DWORD_PTR=INT
+PDWORD=INT
+FLOAT=float
+GLOBALHANDLE=pointer
+HDC=pointer
+HBITMAP=pointer
+HBRUSH=pointer
+HICON=pointer
+HCURSOR=pointer
+HPALETTE=pointer
+HPEN=pointer
+HCONV=pointer
+HACCEL=pointer
+HCONVLIST=pointer
+HDDEDATA=pointer
+HDESK=pointer
+HDLG=pointer
+HDROP=pointer
+HDWP=pointer
+HENHMETAFILE=pointer
+HFILE=pointer
+HFONT=pointer
+HGDIOBJ=pointer
+HGLOBAL=pointer
+HHOOK=pointer
+HIMAGELIST=pointer
+HIMC=pointer
+HINSTANCE=pointer
+HKEY=pointer
+HKL=pointer
+HLOCAL=pointer
+HMEMU=pointer
+HMETAFILE=pointer
+HMIDIIN=pointer
+HMIDIOUT=pointer
+HMMIO=pointer
+HMODULE=pointer
+HMONITOR=pointer
+HRGN=pointer
+HRSRC=pointer
+HSZ=pointer
+HWAVEIN=pointer
+HWAVEOUT=pointer
+HWINSTA=pointer
+HWND=pointer
+LOCALHANDLE=pointer
+SC_HANDLE=pointer
+SC_LOCK=pointer
+SERVICE_STATUS_HANDLE=pointer
+MFENUMPROC=pointer
+ENUMFENUMPROC=pointer
+ENUMRESLANGPROC=pointer
+ENUMRESNAMEPROC=pointer
+ENUMRESTYPEPROC=pointer
+FONTENUMPROC=pointer
+GOBJENUMPROC=pointer
+HOOKPROC=pointer
+LPCCHOOKPROC=pointer
+LPCFHOOKPROC=pointer
+LPFRHOOKPROC=pointer
+LPOFNHOOKPROC=pointer
+LPPRINTHOOKPROC=pointer
+LPSETUPHOOKPROC=pointer
+FARPROC=pointer
+DLGPROC=pointer
+LINEDDAPROC=pointer
+LOHANDLER_FUNCTION=pointer
+PROPENUMPROC=pointer
+PFNCALLBACK=pointer
+PHANDLER_ROUTINE=pointer
+TIMERPROC=pointer
+WNDENUMPROC=pointer
+WNDPRO=pointer
+YIELDPROC=pointer
+ATOM=WORD
+LPRESULT=int
+LRESULT=int
+COLORREF=INT
+WPARAM=INT
+LPARAM=int
+CRITICAL_SECTION=struct
+LANGID=WORD
+LCID=INT
+LCTYPE=INT
+MCIDEVICEID=INT
+MMRESULT=INT
+PCRITICAL_SECTION=pointer
+PHKEY=pointer
+POINTER_32=int
+POINTER_64=long
+PSIDpointer
+REGSAM=INT
+SIZE_T=INT
+SSIZE_T=int
+UNSIGNED=INT
+LUID=struct
+VOID=void
+PVOID=pointer
+LPVOID=pointer
+LPCVOID=pointer
+*/
+
+var byref=/*
+LPCRECT=struct
+LPCRECTL=struct
+PLUID=struct
+PLCID=INT
+LPCOLORREF=INT
+LPCRITICAL_SECTION=struct
+LPHWAVEIN=pointer
+LPHWAVEOUT=pointer
+PFLOAT=float
+HANDLE=pointer
+PHANDLE=pointer
+SPHANDLE=pointer
+LPHANDLE=pointer
+PLONG=int
+LPLONG=int
+PULONG=INT
+PULONGLONG=LONG
+PWORD=WORD
+LPWORD=WORD
+LPDWORD=INT
+PUINT=INT
+LPINT=int
+PLONGLONG=long
+PBOOL=int
+LPBOOL=int
+PSHORT=word
+PUSHORT=WORD
+PBOOLEAN=BYTE
+*/
+	
+var tbyval = string.list(byval)
+var tbyref = string.list(byref)	
+ 
+vb2a = function(str){
+	str = ..string.replace(str,"\&h|H", "0x")  
+	str = ..string.replace(str,"(\W)<Long>|<long>(\W)", "\1int\2")  
+	str = ..string.replace(str,"(\W)<Integer>|<integer>(\W)", "\1word\2")  
+	str = ..string.replace(str,"(\W)<Single>|<single>(\W)", "\1float\2")  
+	str = ..string.replace(str,"(\W)<Double>(\W)", "\1double\2")  
+	str = ..string.replace(str,"(\W)<Currency>|<currency>(\W)", "\1long\2")  
+	str = ..string.replace(str,"(\W)<Byte>|<byte>(\W)", "\1byte\2")  
+	str = ..string.replace(str,"(\W)<Date>|<date>(\W)", "\1double\2")  
+	str = ..string.replace(str,"(\W)<Boolean>|<boolean>(\W)", "\1int\2")  
+	str = ..string.replace(str,"(\W)<String>(\W)", "\1string\2")  
+	str = ..string.replace(str,"(\W)<Any>|<any>(\W)", "\1pointer\2")  
+	str = ..string.replace(str,"(\W)<Variant>|<variant>(\W)", "\1\2")  
+	str = ..string.replace(str,"(\W)<Object>|<object>(\W)", "\1\2")  
+	str = ..string.replace(str,"(\W)<Dim>|<dim>(\W)", "\1var\2")  
+	str = ..string.replace(str,"(\W)<Private>|<private>(\W)", "\1\2")  
+	str = ..string.replace(str,"(\W)<Public>|<public>(\W)", "\1\2") 
+	str = ..string.replace(str,"(\W)Option\s+Explicit(\W)", "\1\2") 
+	str = ..string.replace(str,"(\W)Const(\W)", "\1\2") 
+	str = ..string.replace(str,"(\W)Sub(\W)", "\1function\2")
+	str = ..string.replace(str,"'","//");
+	str = ..string.replace(str,"(\W)<End>|<end>\s+<If>|<if>(\W)", "\1end\2")  
+	str = ..string.replace(str,"(\W)<Then>|<then>(\W)", "\1begin\2")  
+	str = ..string.replace(str,"(\W)End(\W)", "\1end\2")
+	str = ..string.replace(str,"(\W)<Call>|<call>(\W)", "\1\2") 
+	str = ..string.replace(str,"(\W)<vbNullString>|<vbnullstring>(\W)", "\1null\2") 
+	return str;
+}
+
+
+ 
+var at_all = {string=1; int=1;INT=1;long=1;LONG=1;word=1;WORD=1;byte=1;BYTE=1;float=1;double=1;pointer=1}
+any2a = function(t){
+   if(!at_all[t])
+   		return "struct";
+   return t;
+}
+
+
+api2aau = function(code){
+	var converApi = function(api,str){ 
+		str = ..string.replace(str,"(\W)Optional\s*", "\1")
+		
+		for(k,v in tbyval){
+   			if(! tonumber(k) ){
+   				str = ..string.replace(str,"(\W)"+k+"(\W)", "\1"+v+"\2")  
+   			}
+		}
+		
+		for(k,v in tbyref){
+   			if(! tonumber(k) ){
+   				str = ..string.replace(str,"(\W)"+k+"(\W)", "\1"+v+"&\2") 
+   			}
+		} 
+		str = ..string.replace(str,"([\w_]+)\s+<As>|<as>\s+([\w_]+)\s*\*\s*(\d+)"  , function(c,c2,c3 ){ 
+			return  string.format("byte %s[%s]",c,c3); 
+		} )
+		
+		str = ..string.replace(str,"(\,|\()\s*([\w_]+)\s+<As>|<as>\s+([\w_]+)"  , function(c,c2,c3){
+			return  string.format("%s%s& %s",c,any2a(c3),c2 ); 
+		} )
+		
+		str = ..string.replace(str,"<byref>|<ByRef>\s*([\w_]+)\s+<As>|<as>\s+([\w_]+)",function(c,c2 ){
+			return  string.format("%s& %s",any2a(c2),c ); 
+		})
+		str = ..string.replace(str,"(\W)<ByVal>|<byval>(\W)","\1\2")
+		str = ..string.replace(str,"(\,|\()\s*([\w_]+)\s+<As>|<as>\s+([\w_]+)"  , function(c,c2,c3){
+			return  string.format("%s%s %s",c,any2a(c3),c2 ); 
+		}
+			)
+		
+		if( string.startWith(api,"Get") && (not string.indexAny(str,"&") ) ){
+			//在VB里string全部是byval
+			str = ..string.replace(str,"(\W)string(\W)", "\1string&\2") 
+		}
+		return str;
+	}
+
+	var loaddoc = ""
+	var upperFirst = function(api,str){
+	    var load = ""
+	    str = string.upper(string.left(str,1)) ++ string.sub(str,2)
+	    var dll = str;
+	    var tstr = string.split(str,'.'); 
+	    if(#tstr == 2)
+	    	dll = tstr[1]
+	    	
+	    if( (dll!="Kernel32") && ( dll!="User32") && (not string.find(loaddoc,dll) ) ) {
+	        load =  string.format('::%s := ..raw.loadDll("%s")\n',dll,str )
+	        loaddoc += load
+	    }
+	    return ..string.format('%s%s = ::%s',load,api,dll);
+	
+	} 
+	
+
+	code = ..string.replace(code,"<Declare>|<declare>\W+<Function>|<function>\W+([\w_]+)\s*[\&\%]*\W+<Lib>|<lib>\W+""([\.\w]+)""\W+<Alias>|<alias>\W+""([\w_]+)""\W*(%()?)\W+<As>|<as>\W+([\w_]+)",function(c,c2,c3,c4,c5){
+		return ..string.format('%s.api("%s",%s")', upperFirst(c,c2),c3,  converApi(c,'"'+c5+c4) );
+	} )
+	code = ..string.replace(code,"<Declare>|<declare>\W+<Function>|<function>\W+([\w_]+)\W+<Lib>|<lib>\W+""([\.\w]+)""\W+<Alias>|<alias>\W+""([\w_]+)""\W*(%()?)",function(c,c2,c3,c4 ){
+		return ..string.format('%s.api("%s",%s")', upperFirst(c,c2),c3,  converApi(c,'"void'+c4) );
+	} ) 
+	code = ..string.replace(code,"<Declare>|<declare>\W+<Function>|<function>\W+([\w_]+)\s*\&\W+<Lib>|<lib>\W+""([\.\w]+)""\W+<Alias>|<alias>\W+""([\w_]+)""\W*(%()?)",function(c,c2,c3,c4 ){
+		return ..string.format('%s.api("%s",%s")', upperFirst(c,c2),c3,  converApi(c,'"int'+c4) );
+	} ) 
+	code = ..string.replace(code,"<Declare>|<declare>\W+<Function>|<function>\W+([\w_]+)\s*[\&\%]*\W+<Lib>|<lib>\W+""([\.\w]+)""\W*(%()?)\W+<As>|<as>\W+([\w_]+)",function(c,c2,c3,c4 ){
+		return ..string.format('%s.api("%s",%s")', upperFirst(c,c2),c,  converApi(c,'"'+c4+c3) );
+	} )
+	code = ..string.replace(code,"<Declare>|<declare>\W+<Function>|<function>\W+([\w_]+)\W+<Lib>|<lib>\W+""([\.\w]+)""\W*(%()?)",function(c,c2,c3  ){
+		return ..string.format('%s.api("%s",%s")', upperFirst(c,c2),c,  converApi(c,'"void'+c3) );
+	} ) 
+	code = ..string.replace(code,"<Declare>|<declare>\W+<Function>|<function>\W+([\w_]+)\s*\&\W+<Lib>|<lib>\W+""([\.\w]+)""\W*(%()?)",function(c,c2,c3  ){
+		return ..string.format('%s.api("%s",%s")', upperFirst(c,c2),c,  converApi(c,'"void'+c3) );
+	} ) 
+	return  code;
+}
+	
+struct2aau = function(code){
+	var converStruct = function(str){ 
+	
+		for(k,v in tbyval){
+   			if(! tonumber(k) ){
+   				str = ..string.replace(str,"(\W)"+k+"(\W)", "\1"+v+"\2") 
+   			}
+		}
+		
+		for(k,v in tbyref){
+   			if(! tonumber(k) ){
+   				str = ..string.replace(str,"(\W)"+k+"(\W)", "\1pointer\2") 
+   			}
+		}
+		
+		str = ..string.replace(str,"([\w_]+)\s*\(\s*\)\s*<As>|<as>\s+string",function(c,d1,d2 ){
+			return  string.format('BYTE %s[];', c ); 
+		} ) 
+		str = ..string.replace(str,"([\w_]+)\s*\(\s*(\d+)\s*[tTOo]+\s*(\d+)\)\s*<As>|<as>\s+string",function(c,d1,d2 ){
+			return  string.format('BYTE %s[%d];', c,tonumber(d2)-tonumber(d1) +1 ); 
+		} ) 
+		str = ..string.replace(str,"([\w_]+)\s*\(\s*(\d+)\s*[tTOo]+\s*(\d+)\)\s*<As>|<as>\s+([\w_]+)",function(c,d1,d2,c2 ){
+			return  string.format('%s %s[%d];',any2a(c2),c,tonumber(d2)-tonumber(d1) +1 ); 
+		} )
+		
+		str = ..string.replace(str,"([\w_]+)\s+<As>|<as>\s+([\w_]+)\s*\*\s*(\d+)"  , function(c,c2,c3 ){ 
+			return  string.format('byte %s[%s];',c,c3); 
+		} )
+		str = ..string.replace(str,"([\w_]+)\s+<As>|<as>\s+([\w_]+)",function(c,c2 ){
+			return  string.format('%s %s;',any2a(c2),c ); 
+		} )
+		return str;
+	}
+	
+	code = ..string.replace(code,"<Type>|<type>\s+([\w_]+)(.+?)<End>|<end>\s+<Type>|<type>",function(c,c2){
+		return ..string.format('class %s {%s}',  c ,converStruct(c2) );
+	} )
+		
+	
+	return code;
+}
+ 
+enum2aau = function(code){ 
+		
+	code = ..string.replace(code,"E|enum\s+([\w_]+)(.+?)E|end\s+E|enum",function(c,c2){
+		if(string.find(c2,"\r") ){
+			c2 = string.replace(c2,"\r" ,';\r')
+			c2 = string.replace(c2,"\r\n*\;\r\n*" ,'\r\n\r\n')
+		}
+		else{
+			c2 = string.replace(c2,"\n" ,';\n')
+			c2 = string.replace(c2,"\n\;\n" ,'\n\n')
+		}
+		c2 = string.replace(c2,"\/\/\s*(<0x>?\d+\;)" ,"=\1")
+		c2 = string.replace(c2,"\/\/\s*(<0x>?\d+)(\N+)\;" ,"=\1;//\2")
+		
+		return ..string.format('%s={\n%s}',  c ,c2 );
+	} )
+		
+	
+	return code;
+}
+	
+vbcode =" " + vbcode + " "; //简化(\W)\w+(\W)
+vbcode = vb2a(vbcode);
+vbcode = api2aau(vbcode)
+vbcode = struct2aau(vbcode)
+vbcode = enum2aau(vbcode)
+vbcode = string.trim(vbcode);
+return vbcode
+} 
+
+winform.btnVB2AAuto.oncommand = function(id,event) { 
+	winform.txtCode.text = VBAPI2AAUTO(winform.txtCode.text)  
+} 
+ 
+winform.btnStruct2AAuto.oncommand = function(id,event) { 
+
+var byval=/*
+CHAR=BYTE
+CCHAR=BYTE
+PSZ=string
+PCHAR=string
+PSTR=string
+LPSTR=string
+NPSTR=string
+PCSTR=string
+LPCSTR=string
+WCHAR=WORD
+PWCH=string
+PWCHAR=string
+PWSTR=string
+LPWSTR=string
+NWPSTR=string
+PCWCH=string
+LPCWCH=string
+PCWSTR=string
+LPCWSTR=string
+TCHAR=BYTE
+PTCHAR=string
+PTCH=string
+LPTCH=string
+PTSTR=string
+LPTSTR=string
+PCTSTR=string
+LPCTSTR=string
+UCHAR=string
+PUCHAR=string
+BSTR=string
+OLECHAR=WORD
+LPOLESTR=string
+LPCOLESTR=string
+BYTE=BYTE
+PBYTE=string
+LPBYTE=string
+TBYTE=BYTE
+PTBYTE=string
+BOOL=int
+BOOLEAN=BYTE
+SHORT=word
+USHORT=WORD
+INT32=int
+INT64=long
+INT_PTR=int
+UINT=INT
+UINT32=INT
+UINT64=INT
+UINT_PTR=INT
+LONG=int
+LONG32=int
+LONG64=long
+LONGLONG=long
+__int64=long
+LONG_PTR=int
+ULONG=INT
+ULONG32=INT
+ULONG64=LONG
+ULONGLONG=LONG
+ULONG_PTR=INT
+DWORD32=INT
+DWORD64=LONG
+DWORD_PTR=INT
+PDWORD=INT
+FLOAT=float
+GLOBALHANDLE=pointer
+HDC=pointer
+HBITMAP=pointer
+HBRUSH=pointer
+HICON=pointer
+HCURSOR=pointer
+HPALETTE=pointer
+HPEN=pointer
+HCONV=pointer
+HACCEL=pointer
+HCONVLIST=pointer
+HDDEDATA=pointer
+HDESK=pointer
+HDLG=pointer
+HDROP=pointer
+HDWP=pointer
+HENHMETAFILE=pointer
+HFILE=pointer
+HFONT=pointer
+HGDIOBJ=pointer
+HGLOBAL=pointer
+HHOOK=pointer
+HIMAGELIST=pointer
+HIMC=pointer
+HINSTANCE=pointer
+HKEY=pointer
+HKL=pointer
+HLOCAL=pointer
+HMEMU=pointer
+HMETAFILE=pointer
+HMIDIIN=pointer
+HMIDIOUT=pointer
+HMMIO=pointer
+HMODULE=pointer
+HMONITOR=pointer
+HRGN=pointer
+HRSRC=pointer
+HSZ=pointer
+HWAVEIN=pointer
+HWAVEOUT=pointer
+HWINSTA=pointer
+HWND=pointer
+LOCALHANDLE=pointer
+SC_HANDLE=pointer
+SC_LOCK=pointer
+SERVICE_STATUS_HANDLE=pointer
+MFENUMPROC=pointer
+ENUMFENUMPROC=pointer
+ENUMRESLANGPROC=pointer
+ENUMRESNAMEPROC=pointer
+ENUMRESTYPEPROC=pointer
+FONTENUMPROC=pointer
+GOBJENUMPROC=pointer
+HOOKPROC=pointer
+LPCCHOOKPROC=pointer
+LPCFHOOKPROC=pointer
+LPFRHOOKPROC=pointer
+LPOFNHOOKPROC=pointer
+LPPRINTHOOKPROC=pointer
+LPSETUPHOOKPROC=pointer
+FARPROC=pointer
+DLGPROC=pointer
+LINEDDAPROC=pointer
+LOHANDLER_FUNCTION=pointer
+PROPENUMPROC=pointer
+PFNCALLBACK=pointer
+PHANDLER_ROUTINE=pointer
+TIMERPROC=pointer
+WNDENUMPROC=pointer
+WNDPRO=pointer
+YIELDPROC=pointer
+ATOM=WORD
+LPRESULT=int
+LRESULT=int
+COLORREF=INT
+WPARAM=INT
+LPARAM=int
+CRITICAL_SECTION=struct
+LANGID=WORD
+LCID=INT
+LCTYPE=INT
+MCIDEVICEID=INT
+MMRESULT=INT
+PCRITICAL_SECTION=pointer
+PHKEY=pointer
+POINTER_32=int
+POINTER_64=long
+PSIDpointer
+REGSAM=INT
+SIZE_T=INT
+SSIZE_T=int
+UNSIGNED=INT
+LUID=struct
+VOID=void
+PVOID=pointer
+LPVOID=pointer
+LPCVOID=pointer
+*/
+
+var byref=/*
+LPCRECT=struct
+LPCRECTL=struct
+PLUID=struct
+PLCID=INT
+LPCOLORREF=INT
+LPCRITICAL_SECTION=struct
+LPHWAVEIN=pointer
+LPHWAVEOUT=pointer
+PFLOAT=float
+HANDLE=pointer
+PHANDLE=pointer
+SPHANDLE=pointer
+LPHANDLE=pointer
+PLONG=int
+LPLONG=int
+PULONG=INT
+PULONGLONG=LONG
+PWORD=WORD
+LPWORD=WORD
+LPDWORD=INT
+PUINT=INT
+PINT=int
+LPINT=int
+PLONGLONG=long
+PBOOL=int
+LPBOOL=int
+PSHORT=word
+PUSHORT=WORD
+PBOOLEAN=BYTE
+*/
+	
+	var tbyval = string.list(byval)
+	var tbyref = string.list(byref)
+	
+	c2a = function(str){ 
+		str = string.replace(str,".+?(%\{\})\s*([\w_]+).+", "class \2 \1") 
+	
+ 		str = string.replace(str,"(\W)unsigned\s*long\s*long(\W)", "\1LONG\2")
+		str = string.replace(str,"(\W)long\s*long(\W)", "\1long\2")
+		str = string.replace(str,"(\W)unsigned\s*__int64(\W)", "\1LONG\2")
+		str = string.replace(str,"(\W)__int64(\W)", "\1long\2")
+ 
+		str = string.replace(str,"(\W)INT(\W)", "\1int\2") 
+		str = string.replace(str,"(\W)DWORD(\W)", "\1INT\2") 
+		str = string.replace(str,"(\W)ULONG(\W)", "\1INT\2") 
+		str = string.replace(str,"(\W)UINT(\W)", "\1INT\2") 
+		str = string.replace(str,"(\W)unsigned\s*long(\W)", "\1INT\2")
+		str = string.replace(str,"(\W)unsigned\s*int(\W)", "\1INT\2")
+		
+		str = string.replace(str,"(\W)FLOAT(\W)", "\1INT\2") 
+		str = string.replace(str,"(\W)PVOID(\W)", "\1pointer\2") 
+		str = string.replace(str,"(\W)LPVOID(\W)", "\1pointer\2") 
+		str = string.replace(str,"(\W)LPCVOID(\W)", "\1pointer\2") 
+		str = string.replace(str,"void\s*\*\s*", "pointer ") 
+		
+		
+		str = string.replace(str,"(\W)BOOL(\W)", "\1int\2") 
+		str = string.replace(str,"(\W)long(\W)", "\1int\2") 
+		str = string.replace(str,"(\W)LRESULT(\W)", "\1int\2") 
+		str = string.replace(str,"(\W)LPARAM(\W)", "\1int\2") 
+		str = string.replace(str,"(\W)WPARAM(\W)", "\1int\2") 
+		str = string.replace(str,"(\W)HWND(\W)", "\1int\2") 
+		str = string.replace(str,"(\W)HINSTANCE(\W)", "\1int\2") 
+		str = string.replace(str,"(\W)HKEY(\W)", "\1int\2") 
+		str = string.replace(str,"(\W)HANDLE(\W)", "\1int\2") 
+		str = string.replace(str,"\n\N*#\N+", "")  
+		
+		str = string.replace(str,"(\W)LPCSTR(\W)", "\1string\2")  
+		str = string.replace(str,"(\W)LPCTSTR(\W)", "\1string\2")  
+		str = string.replace(str,"(\W)LPSTR(\W)", "\1string\2") 
+		str = string.replace(str,"(\W)LPTSTR(\W)", "\1string\2") 
+		str = string.replace(str,"(\W)const\s*char\s*\*(\W)", "\1string\2")  
+		str = string.replace(str,"(\W)const\s*unsigned\s*\char\s*\*(\W)", "\1string\2") 
+		str = string.replace(str,"(\W)char\s*\*(\W)", "\1string\2")  
+		str = string.replace(str,"(\W)unsigned\s*\char\s*\*(\W)", "\1string\2")  
+		str = string.replace(str,"(\W)BYTE\s*\*(\W)", "\1string\2")  
+		
+		str = string.replace(str,"(\W)unsigned short(\W)", "\1WORD\2") 
+		str = string.replace(str,"(\W)USHORT(\W)", "\1WORD\2")
+		str = string.replace(str,"(\W)SHORT(\W)", "\1WORD\2") 
+		str = string.replace(str,"(\W)short(\W)", "\1word\2")  
+		
+		str = string.replace(str,"(\W)char(\W)", "\1byte\2") 
+		
+		
+		str = string.replace(str,"union[^\w_]+(%{}?)\s*([\w_]+)", "union \2=\1")  
+		str = string.replace(str," +", " ")  
+		
+		
+		str = string.replace(str,"(\W)LPCSTR(\W)", "\1string\2")  
+		str = string.replace(str,"(\W)LPCSTR(\W)", "\1string\2")  
+		str = string.replace(str,"(\W)LPCSTR(\W)", "\1string\2")  
+	
+    	//下面这句一定要放在最后
+    	str = string.replace(str,"(\W)unsigned(\W)", "\1INT\2")
+    	return str;
+	}
+	
+	var dll = "dll"
+	api2aau = function(code){
+		var converApi = function(str){
+			for(k,v in tbyval){
+   				if(! tonumber(k) ){
+   					str = ..string.replace(str,"(\W)"+k+"(\W)", "\1"+v+"\2")  
+   				}
+			}
+			for(k,v in tbyref){
+   				if(! tonumber(k) ){
+   					str = ..string.replace(str,"(\W)"+k+"(\W)", "\1"+v+"&\2") 
+   				}
+			}
+			str = ..string.replace(str,"\*","&")
+			return str;
+		}
+	
+		code = string.replace(code,"(\W)WINAPI(\W)", "\1\2") 
+		code = string.replace(code,"(\W)__in(\W)", "\1\2") 
+		code = ..string.replace(code,"([\w_]+)\s+([\w_]+)\s*(%())",function(c,c2,c3){
+			return ..string.format('%s= %s.api("%s","%s")',  c2, dll, c2, converApi(c+c3) );
+		} )
+		return code;
+	}
+	
+	struct2aau = function(str){
+		str =" " + str; //简化(\W)\w+(\W)
+		
+		str = c2a(str);
+		str = api2aau(str);
+		str = string.replace(str,"(\W)\w+\s*\*", "\1pointer ") 
+		
+		for(k,v in tbyval){
+   			if(! tonumber(k) ){
+   				str = ..string.replace(str,"(\W)"+k+"(\W)", "\1"+v+"\2") 
+   			}
+		}
+		for(k,v in tbyref){
+   			if(! tonumber(k) ){
+   				str = ..string.replace(str,"(\W)"+k+"(\W)", "\1pointer\2") 
+   			}
+		}
+		
+		str = string.trimleft(str);//去掉函数在左侧补偿的空格 
+		return str;
+	} 
+	
+	var ccode = winform.txtCode.text;
+	dll =  string.match( ccode,"(\w+).dll(\W)"); 
+	dll ?= string.lower(dll) 
+	select(dll) {
+		case "kernel32"
+		{
+			dll="::Kernel32"
+		}
+		case "user32"
+		{
+			dll="::User32"
+		} 
+		else{
+		    dll="dll"
+		}
+		
+	}
+	
+	winform.txtCode.text = struct2aau( winform.txtCode.text); 
+} 
+
+winform.btnJavaScripToAAuto.oncommand = function(id,event){ 
+	var str = winform.txtCode.text; 
+ 
+	str = string.replace(str,"\.\.\.", " ");
+	str = string.replace(str,"for\s*\(\s*<var>?(\s*[\w_]+\s*\=\s*[^;]+\;)\s*[\w_]+\s*\>(\s*[^;]+\s*)\;(\s*[\w_]+\s*)\-\-", "for (\1\2+1;-1");
+	str = string.replace(str,"for\s*\(\s*<var>?(\s*[\w_]+\s*\=\s*[^;]+\;)\s*[\w_]+\s*\<(\s*[^;]+\s*)\;(\s*[\w_]+\s*)\+\+", "for (\1\2-1;1");
+	str = string.replace(str,"for\s*\(\s*<var>?(\s*[\w_]+\s*\=\s*[^;]+\;)\s*[\w_]+\s*\<(\s*[^;]+\s*)\;\s*[\w_]+\s*\+\=\s*(\d+)", "for (\1\2-1;\3");
+	str = string.replace(str,"for\s*\(\s*<var>?(\s*[\w_]+\s*\=\s*[^;]+\;)\s*[\w_]+\s*\>(\s*[^;]+\s*)\;\s*[\w_]+\s*\-\=\s*(\d+)", "for (\1\2+1;-\3");
+	str = string.replace(str,"\[\s*\]", "{}");
+	str = string.replace(str,"([^\n]+)([\w_]+)\+\+", "\2++;\1\2"); //x++提取为独立语句
+	str = string.replace(str,"([\w_]+)\.length", "#\1");  
+	str = string.replace(str,".charCodeAt\(([^)]+)\)", "[\1+1]");
+	str = string.replace(str,"String\.fromCharCode", "..string.pack");
+	str = string.replace(str,"String\.", "string.");
+	str = string.replace(str,"([\w_]+)\.join\(", "..string.join(\1,"); 
+	str = string.replace(str,"(\W)switch(\W)", "\1select\2")
+	str = string.replace(str,"\s*\:\s*case\s*", ",")
+	str = string.replace(str,"\:", "") 
+	str = string.replace(str,"new\s*Array\s*\(([^)]+)\)",function(c){
+	    return "{" + string.replace(c,"\,",";") + "}";
+	} )
+	str = string.replace(str,"new Date()", "time.now()") 
+	str = string.replace(str,"typeof\s+([\w\[\]\.]+)", "type(\1)") 
+	
+	str = string.replace(str,"([\w_]+)\.push\(", "table.push(\1,");  
+    str = string.replace(str,"([\w_]+)\.pop\(", "table.pop(\1,");  
+    str = string.replace(str,"([\w_]+)\.concat\(", "table.concat(\1,"); 
+    str = string.replace(str,"([\w_]+)\.slice\(", "table.unpack(\1,");  
+    str = string.replace(str,"(\W)print(\W)", "\1io.print\2") 
+ 
+	winform.txtCode.text =str; 
+} 
+
+winform.btnLascriptToAAuto.oncommand = function(id,event) { 
+	var str = winform.txtCode.text;
+	
+	str = string.replace(str,"%{}",function(c){
+	    return  string.replace(c,"\,",";") ;
+	} )
+	str = string.replace(str,"--\[\[", "/*")
+	str = string.replace(str,"\]\]", "*/")
+	
+	str = string.replace(str,"\[\[", "/*")
+	str = string.replace(str,"\]\]", "*/")
+	
+	str = string.replace(str,"--","//")
+	str = string.replace(str,"//-","///")
+	str = string.replace(str,"(\W)local(\W)", "\1var\2")
+	str = string.replace(str,"(\W)then(\W)", "\1begin\2")
+	str = string.replace(str,"(\W)else(\W)", "\1end;else begin\2")
+	str = string.replace(str,"(\Wfunction\W[^)]*\))", "\1 begin ")
+	str = string.replace(str,"(\W)do(\W)", "\1begin\2")
+	str = string.replace(str,"(for[^,\n]+),([^,\n ]+),", "\1;\2;")   
+	str = string.replace(str,"(for[^,\n]+),([^,\n ]+)", "\1;\2") 
+	str = string.replace(str,"(\W)repeat(\W)", "\1do{\2")
+	str = string.replace(str,"(\W)until(\W)", "\1}while not \2")
+	str = string.replace(str,"\~\=", "!=")
+	str = string.replace(str,"\.\.", "++")
+	str = string.replace(str,"(\W)begin(\W)", "\1{\2")
+	str = string.replace(str,"(\W)end(\W)", "\1}\2")
+    str = string.replace(str,"\:", "\.")
+    str = string.replace(str,"_G\.","..");
+    str = string.replace(str,"win\.consoleOpen\s*\(\s*\)\s*\;?","io.open();");
+    str = string.replace(str,"win\.messageBox","win.msgbox");
+    str = string.replace(str,"pairs\("," ");
+    str = string.replace(str,"(\W)print(\W)", "\1io.print\2")
+    str = string.replace(str,"(\W)delay(\W)", "\1win.delay\2")
+    str = string.replace(str,"(\W)string.len(\W)", "\1#\2")
+    str = string.replace(str,"(\W)string.char(\W)", "\1string.pack\2")
+    str = string.replace(str,"(\W)string.byte(\W)", "\1string.unpack\2")
+    str = string.replace(str,"(\W)string.len(\W)", "\1#\2")
+    str = string.replace(str,"(\W)string.len(\W)", "\1#\2")
+    
+    str = string.replace(str,"([^\\])""", "\1'") 
+    str = string.replace(str,"([^\\])""", "\1'") 
+    
+    str = string.replace(str,"'\s*\+\+", "'+") 
+    str = string.replace(str,"\+\+\s*'", "+'") 
+    str = string.replace(str,'"\\s*\\+\\+', """+") 
+    str = string.replace(str,'\\+\\+\\s*"', "+""") 
+    
+    str = string.replace(str,"io\.read", "io\.stdin\.read") 
+    str = string.replace(str,"io\.write", "io\.stdout\.write") 
+    str = string.replace(str,"math\.mod", "math.fmod")  
+    
+	winform.txtCode.text ='import win;\n' + str; 
+}
+
+winform.show(true) 
+win.loopMessage( winform );

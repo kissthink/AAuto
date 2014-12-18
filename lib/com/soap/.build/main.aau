@@ -1,0 +1,12 @@
+import ide;
+import fsys;
+
+var publisDir = ide.getPublisDir();
+if(!#publisDir)return; 
+
+var resDir =  fsys.joinpath(publisDir,"\lib\com\soap\" ); 
+if( ! io.exist(resDir) ){ 
+	var libPath,libDir = io.libpath("com.soap")
+	..fsys.createDir( resDir );
+	..fsys.copy( fsys.joinpath(libDir,"\.mssoap3.0") ,resDir,0x10/*_FOF_NOCONFIRMATION*/  | 0x200/*_FOF_NOCONFIRMMKDIR*/); 
+}

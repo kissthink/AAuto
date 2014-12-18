@@ -1,0 +1,51 @@
+//PE文件分析工具
+//判断文件是否为标准PE文件 
+import win.ui; 
+import win.ui.menu
+import fsys.dlg
+/*DSG{{*/
+var winform = win.form( acceptfiles=1;bottom=162;parent=...;right=443;text="PE文件分析工具";topmost=1 )
+winform.add( 
+btnbuild={ bottom=85;right=296;left=206;top=59;z=3;text="分析";cls="button" };
+static={ bottom=121;right=406;left=30;top=99;z=4;text="......";transparent=1;edge=1;cls="static" };
+btndlg={ bottom=46;right=409;left=319;top=20;z=1;text="浏览 ...";cls="button" };
+editpath={ bottom=46;right=311;left=29;multiline=1;top=19;z=2;edge=1;cls="edit" }
+)
+/*}}*/
+
+winform.wndproc = function(hwnd,message,wParam,lParam){
+	select(message) {//判断消息类型
+		case 0x233/*_WM_DROPFILES*/ { 
+			winform.editpath.text = win.getDropFile(wParam )[1];  
+		} 
+	}
+} 
+
+import process;
+winform.btnbuild.oncommand = function(hwnd,event){ 
+	if( winform.editpath.text == "" ){
+		winform.static.text = "错误: 请输入或者选择要分析的文件!";
+		winform.redraw();
+		return ; 
+	}
+	 
+	if( process.isExe(winform.editpath.text) ){
+		winform.static.text = "分析结果：该文件是可执行文件!"; 
+		return;
+	}
+	else {
+		winform.static.text = "分析结果：该文件不是可执行文件!"; 
+	} 
+}
+	
+winform.btndlg.oncommand = function(hwnd,event){ 
+	var str  = fsys.dlg.open()
+	if( str)
+		winform.editpath.text = str; 
+}
+
+winform.show(true) 
+win.loopMessage( winform );
+
+
+

@@ -1,0 +1,38 @@
+//视频播放器控件
+import win.ui;
+/*DSG{{*/
+var winform = ..win.form( right=626;text="mediaplayer 视频播放器控件";bottom=482 )
+winform.add( 
+btnDump={ dr=1;bottom=472;right=515;left=427;top=445;z=4;db=1;text="显示成员";cls="button" };
+btnPlay={ dr=1;bottom=472;right=312;left=224;top=445;z=2;db=1;text="播放";cls="button" };
+btnStop={ dr=1;bottom=472;right=416;left=328;top=445;z=3;db=1;text="停止";cls="button" };
+static={ dr=1;dl=1;bottom=434;right=606;left=32;dt=1;top=16;z=1;db=1;edge=1;cls="static" }
+)
+/*}}*/
+
+//创建控件
+var wmplay = winform.static.createEmbed("{6BF52A52-394A-11d3-B153-00C04F79FAA6}");    
+wmplay._object.Url  = "mms://winmedia.cctv.com.cn/kids/300K/90152santudi.wmv"
+wmplay._object.stretchToFit = true;
+
+/*
+下面的代码防止拖动改变窗口大小时视频闪烁
+注意 winform.static 不要设为透明
+*/
+winform.static.modifyStyle(, 0x2000000/*_WS_CLIPCHILDREN*/ )
+winform.modifyStyle(, 0x2000000/*_WS_CLIPCHILDREN*/ ) 
+
+winform.btnStop.oncommand = function(id,event){ 
+    wmplay._object.controls.stop() 
+}
+winform.btnPlay.oncommand = function(id,event){ 
+    wmplay._object.controls.play()
+}
+winform.btnDump.oncommand = function(id,event){
+    io.open()
+    com.DumpTypeInfo(wmplay._object) 
+    io.print("请按 CTRL+C 关闭此窗口")
+} 
+
+winform.show(true) 
+win.loopMessage();

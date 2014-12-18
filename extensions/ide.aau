@@ -1,0 +1,217 @@
+//ide扩展库
+import inet.whttp;
+import fsys.cab;
+import zlib.httpFile;
+import sevenZip.lzma.httpFile;
+import winex;
+import win.ui.ctrl.edit; 
+import process.mutex;
+import web.json;
+
+namespace ide{
+
+	getExtLibs = function(){
+		var strLibVers = ..string.load( "~\extensions\extlibver.table") or "{}";
+		return eval(strLibVers);
+	};
+	requestLibInfo = function(libName){
+		if( !libName ) error("请指定库名称参数",2);
+		return ..win.invoke(
+			function(libName){
+				import web.rest.jsonLiteClient;
+				var http = web.rest.jsonLiteClient();
+				var libApi = http.declareApi("http://update.aau.cn/aauto/lib/find/?{libName}")
+				var listLib = libApi[libName].get();
+				http.close();
+				return listLib;
+			},libName
+		) 
+	};
+	var hasBeenEntered = {}; 
+	importFile = function(libName,oldVersion,title){ 
+		if(hasBeenEntered[libName]){
+			error('导入库失败,未找到库文件\n库路径:' + libName,2 );
+		}
+		hasBeenEntered[libName] = true; 
+		
+		var updateInfo = requestLibInfo( libName );  
+		if( ! ( updateInfo ? updateInfo.url ) ){
+			if(!oldVersion){
+				error('导入库失败,未找到库文件\n库路径:' + libName,2 );
+			}
+			hasBeenEntered[libName] = false;
+			return false;
+		}
+		if( oldVersion && oldVersion == updateInfo.version ){
+			hasBeenEntered[libName] = false;
+			return true;
+		}
+		
+		if( !title )
+			title =  libName+"扩展库尚未安装，您需要下载安装"+libName+"扩展库吗?";
+		
+		if(  ( !#title ) || ..win.msgboxTest( title ,"快手(AAuto Quicker)") ){ 
+		
+			var mutex = ..process.mutex("{5C6E466D-0DF1-4ABC-BFAD-9B890AA358FC}.lock.import." + libName,false,false);
+			mutex.wait(); {
+			
+				if( ..string.endWith( updateInfo.url,".cab",true) ){
+					..fsys.cab.download( updateInfo.url,"快手(AAuto Quicker) - 下载"+libName+"扩展库","~/download/lib/"  );
+				}
+				elseif( ..string.endWith( updateInfo.url,".tar.lzma",true) ){
+					..sevenZip.lzma.httpFile.download(updateInfo.url,"快手(AAuto Quicker) - 下载"+libName+"扩展库","~/download/lib/" , ,updateInfo.libName + ".tar.lzma");
+				}
+				elseif( ..string.endWith( updateInfo.url,".zip",true) ){
+					..zlib.httpFile.download(updateInfo.url,"快手(AAuto Quicker) - 下载"+libName+"扩展库","~/download/lib/" , ,updateInfo.libName + ".zip");
+				}
+			
+			} mutex.release();
+			
+			if(..io.libpath(libName) ){	 
+				var libVers = getExtLibs();
+				libVers[updateInfo.libName] = { version = updateInfo.version }
+				..string.save("~\extensions\extlibver.table", ..table.tostring(libVers) )
+				
+				if(!oldVersion){
+					global.import(libName);
+				}
+				hasBeenEntered[libName] = false;
+				return true;
+			}
+		}
+		
+		hasBeenEntered[libName] = false;
+		if(!oldVersion){
+			error('导入库失败,未找到库文件\n库路径:' + libName,3 ); 
+		}
+		return false; 
+	}
+	
+	if( _STUDIO_INVOKED == "process" ) return;
+	
+	getActiveCodeEditor = function(){
+		var hView = getActiveViewHwnd(); 
+		if( hView ){
+			var hEdit = ..winex.findEx(hView ,,"AAutoCodeEditor.+")
+			if(hEdit){ 
+				var ctrl = ..win.ui.ctrl.edit();
+				ctrl.hwnd = hEdit;
+				return ctrl;
+			}
+		}
+	};  
+	mdiActivate = function(hwnd,cls="Afx"){
+		var mc = ..win.findEx( getMainHwnd(),0,"MDIClient"); 
+		if( type(hwnd) != type.number ){
+			hwnd = ..winex.findEx(mc,,cls,hwnd);
+		}  
+		if(!hwnd) return;
+		
+		while( 
+		    var cur,p = hwnd;
+		    p = ..win.getParent(cur); 
+		    p 
+		) { 
+			if( p == mc ){
+				::SendMessageInt(mc,0x222/*_WM_MDIACTIVATE*/,cur,0)
+				return true;
+			}
+			cur = p;
+		} 
+	};
+	compile = function(){
+		::SendMessageInt( getMainHwnd(),0x111/*_WM_COMMAND*/, 0x8315/*_IDE_ID_BUILD_COMPILE*/,0);
+	};
+	run = function(){
+		::SendMessageInt( getMainHwnd(),0x111/*_WM_COMMAND*/, 0x831D/*_IDE_ID_BUILD_RUN*/,0);
+	};
+	publish = function(){
+		::SendMessageInt( getMainHwnd(),0x111/*_WM_COMMAND*/, 0x8317/*_IDE_ID_BUILD_PUBLISH*/,0);
+	};
+	switchDesignView = function(){
+		::SendMessageInt( getMainHwnd(),0x111/*_WM_COMMAND*/, 0x831A/*_IDE_ID_DESIGN_SWITCHTO*/,0);
+	};
+	startpage = function(){
+		::SendMessageInt( getMainHwnd(),0x111/*_WM_COMMAND*/, 32896/*_IDE_ID_BUILD_COMPILE*/,0);
+	};
+	newProject = function(){
+		::SendMessageInt( getMainHwnd(),0x111/*_WM_COMMAND*/, 33180,0);
+	}; 
+	getVersion = function(){
+		var ver = getConfig("version");  
+		major,minor,build = ..string.match(ver,"\s*(\d+)\.(\d+)\.(\d+)");
+		return major,minor,build;
+	};
+	getPublisDir = function(){
+		var dir = getProjectProperty("publishDir")
+		if( dir[1] == '\\'# || dir[1] == '/'# ){
+			dir = ..fsys.joinpath( getProjectDir(),dir )
+		}
+		return dir;
+	}; 
+	getPublishObjPath = function(){
+		return ..fsys.joinpath( getPublisDir(), getProjectProperty("name") + ".obj" ) ;
+	};
+	getPublishPath = function(){
+		return ..fsys.joinpath( getPublisDir(), getProjectProperty("output")) ;
+	}; 
+	getPublishName = function(){
+		return getProjectProperty("output");
+	}; 
+	setPublishName = function(name){
+		return setProjectProperty("output",name);
+	};
+	
+} 
+
+/**intellisense(ide)
+getActiveCodeEditor() = 返回当前代码编辑器控件\n!edit.
+mdiActivate( = 激活文档窗口
+mdiActivate(.(句柄) = 激活窗口
+mdiActivate(.("标题","类名") = 激活窗口
+switchDesignView() = 切换当前窗体设计视图;
+run() = 运行当前视图源码;
+createThread("__") = 运行指定AAuto文件,\n参数指定aau文件路径
+createProcess(.(代码文件路径,代码,动词) = 在IDE中创建进程启动参数@1或参数@2指定的代码\n动词可以是open,runas等
+compile() = 编译当前视图源码;
+publish() = 编译当前工程生成exe文件
+newProject() = 打开新建工程向导
+startpage() = 切换到开始页
+getProjectDir() = 获取当前工程所在目录,\n如果未打开工程，返回空字符串
+getProjectPath() = 获取当前工程路径,\n如果未打开工程，返回空字符串
+getProjectProperty("publishDir__") = 返回工程属性,\n失败返回空字符串 
+setProjectProperty("publishDir","") = 设置工程属性,\n返回布尔值表示是否成功 
+projectIsOpened() = 返回当前是否已经打开工程
+refreshUserLib() = 刷新当前工程用户库节点,\n并更新用户库智能提示数据
+refreshStdLib() = 刷新标准库视图,\n并更新标准库智能提示数据
+openDocument("/__/*输入文件路径*/") = 打开*.aau文件或*.aproj工程文件。
+newDocument() = 新建aau文档窗口
+insertCode(__) = 在当前代码编辑器光标位置插入代码,\n支持智能提示模板语法，自动插入新行，自动缩进，\n并将双下划线转换为光标位置，其后的段注释显示为汽泡提示。\n成功返回true
+save() = 保存当前文档
+saveAll() = 保存所有文档，并保存工程文件
+getActiveViewHwnd() = 获取活动视图句柄,以及文档路径.\n其父窗口为MDI子窗口，子窗口为编辑器窗口,\n如果文档未保存为文件，则返回值2为空
+getMainHwnd() = 获取IDE顶层主窗口句柄
+showDesktopAlert(.(提示信息,链接文本,链接URL,显示时间) = 在桌面右下角弹出信息提示框,\n除第一个参数以外，其他参数可选，\n显示时间以毫秒为单位，默认为10000毫秒
+getConfig("__/*属性名*/") = 返回IDE配置文件 ("/Config/USE.CFG") 指定字段值,\n返回值为字符串，失败返回空串
+setConfig("__/*属性名*/","") = 修改IDE配置文件 ("/Config/USE.CFG") 指定字段值,\n参数必须都是字符串
+pluginViewCreate("__/*aau文件*/") = 创建视图插件,\n参数指定aau文件路径
+pluginViewShow(.(winform) = 显示视图插件,\n请用此函数替换winform.show(),\n窗体样式必须设为"child"样式
+getVersion() = @major,minor,build = ide.getVersion();
+getThreadTitle(.(线程ID) = 参数如果是IDE运行创建的主线程ID,则返回创建线程的文档标题,\n如果文档存在有效路径,则标题是文件路径.
+getPublisDir() = 返回发布目录
+getPublishName() = 返回生成文件名
+setPublishName(.("输出文件名") = 插件可以使用此函数修改输出文件名\n因此所有插件请尽可能使用getPublishPath函数获取当前输出路径
+getPublishPath() = 返回生成文件路径
+importFile(.( "库名称" ) = 安装服务端扩展库,参数二可选指定已安装版本号\n参数三可选用于指定确认对话框标题,传入空串不显示确认对话框
+getExtLibs() = 返回已安装的扩展库列表
+requestLibInfo(.("all") = 查询服务端扩展库信息
+updateVersion(__) = 更新版本
+end intellisense**/
+
+/**intellisense()
+ide = 快手开发环境扩展支持库,\n需要使用import ide;语句导入才能使用。 
+_IDE_ID_BUILD_COMPILE=@0x8315/*_IDE_ID_BUILD_COMPILE*/
+_IDE_ID_BUILD_PUBLISH=@0x8317/*_IDE_ID_BUILD_PUBLISH*/
+_IDE_ID_DESIGN_SWITCHTO=@0x831A/*_IDE_ID_DESIGN_SWITCHTO*/
+_IDE_ID_BUILD_RUN=@0x831D/*_IDE_ID_BUILD_RUN*/
+end intellisense**/

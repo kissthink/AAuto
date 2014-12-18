@@ -1,0 +1,171 @@
+//mbcs 宽字符(汉字)
+namespace string
+import util.metaProperty
+
+import table;
+var push =  table.push;  
+var gmatch = gmatch;
+var join = join;
+
+class mbcs{
+
+	ctor( wstr,sepPattern = '(<\x80-\xFF.>|.)'  ){  
+		for wchar in gmatch(wstr,sepPattern ) { 
+  	    	push( this,wchar )  
+		}
+		this.sepPattern = sepPattern;	 
+	}; 
+	
+	@_metaProperty
+}
+ 
+	
+namespace mbcs{  
+	var mbslen = ..string.len; 
+	var search = ..string.search;
+	
+	_metaProperty = ..util.metaProperty(
+		slice = function(i,j){ 
+			var t = ..table.slice(owner,i,j);
+			t.sepPattern = owner.sepPattern;
+			t@ = owner@; 
+			return t;
+		} 
+		splice = function(p,l,...){
+			var t = ..table.splice(owner,p,l,...);
+			owner.reset();
+			if(t){
+				t.sepPattern = owner.sepPattern;
+				t@ = owner@; 
+				return t;	
+			}
+		} 
+		push = function(...){
+			var ret = push(owner,...);
+			owner.reset();
+			return  ret; 
+		} 
+		sub = function(i,j){  
+			return  join( ..table.slice(owner,i,j) ); 
+		} 
+		left = function(len){ 
+			var subtab = { ..table.left(owner,len) }
+			return join( subtab); 
+		} 
+		right = function(len){
+			var subtab = { ..table.right(owner,len) }
+			return join( subtab);  
+		} 
+		reset = function(str){
+			var wstr = str : tostring(owner)
+			..table.pop(owner,#owner)
+			for wchar in gmatch( wstr,owner.sepPattern ) { 
+  	    		push( owner,wchar ) 
+			}	
+		} 
+		limit = function(len,rep="..."){
+			return #owner>len? owner.left(len) ++ rep : tostring(owner)  
+		}
+		find = function(s){
+			var str = tostring(owner)
+			var i,j = ..string.find(str,s);
+			var a = mbslen(str,1,i); 
+			return a,a - 1 + mbslen(str,i,j);
+		 	
+		}
+		lastIndexAny = function(...){
+			var str = tostring(owner)
+			var i = ..string.lastIndexAny(str,...);
+			return mbslen(str,1,i);  
+		}
+		indexAny = function(...){
+			var str = tostring(owner)
+			var i = ..string.indexAny(str,...);
+			return mbslen(str,1,i);  
+		}
+		match = function(p){
+			return match(tostring(owner),p);
+		}
+		gmatch = function(p){
+			return gmatch(tostring(owner),p);
+		}
+		gSearch = function(p){
+			var i,j  = 0,0;
+			var str = tostring(owner);
+			return function(){ 
+				i,j = search(str,p,j+1); 
+				if(!i) return;
+				var a = mbslen(str,1,i);
+				return a,a - 1 + mbslen(str,i,j);
+			}
+		}
+		lastSearch = function(...){
+			var str = tostring(owner)
+			var i,j = ..string.lastSearch(str,...);
+			var a = mbslen(str,1,i);
+			return a,a -1 + mbslen(str,i,j);  
+		}
+		unpack = function(b=1,e){
+			var chr,c;
+			var t = {};
+			for(i=b; e:#owner;1){
+				chr = owner[i];
+				if(#chr>1){ 
+					push(t,(chr[1] << 8) | chr[2] );
+				}
+				else {
+					push(t,chr[1]);
+				} 
+			}
+			return ..table.unpack(t) 
+		} 
+		pack = function(...){
+			t = ...
+			if(type(t)!=type.table)
+				t = {...}
+			var b = {};
+			for(i=1;#t;1){ 
+				if(t[i]>0xFF || t[i]<0){
+					push(b,(  t[i] >> 8) & 0xFF, t[i] & 0xFF );
+				}
+				else {
+					push(b,t[i]);
+				} 
+			} 
+			owner.reset( ..string.pack(b) );
+			return owner;
+		}  
+		_tostring = function(){
+			return join(owner)
+		} 
+	)  
+}
+
+/**intellisense()
+!mbcs.sub(.(开始位置,结束位置) = 截取字符串
+!mbcs.left(.(长度) = 从左侧截取字符串
+!mbcs.right(.(长度) = 从右侧截取字符串
+!mbcs.find(__/*模式表达式*/) = 查找字符串\n返回匹配串开始,结束位置
+!mbcs.search(__/*文本*/) = 查找文本\n不支持模式语法\n返回匹配串开始,结束位置
+!mbcs.lastSearch(__/*文本*/) = 查找最后一个匹配文本\n不支持模式语法\n返回匹配串开始,结束位置
+!mbcs.gSearch(查找文本) = @for i,j in string.gSearch("__/*查找文本*/"){
+	
+}
+!mbcs.match(__/*模式表达式*/) = 返回匹配字符串
+!mbcs.gmatch(__/*模式表达式*/) = 创建迭代器,用于for...in循环
+!mbcs.reset() = 重新计算字符串长度
+!mbcs.reset(str) = 重新解析字符串
+!mbcs.limit(__/*长度*/) = 限制字符串长度
+!mbcs.limit(__/*长度*/,"...") = 限制字符串长度
+!mbcs.unpack(.(i,j) = 返回字符串的第i到j个字符码
+!mbcs.pack(__) = 参数可以是一个表示字符码的数组,或多个表示字符码的数值参数\n支持宽字符码
+!mbcs.splice(.(位置,删除长度,要插入的一个或多个字符串) = 在指定的位置删除并添加字符\n如果删除了元素,该函数返回包含删除元素的宽字符串对象
+!mbcs.slice(.(开始位置,结束位置) = 从指定位置截取并返回新的宽字符串对象\n开始位置可选，默认为1\n结束位置可选,默认为数组长度\n如果位置参数为负数,则自右侧反向计算
+!mbcs.slice() = !mbcs.
+!mbcs.splice() = !mbcs.
+!mbcs.push(__) = 在尾部添加一个或多个字符串
+?string.mbcs = !mbcs.
+string.mbcs = 宽字符串支持库
+string.mbcs("__") = 创建宽字符串对象\n!mbcs.
+string.mbcs() = !mbcs.
+end intellisense**/

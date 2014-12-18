@@ -1,0 +1,17 @@
+import process
+io.open()
+
+for processEntry in process.each( ".*.exe" ) { 
+    
+    io.print( processEntry.szExeFile  ,"进程ID:"+processEntry.th32ProcessID )
+    
+    try{
+    
+    	//在外部EXE进程创建CALL函数   
+		GetCommandLine = raw.remoteApi(processEntry.th32ProcessID,"string()","Kernel32.dll","GetCommandLineA")
+		
+		io.print("命令行:" + ( GetCommandLine() : "" ) )
+		io.print( "" )
+	}
+		 
+}

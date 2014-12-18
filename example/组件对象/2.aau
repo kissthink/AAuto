@@ -1,0 +1,7 @@
+//调用TTS组件
+//调用TTS组件演示代码
+
+import com;
+
+var voiceObj = com.CreateObject("Sapi.SpVoice");
+voiceObj.Speak("Hello, world."); 

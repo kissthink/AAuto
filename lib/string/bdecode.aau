@@ -1,0 +1,144 @@
+//bdecode BT种子解码
+import crypt;
+import crypt.bin;
+import inet.url;
+
+class string.bdecode {
+
+	ctor( torrentData ){ 
+		
+		if( #torrentData < 0x104/*_MAX_PATH*/ ){
+		 	var s = ..string.load(torrentData);
+		 	if(s) torrentData = s;
+		}
+		if(!torrentData) return null,"请指定正确的种子文件数据或路径";
+		
+		var pos = 1; 
+		var length = #torrentData;
+		var sub = ..string.sub;
+		
+		var parseNumber = function(endChar){ 
+			var b,e = ..string.find(torrentData,"\d+",pos) 
+			if( b ){ 
+				pos = e + 1; 
+				if( torrentData[pos] != endChar){  
+					return null,"整数没有正确的标识结束,位置[" + pos + "]" ;
+				}
+				pos++;
+				
+				return ( tonumber( sub(torrentData,b,e) ) ),null;
+			}
+			return  null,"错误的数值格式,位置[" + pos + "]" ;
+		} 
+		var parseString = function(){
+			var n,err = parseNumber(':'#);  
+			if(err)return null,err,"字符串长度语法错误,位置[" + pos + "]" 
+				
+			var ret  = sub(torrentData,pos,pos+n-1); 
+			pos += n ;  
+			return ret;
+		} 
+		var parseList = function(){  
+ 			var list = {} 
+ 			
+ 			while( 
+ 				var val,err;
+ 				val,err = this.parseNext(); 
+ 				val || err
+ 			) {
+ 				if( err ) return null,err;
+ 				..table.push(list,val );
+ 			} 
+ 			return list; 
+		}
+		
+		var parseDict = function(){  
+ 			var dict = {}; 
+ 			var fieldsOffset = {};
+ 			if(!this.metadata){
+ 				this.metadata = dict;
+ 				this.metadataOffset = fieldsOffset;
+ 			}
+ 			
+ 			while( 
+ 				var key,err;
+ 				key,err = this.parseNext(); 
+ 				key || err
+ 			) { 
+ 				if( err ) return null,err;
+ 				
+ 				var dataBegin = pos;
+ 				var val,err = this.parseNext();  
+ 				if( err ) return null,err;
+ 				
+ 				dict[key] = val;
+ 				fieldsOffset[key] = { dataBegin;pos - 1};
+ 			} 
+ 			return dict; 
+		}
+	};
+	reset = function(){ 
+		pos = 1;
+	}; 
+	getInfoHash = function(){
+		this.reset();  
+		var metadata,err = this.parseNext();
+		if( err) return null,err;
+		
+		var infoOffset = this.metadataOffset[["info"]];
+		if(!infoOffset) return;
+		var infoHash = ..crypt.sha1( sub( torrentData,infoOffset[1],infoOffset[2]) ,true);
+		this.reset();
+		
+		this.metadata = metadata;
+		return infoHash; 
+	};
+	getMagnetUri = function(){
+		this.reset();
+		var infoHash,err = this.getInfoHash();
+		if( err ) return null,err;
+		 
+		var metadata = this.metadata;
+		var params = {  
+        	dn = metadata['info']['name'];
+ 			tr = metadata['announce']; 
+			xl = metadata['info']['length']
+		}
+		return  'magnet:?xt=urn:btih:' + infoHash + '&'+ ..inet.url.stringifyParameters(params,false);
+	} 
+	parseNext = function(){ 
+		var c = torrentData[pos];
+		select(c) {
+			case 'i'# { 
+				pos++;
+				return parseNumber( 'e'# );
+			}
+			case 'l'# {
+				pos++;
+				return parseList(); 
+			}
+			case 'd'# {
+				pos++;
+				return parseDict()
+			}
+			case 'e'# {
+				pos++;
+				return;
+			}
+			else {
+				return parseString();
+			}
+		}
+	}; 
+} 
+
+/**intellisense()
+string.bdecode(.(种子数据) = 创建BT种子解码器
+string.bdecode() = !bdecode.
+!bdecode.parseNext() = 解析种子并返回值
+!bdecode.reset() = 指针重新移动到数据开始处
+!bdecode.getMagnetUri() = 转换为磁力链接
+!bdecode.infoHash() = 读取infoHash
+!bdecode.metadata = 种子数据
+end intellisense**/
+

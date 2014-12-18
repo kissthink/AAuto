@@ -1,0 +1,23 @@
+//获取Java对象成员
+
+io.open()
+import java; 
+var jvm = java();
+
+//创建java类实例,并调用其成员方法
+var helloworld = jvm.newJavaObject( "HelloworldApp","void()" );
+	
+//获取对象成员方法
+var obj_name = helloworld.getField( "name","string" ) ;
+io.print( obj_name )
+
+//获取类静态成员
+var class_static_num  = jvm.getClassField(  
+	"HelloworldApp", //类名
+	"static_num",//字段名
+	"int" //数据类型
+);
+io.print( class_static_num )
+
+execute("pause") //按任意键继续
+io.close();//关闭控制台

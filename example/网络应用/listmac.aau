@@ -1,0 +1,58 @@
+//列出所有网卡MAC地址
+import win.reg;
+import fsys.file;
+
+DeviceIoControlByString = ::Kernel32.api("DeviceIoControl","int(pointer hDevice,int dwIoControlCode,struct& lpInBuffer,
+	int nInBufferSize,string& lpOutBuffer,
+	int nOutBufferSize,int& lpBytesReturned,
+	int lpOverlapped)"
+)
+
+getMacByServiceName = function(serviceName){
+
+	var file = fsys.file("\\.\"+serviceName )
+	if(!file)
+		return;
+		
+	var oid = {int v = 0x01010101}
+	var ret,inbuf,outbuf,len  = DeviceIoControlByString(file.handle,1507330/*_IOCTL_NDIS_QUERY_GLOBAL_STATS*/,    
+         	oid,4,8,8,0,0);
+    file.close()
+      	
+ 	outbuf = string.left(outbuf,len); 
+ 	var tab = {}
+ 	for(i=1;#outbuf){
+ 		var hex = string.format("%02X",outbuf[i]) ;
+ 		table.push(tab,hex); 
+ 	}
+ 
+ 	return string.join(tab,"-")
+
+}
+
+//获取所有网卡服务名
+getCardSeviceNames = function(){ 
+	var tab ={}
+	  
+    var regCards = win.reg("HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\NetworkCards",true);
+    regCards.enumKey(
+    
+        function( subreg,  keyname){  
+            var regCard = subreg.openReg(keyname,true)
+            var serviceName = string.match(regCard.queryValue("ServiceName"),'%{}')
+            table.push(tab,serviceName);
+            regCard.close()
+        }  
+    )
+    regCards.close()
+    return tab; 
+}
+
+var cards = getCardSeviceNames()
+
+io.open()
+for(k,v in cards){
+	//列出所有MAC地址
+	io.print( getMacByServiceName(v) )
+
+}

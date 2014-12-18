@@ -1,0 +1,69 @@
+//custom 自定义控件演示
+namespace win.ui.ctrl; 
+class custom { 
+	ctor(parent,tParam){
+/*DSG{{*/
+this = ..win.form(right=233;bottom=87;border="none";exmode="none";mode="child";parent=parent;tParam=tParam)
+this.add()
+/*}}*/
+
+	}
+	loadForm = loadForm;
+	showChildren = showChildren;
+	/*
+	onCreate = function(){
+		//创建窗口后触发此函数 
+	} 
+	onCreated = function(){
+		//窗口初始化属性设置完成后触发此函数
+	}
+	_onDestroy = function(){ 
+		//销毁窗口前触发此函数  
+	}
+	*/
+}
+
+namespace custom {
+
+	showChildren = function(f){
+		for(i,form in owner._forms){
+			form.show(f)
+		}
+	};
+	
+	loadForm = function( code, ... ){
+		var this = owner;
+		if( ! this._adjust ){
+			this._adjust = function(){ 
+				var rc = this.getClientRect();
+				for(i,form in this._forms){
+					form.setRect(rc)
+				}
+			} 
+		} 
+		if( !this._forms ){ this._forms = {}; };
+		var form,wb =  ..win.loadForm(code,function(tParam){
+			for(i,form in this._forms){
+				 form.show(false);
+			}
+			
+    		tParam.text = null;
+    		tParam.parent = this ;
+    		tParam.mode="child";
+    		tParam.exmode="none";
+    		tParam.border="none"
+    		tParam.title=false;   
+    		var form = ..win.form(tParam);
+    		..table.push( this._forms,form ); 
+    		return form;							
+		},this,...);
+		
+		this._adjust(); 
+		return form,wb;
+    };
+}
+
+/*intellisense(win.ui.ctrl)
+custom = 自定义控件演示类
+custom() = !winform.
+end intellisense*/

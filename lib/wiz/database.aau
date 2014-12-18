@@ -1,0 +1,117 @@
+import com;
+import util.metaProperty; 
+namespace wiz;
+
+class database{
+	ctor( /*输入构造函数所需要的参数*/ ){
+		this._objDatabase = ..com.CreateObject("WizKMCore.WizDatabase")
+	};
+	@_metaProperty;
+}
+
+namespace database {  
+
+  _metaProperty = ..util.metaProperty( 
+	  
+		get = function(k){
+			return owner._objDatabase[k]
+		};
+		set = function(k,v){
+			owner._objDatabase[k] = v;
+		};
+	)
+}
+
+/**intellisense()
+wiz.database() = 创建数据库对象\n!WizDatabase.
+end intellisense**/
+
+/**intellisense(!WizDatabase)
+Open("__") =  打开一个数据库。\nstrDatabasePath：指定一个数据库文件夹路径，文件夹必须包含index.db文件 \n参数可以传入一个空字符串
+Close() = 关闭数据库
+DatabasePath = 获得数据库路径。
+Folders = 获得数据库文件夹集合。类型为IWizFolderCollection\n!IWizFolderCollection.
+TagGroups = 获得标签组集合，类型为IWizTagGroupCollection\nIWizTagGroupCollection.
+Tags = 获得所有标签集合，类型为IWizTagCollection\nIWizTagCollection.
+Styles = 获得所有样式集合，类型为IWizStyleCollection\nIWizStyleCollection.
+Attachments =  获得所有附件集合，类型为IWizDocumentAttachmentCollection\nIWizDocumentAttachmentCollection.
+Metas = 获得所有用户数据库Meta集合，类型为IWizMetaCollection\nIWizMetaCollection. 
+MetasByName(.(strMetaName) = 通过meta的名称，获得所有名称为bstrMetaName的meta集合 
+Meta(.("strMetaName","MetaKey","strVal") = 指定参数三则设置一个值,否则获取一个值
+DeletedItemsFolde =  获得已删除文件夹。类型为IWizFolder\n!IWizFolder.
+CreateRootFolder(.("strFolderName",bSync) = 创建一个根文件夹\nstrFolderName：文件夹名称\nbSync：是否同步\n返回值：创建成功的文件夹对象。类型为IWizFolder
+CreateRootFolder() = !IWizFolder.
+CreateRootFolder2(.("strFolderName",bSync,"strIconFileName") = 创建一个根文件夹\nstrFolderName：文件夹名称\nbSync：是否同步\n返回值：创建成功的文件夹对象。类型为IWizFolder
+CreateRootFolder2() = !IWizFolder.
+CreateTagGroup(.(strTagGroupName, strTagGroupDescription) = 创建一个标签组。bstrTagGroupName：标签组名称；bstrTagGroupDescription：标签组描述；返回值：成功创建的标签组对象，类型为IWizTagGroup
+CreateStyle(.(strName, strDescription, nTextColor, nBackColor, bTextBold, nFlagIndex) = 创建一个样式。bstrName：样式名称；bstrDescription：样式描述；nTextColor：文字颜色(RGB)；nBackColor：背景色；vbTextBold：文字是否粗体；nFlagIndex：旗帜索引，保留；返回成功创建的样式对象。
+TagGroupFromGUID(.(strTagGroupGUID) = 通过标签组GUID获得标签组对象
+TagFromGUID(.(strTagGUID) = 通过标签GUID获得标签对象
+StyleFromGUID(.(strStyleGUID) = 通过样式GUID获得样式对象
+DocumentFromGUID(.(strDocumentGUID) = 通过文档GUID获得文档对象
+DocumentsFromSQL(.(strSQLWhere) = 通过SQL获得文档集合。您可以指定一个SQL语句查询条件，来获得文档列表。bstrWhere：sql 语句where后面的部分，例如 DOCUMENT_TITLE like ‘%我的文档%’；返回：IWizDocumentCollection
+DocumentsFromTags(.(pTagCollectionDisp) = 获得所有具有指定标签的文档集合。pTagCollectionDisp：标签对象，类型必须是IWizTag；返回：IWizDocumentCollection
+AttachmentFromGUID(.(strAttachmentGUID) = 通过附件GUID获得附件对象
+GetObjectsByTime(.(dtTime, strObjectType) = 获得一个修改时间在指定时间之后的对象列表。dtTime：指定的时间；bstrObjectType：对象类型，可能的值为：tag_group, tag, style, attachment, document, deleted_guid；返回值为：IWizXXXCollection
+GetModifiedObjects(.(strObjectType) = 获得自从上次同步后的对象的列表。bstrObjectType：对象类型，可能的值为：tag_group, tag, style, attachment, document, deleted_guid；返回值为：IWizXXXCollection
+CreateTagGroupEx(.(strGUID, strName, strDescription, dtModified,  nVersion) = 直接创建一个TagGroup。需要指定所有的信息。
+CreateTagEx(.(strGUID, strGroupGUID, strName, strDescription, dtModified,  nVersion) = 直接创建一个Tag。需要指定所有的信息。
+CreateStyleEx(.(strGUID, strName, strDescription, nTextColor, nBackColor, bTextBold, nFlagIndex, dtModified,  nVersion) = 直接创建一个Style。需要指定所有的信息。
+CreateDocumentEx(.(strGUID, strTitle, strLocation, strName, strSEO, strURL, strAuthor, strKeywords, strType, strOwner, strFileType, strStyleGUID, dtCreated, dtModified, dtAccessed, nIconIndex, nSync, nProtected, nReadCount, nAttachmentCount, nIndexed, dtInfoModified, strInfoMD5, dtDataModified, strDataMD5, dtParamModified, strParamMD5, vTagGUIDs, vParams, pDataStream,  nVersion) = 直接创建一个Document。需要指定所有的信息。
+CreateDocumentAttachmentEx(.(strGUID, strDocumentGUID, strName, strURL, strDescription, dtInfoModified, strInfoMD5, dtDataModified, strDataMD5, pDataStream,  nVersion) = 直接创建一个Attachment。需要指定所有的信息。
+UpdateTagGroupEx(.(strGUID, strName, strDescription, dtModified,  nVersion) = 更新一个TagGroup
+UpdateTagEx(.(strGUID, strGroupGUID, strName, strDescription, dtModified,  nVersion) = 更新一个Tag
+UpdateStyleEx(.(strGUID, strName, strDescription, nTextColor, nBackColor, bTextBold, nFlagIndex, dtModified,  nVersion) = 更新一个Style
+UpdateDocumentEx(.(strGUID, strTitle, strLocation, strName, strSEO, strURL, strAuthor, strKeywords, strType, strOwner, strFileType, strStyleGUID, dtCreated, dtModified, dtAccessed, nIconIndex, nSync, nProtected, nReadCount, nAttachmentCount, nIndexed, dtInfoModified, strInfoMD5, dtDataModified, strDataMD5, dtParamModified, strParamMD5, vTagGUIDs, vParams, pDataStream,  nVersion, nParts) = 更新一个Document
+UpdateDocumentAttachmentEx(.(strGUID, strDocumentGUID, strName, strURL, strDescription, dtInfoModified, strInfoMD5, dtDataModified, strDataMD5, pDataStream,  nVersion, nParts) = 更新一个Attachment
+DeleteObject(.(strGUID, strType, dtDeleted) = 删除一个对象，而不是移动到回收站里面：bstrGUID：对象的GUID；bstrType：对象类型，可能的值为：tag_group, tag, style, attachment, document, deleted_guid；dtDeleted：删除日期
+ObjectExists(.(strGUID, strType) = 判断一个对象是否存在。bstrGUID：对象的GUID；bstrType：对象类型，可能的值为：tag_group, tag, style, attachment, document, deleted_guid；返回值：对象是否存在
+SearchDocuments(.(strKeywords, nFlags, pFolderDisp, nMaxResults) = 搜索文档。bstrKeywords：搜索关键字；nFlags：搜索选项，可以是一个或者多个下面的属性：\nwizSearchDocumentsIncludeSubFolders = 0×01，包含子文件夹\nwizSearchDocumentsFullTextSearchWindows=0×02，使用Windows Search进行全文检索\nwizSearchDocumentsFullTextSearchGoogle=0×04，使用Google Desktop进行全文检索\npFolderDisp：所在的文件夹。可以为null，表示搜索整个数据库\nnMaxResults：返回结果最大数量\n返回值：IWizDocumentCollection
+EmptyDeletedItems()= 清空回收站
+BeginUpdate() = 开始更新数据库。如果大批量更新数据库，可以使用BeginUpdate/EndUpdate锁定数据库，这样可以避免程序界面频繁刷新。
+EndUpdate() = 停止更新
+GetRecentDocuments(.(strDocumentType, nCount)= 获得最近修改的文档。bstrDocumentType：文档类型，例如document, note等等；nCount：返回的文档数量；返回值：IWizDocumentCollection
+GetCalendarEvents(.(dtStart, dtEnd) = 获得具有日历事件的文档。dtStart：开始时间；dtEnd：结束时间；返回值：IWizDocumentCollection
+GetFolderByLocation(.(strLocation, bCreate, [out,retval] IDispatch** ppFolderDisp) = 通过location获得一个文件夹对象。bstrLocation：文件夹location，格式为/abc/def/；vbCreate：是否自动创建这个文件夹。
+GetTagByName(.(strTagName, bCreate, strTagGroupNameForCreate) = 通过tag的名称，来获得相应的tag。bstrTagName：tag名称；vbCreate：如果tag不存在，是否创建；bstrTagGroupNameForCreate：如果tag不存在，而且需要自动创建，则新建的tag所在的tag group名称。
+GetTagGroupByName(.(strTagGroupName, bCreate) = 通过tag group名称，来获得相应的tag group。bstrTagGroupName：tag group名称；vbCreate：是否创建
+GetAllDocuments([out,retval] IDispatch** ppDocumentCollectionDisp) = 获得所有的文档
+IsModified([out,retval] VARIANT_BOOL* pvbModified) = 获得数据库自从上次同步后，是否进行了修改。
+BackupIndex() = 备份数据库索引（index.db）
+BackupAll(.(strDestPath) = 备份所有的数据，打包所有的数据为zip文件。bstrDestPath：备份后的文件所在的文件夹。
+FileNameToDocument(.(strFileName) = 通过一个ziw文件名（完整路径名），来获得相应的文档对象。
+GetVirtualFolders([out,retval] VARIANT* pvVirtualFolderNames) = 获得所有的虚拟文件夹，这是一个安全数组。元素类型为字符串
+GetVirtualFolderDocuments(.(strVirtualFolderName) = 获得虚拟文件夹所包含的文档。bstrVirtualFolderName：虚拟文件夹名称
+GetVirtualFolderIcon(.(strVirtualFolderName, [out,retval] BSTR* pbstrIconFileName) = 获得虚拟文件夹的图标文件。bstrVirtualFolderName：虚拟文件夹名称；pbstrIconFileName：图标文件名
+GetAllFoldersDocumentCount(.(nFlags, [out,retval] VARIANT* pvDocumentCount) = 获得各个文件夹文档数量
+DocumentsFromURL(.(strURL) = 通过文档URL来查询相同URL文档集合。返回值：IWizDocumentCollection
+DocumentCustomGetModified(.(strDocumentLocation, strDocumentCustomID, [out,retval] DATE* pdtCustomModified) = 获得文档自定义的修改时间。bstrDocumentLocation：文档所在的位置；bstrDocumentCustomID：文档自定义ID
+DocumentCustomUpdate(.(strDocumentLocation, strTitle, strDocumentCustomID, strDocumentURL, dtCustomModified, strHtmlFileName, bAllowOverwrite, nUpdateDocumentFlags) = 自动更新文档。bstrDocumentLocation：文档所在的位置；bstrTitle：文档标题；bstrDocumentCustomID：文档自定义ID；bstrDocumentURL：文档URL；dtCustomModified：文档自定义修改时间；bstrHtmlFileName：文档html文件；vbAllowOverwrite：是否允许覆盖已经存在的文档（根据bstrDocumentCustomID查询是否已经存在相应的文档）；nUpdateDocumentFlags：更新文档选项。
+EnableDocumentIndexing(.(bEnable) = 设置是否启用文档全文索引功能
+GetTodoDocument(.(dtDate) = 获得todo list对象的文档
+GetCalendarEvents2(.(dtStart, dtEnd)= 获得日历中的事件
+GetKnownTagGroupName(.(strTagGroupName)= 获得系统标签组。（通过标签组的名称，会进行本地化）
+SQLQuery(.(strSQL, strOptions; = 执行一个SQL查询，返回一个IWizRowset数据集
+SQLExecute(.(strSQL, strOptions) = 执行一个SQL更新操作（insert update delete）
+GetAllTagsDocumentCount(.(nFlags, [out,retval] VARIANT* pvDocumentCount) = 获得标签对应的文档数量
+AddZiwFile(.(nFlags, strZiwFileName) = 直接添加一个ziw文件作为文档。这个ziw文件必须在数据库目录下面，而且不在数据库中索引中存在。
+Open2(.(strDatabasePath, strPassword, nFlags) = 打开数据库
+ChangePassword(.(strOldPassword, strPassword)= 更改数据库密码
+PasswordFlags() = 密码属性
+PasswordFlags(.(newVal)  = 修改密码属性
+UserName() = 当前数据库对应的wizkm的用户名
+UserName(.(newVal) = 修改用户名
+GetEncryptedPassword() = 获得密码，该密码被加密 
+GetUserPassword() = 获得用户输入的密码
+SetCert(.(strN, stre, strEcnryptedd, strHint, nFlags,  nWindowHandle) = 设置证书到数据库
+GetCertN() = 获得证书的N 
+GetCerte() = 获得证书的e 
+GetEncryptedCertd() = 获得证书的d，被加密
+GetCertHint() = 获得证书密码的提示信息
+InitCertFromServer(.( nWindowHandle) = 从服务器初始化证书（如果用户曾经将证书备份到服务器）
+CertPassword() = 证书密码 
+CertPassword(.(newVal) = 修改证书密码
+AllDocumentsTitle() = 获得所有的文档标题
+DocumentsFromTitle(.(strTitle, nFlags)= 通过文档标题查询文档
+DocumentsFromTagGroup(.(pTagGroupDisp) = 通过标签组查询文档
+end intellisense**/

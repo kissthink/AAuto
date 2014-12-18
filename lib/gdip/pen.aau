@@ -1,0 +1,209 @@
+//pen 画务
+import gdip.core;
+namespace gdip;
+
+class pen {
+
+	ctor( color,width,unit ){ 
+		if( unit === null ) unit = 2/*_GdipUnitPixel*/;
+		
+		var err,handle;
+		if( type(color) == type.number ){
+		    err,handle = gdip.CreatePen1(color,width,unit);
+		}
+		elseif(width!==null) {
+			err,handle = gdip.CreatePen2(color,width,unit);
+		}
+		
+		
+		if(err) return null,gdip.errMsg[err]; 
+		this.pPen = handle; 
+		
+		..table.gc(this,"delete");
+	}
+
+	@_metaProperty//元表指向属性表
+}
+
+namespace pen {
+
+	self.gdip = ..gdip;
+	var gdip = gdip; 
+	
+	_metaProperty = ..util.metaProperty(  
+		
+		width = {
+			_get = function(){ 
+				var e,w = gdip.GetPenWidth(owner[["pPen"]])
+				if(e) return null,gdip.errMsg[e]; 
+				return w; 
+			} 
+			_set = function(v){ 
+				gdip.SetPenWidth(owner[["pPen"]], v)
+			}  	
+		};  
+		unit = {
+			_get = function(){ 
+				var e,w = gdip.GetPenUnit(owner[["pPen"]])
+				if(e) return null,gdip.errMsg[e]; 
+				return w; 
+			} 
+			_set = function(v){ 
+				gdip.SetPenUnit(owner[["pPen"]], v)
+			}  	
+		}; 
+		color = {
+			_get = function(){ 
+				var e,w = gdip.GetPenColor(owner[["pPen"]])
+				if(e) return null,gdip.errMsg[e]; 
+				return w; 
+			} 
+			_set = function(v){ 
+				gdip.SetPenColor(owner[["pPen"]], v)
+			}  	
+		};
+		dashStyle = {
+			_get = function(){ 
+				var e,w = gdip.GetPenMode(owner[["pPen"]])
+				if(e) return null,gdip.errMsg[e]; 
+				return w; 
+			} 
+			_set = function(v){ 
+				gdip.SetPenMode(owner[["pPen"]], v)
+			}  	
+		}; 
+		startCap = {
+			_get = function(){ 
+				var e,w = gdip.GetPenStartCap(owner[["pPen"]])
+				if(e) return null,gdip.errMsg[e]; 
+				return w; 
+			} 
+			_set = function(v){ 
+				gdip.SetPenStartCap(owner[["pPen"]], v)
+			}  	
+		}; 
+		endCap = {
+			_get = function(){ 
+				var e,w = gdip.GetPenEndCap(owner[["pPen"]])
+				if(e) return null,gdip.errMsg[e]; 
+				return w; 
+			} 
+			_set = function(v){ 
+				gdip.SetPenEndCap(owner[["pPen"]], v)
+			}  	
+		}; 
+		dashCap = {
+			_get = function(){ 
+				var e,w = gdip.GetPenDashCap(owner[["pPen"]])
+				if(e) return null,gdip.errMsg[e]; 
+				return w; 
+			} 
+			_set = function(v){ 
+				gdip.SetPenDashCap(owner[["pPen"]], v)
+			}  	
+		};
+		dashOffset = {
+			_get = function(){ 
+				var e,w = gdip.GetPenDashOffset(owner[["pPen"]])
+				if(e) return null,gdip.errMsg[e]; 
+				return w; 
+			} 
+			_set = function(v){ 
+				gdip.SetPenDashOffset(owner[["pPen"]], v)
+			}  	
+		}; 
+		lineJoin = {
+			_get = function(){ 
+				var e,w = gdip.GetPenLineJoin(owner[["pPen"]])
+				if(e) return null,gdip.errMsg[e]; 
+				return w; 
+			} 
+			_set = function(v){ 
+				gdip.SetPenLineJoin(owner[["pPen"]], v)
+			}  	
+		}; 
+		miterLimit = {
+			_get = function(){ 
+				var e,w = gdip.GetPenMiterLimit(owner[["pPen"]])
+				if(e) return null,gdip.errMsg[e]; 
+				return w; 
+			} 
+			_set = function(v){ 
+				gdip.SetPenMiterLimit(owner[["pPen"]], v)
+			}  	
+		}; 
+		getFillType = function(){ 
+			var e,w = gdip.GetPenFillType(owner[["pPen"]])
+			if(e) return null,gdip.errMsg[e]; 
+			return w; 
+		}
+		clone = function(){ 
+			var e,p = gdip.ClonePen(owner[["pPen"]])
+			if(e) return null,gdip.errMsg[e]; 
+			return ..table.gc( { pPen = p; @owner@ },"delete" ) 
+		} 
+		delete = function(){
+			if( owner[["pPen"]] ){
+				gdip.DeletePen(owner[["pPen"]])
+				owner[["pPen"]] = null;
+			}
+		} 
+		_topointer = function(){
+			return owner[["pPen"]];
+		}
+	)  
+}
+
+var $ = _dll;  
+//http://msdn.microsoft.com/en-us/library/windows/desktop/ms534049(v=vs.85).aspx
+/*intellisense(gdip)*/
+CreatePen1 = $.api("GdipCreatePen1","int(int color,float Width,int unit,pointer& pen)")
+CreatePen2 = $.api("GdipCreatePen2","int(PTR brush,float Width,int unit,pointer& pen)")
+ClonePen = $.api("GdipClonePen","int(PTR pen,ptr& clonepen)")
+DeletePen = $.api("GdipDeletePen","int(PTR pen)")
+
+SetPenWidth = $.api("GdipSetPenWidth","int(PTR pen,float Width)")
+GetPenWidth = $.api("GdipGetPenWidth","int(PTR pen,float& Width)")
+SetPenUnit = $.api("GdipSetPenUnit","int(PTR pen,int unit)")
+GetPenUnit = $.api("GdipGetPenUnit","int(PTR pen,int& unit)")
+SetPenColor = $.api("GdipSetPenColor","int(PTR pen,int argb)")
+GetPenColor = $.api("GdipGetPenColor","int(PTR pen,int& argb)")
+GetPenDashStyle = $.api("GdipGetPenDashStyle","int(PTR pen,INT& dStyle)")
+SetPenDashStyle = $.api("GdipSetPenDashStyle","int(PTR pen,INT dStyle)")
+SetPenMode = $.api("GdipSetPenMode","int(PTR pen,int penMode)")
+GetPenMode = $.api("GdipGetPenMode","int(PTR pen,int& penMode)")
+SetPenStartCap = $.api("GdipSetPenStartCap","int(PTR pen,int startCap)")
+GetPenStartCap = $.api("GdipGetPenStartCap","int(PTR pen,int& startCap)")
+SetPenEndCap = $.api("GdipSetPenEndCap","int(PTR pen,int endCap)")
+GetPenEndCap = $.api("GdipGetPenEndCap","int(PTR pen,int& endCap)")
+SetPenDashCap = $.api("GdipSetPenDashCap197819","int(PTR pen,int dcap)")
+GetPenDashCap = $.api("GdipGetPenDashCap197819","int(PTR pen,int& dcap)")
+GetPenFillType = $.api("GdipGetPenFillType","int(PTR pen,int& ptype)")
+SetPenLineJoin = $.api("GdipSetPenLineJoin","int(PTR pen,int lnJoin)")
+GetPenLineJoin = $.api("GdipGetPenLineJoin","int(PTR pen,int& lnJoin)")
+SetPenMiterLimit = $.api("GdipSetPenMiterLimit","int(PTR pen,float miterLimit)")
+GetPenMiterLimit = $.api("GdipGetPenMiterLimit","int(PTR pen,float& miterLimit)")
+GetPenDashOffset = $.api("GdipGetPenDashOffset","int(PTR pen,float& Offset)")
+SetPenDashOffset = $.api("GdipSetPenDashOffset","int(PTR pen,float Offset)")
+/*end intellisense*/
+ 
+/**intellisense()
+gdip.pen = 画笔
+gdip.pen(.(颜色值,宽度,单位) = 创建单色画笔\n单位默认为像素
+gdip.pen(.(笔刷,宽度,单位) = 创建画笔\n单位默认为像素
+!gdip_pen.color = 颜色
+!gdip_pen.unit = 单位
+!gdip_pen.width = 宽度
+!gdip_pen.dashStyle = _GdipDashStyle__/*虚线样式*/
+!gdip_pen.startCap = _GdipLineCap__/*起点笔帽*/
+!gdip_pen.endCap = _GdipLineCap__/*终端笔帽*/
+!gdip_pen.dashCap = _GdipLineCap__/*虚线笔帽*/
+!gdip_pen.lineJoin = _GdipLineJoin__/*线条连接样式*/
+!gdip_pen.miterLimit = 斜率限制
+!gdip_pen.dashOffset = 虚线偏移
+!gdip_pen.getFillType() = 填充类型
+!gdip_pen.color = 获取或修改画笔颜色
+!gdip_pen.delete() = 释放画笔对象
+!gdip_pen.clone() = 复制画笔对象
+gdip.pen()= !gdip_pen.
+end intellisense**/

@@ -1,0 +1,28 @@
+import fsys;
+io.open()
+
+path = fsys.joinpath(io._exedir,"Config\intellisense\kernel.txt")
+
+//打开文件
+file = io.open(path);
+
+//移动文件指针到尾部
+file.seek("end") 
+
+//读取最后一行
+io.print( file.readback() )
+
+//读取倒数第二行
+io.print( file.readback() )
+
+//读取倒数第三行
+io.print( file.readback() )
+
+//再向前读取10个字节
+io.print( file.readback(10) )
+
+//向前读取到文件头部第二个字符
+//io.print( file.readback(-2) ) 
+
+execute("pause") //按任意键继续
+io.close();//关闭控制台

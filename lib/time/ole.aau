@@ -1,0 +1,93 @@
+//ole 时间对象
+namespace time; 
+ 
+class ole {
+    ctor( value, ... ) begin
+        var tm;   
+        if(type(value)==type.number){  
+        	tm = ..time( , ... );
+            if(! VariantTimeToSystemTime( value ,tm)  ) return;
+        }
+        else {
+        	tm = ..time( value, ... )
+        	var re,n = SystemTimeToVariantTime(tm,0)
+        	VariantTimeToSystemTime(n,tm) 
+        }
+        
+        if(tm.format="%c") tm.format="%m/%d/%Y %H:%M:%S"
+        elseif(tm.format="!%c") tm.format="!%m/%d/%Y %H:%M:%S"
+        ..table.mixin(this,tm) //丢弃元表
+    end; 
+    
+    @_meta
+}
+
+namespace ole{
+
+	now = function(){
+		return ..time.ole();
+	}
+	 
+	_meta =  ..table.mix( { 
+		_get =  _meta;
+		_type = "time.ole.datetime";
+		_eq = function(b) {
+			return tonumber(owner) == tonumber(b)
+		};  
+    	_le = function(b) {
+			return tonumber(owner) <= tonumber(b)
+		} ; 
+		_lt = function(b) { 
+			return tonumber(owner) < tonumber(b)
+		};
+		addday = function(span){
+			return owner._fromnumber( tonumber(owner)+span )
+		} 
+		addhour = function(span){
+			return owner._fromnumber( ( tonumber(owner)*24 + span)/24 )
+		} 
+		addminute = function(span){
+			return owner._fromnumber( ( tonumber(owner)*1440 + span)/1440 )
+		} 
+		addsecond = function(span){
+			return owner._fromnumber( ( tonumber(owner)*86400 + span)/86400 )
+		}
+		update = function(){
+			return owner._fromnumber(   tonumber(owner) );
+		}
+		diffhour  = function(tm2){
+			return (tonumber(owner) -tonumber(tm2))  /24
+		} 
+		diffminute = function(tm2){
+			return (tonumber(owner) -tonumber(tm2)) /1440
+		} 
+		diffsecond= function(tm2){
+		   return (tonumber(owner) -tonumber(tm2))  /86400
+		}
+		diffday = function(tm2){
+			return (tonumber(owner) -tonumber(tm2))  
+		}
+		_fromnumber = function(n){
+			VariantTimeToSystemTime(n,owner);
+			return owner;
+		};
+		_tonumber = function(){
+			var tm = owner.local(true) : owner;
+        	var re,n = SystemTimeToVariantTime(tm,0)
+        	return n;
+    	}; 
+    	
+	},..time._meta);
+	 
+    oleaut32 = ..raw.loadDll("oleaut32.dll")
+    VariantTimeToSystemTime= oleaut32.api("VariantTimeToSystemTime","bool(double vtime,struct& lpSystemTime)");
+    SystemTimeToVariantTime= oleaut32.api("SystemTimeToVariantTime","bool(struct lpSystemTime,double&pvtime)");  
+}
+
+/*intellisense()
+time.ole(.(__,"%Y/%m/%d %H:%M:%S") = 参数一可以是表示时间的数值、字符串、参数表、或time,time.ole 对象\n第二个参数指定格式化串,首字符为!表示GMT时间\n返回datetime对象
+?time.ole =!time.
+time.ole() = !time.
+time.ole.now() = !time.
+time.ole = 数值运算支持从100年1月1日到9999年12月31日的日期\n字符串格式化支持从1980年1月1日到2107年12月31日的日期
+end intellisense*/

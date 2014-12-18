@@ -1,0 +1,231 @@
+//Web资源地址嗅探器
+//Web资源地址嗅探器//用于捕获上网浏览或观看网上影音资源时真实HTTP地址的捕获
+
+/************************************
+作者		: roking
+日期		: 2010年4月30日
+版本		: V20100627 
+描述		: 用于捕获上网浏览或观看网上影音资源时真实HTTP地址的捕获
+************************************/
+import win; 
+import win.ui; 
+import win.ui.menu;
+import com.picture;
+import fsys.dlg;
+import inet.url;
+
+_ver ="20100430";  //版本号
+dict = {}; 	//用于去重的字典
+filters = {count=0};   //资源类型过滤器，用于同设置窗口传递设置数据
+isCapturing = false;   //是否正在捕获
+timerId = null;    //计时器ID
+ 
+
+threadsniff = function( ){/* URL捕获线程函数定义 */
+    import wsock.sniff; 
+ 	for(sockdata in wsock.sniff()) {
+ 		
+		if(thread.get("stop")){
+			io.print("线程退出...");
+			sockdata.sniff.close(); //关闭抓包
+	    }
+		else if(sockdata.ok && sockdata.tcpheader)  { 
+  		    httpdata = wsock.decodeHttpPack( sockdata.tcpdata );
+			if(httpdata.method == "GET" && httpdata.url) { 
+				thread.set("buffer",thread.get("buffer") ++ httpdata.url ++ '\n');   //捕获到的url存入共享缓冲区
+  		    }  
+		}		
+	} 
+}
+/*DSG{{*/
+var frmMain = win.form(parent=...; bgcolor=16777215;bottom=336;right=648;border="dialog frame";exmode="";text="Web资源地址嗅探器";style=0;cls="AFORM" )
+frmMain.add( 
+btnClear={ bgcolor=15790320;bottom=82;color=0;text="清空(&C)";left=554;top=56;tabstop=1;right=637;z=1;cls="button" };
+btnExport={ bgcolor=15790320;bottom=115;color=0;right=637;left=554;top=89;tabstop=1;text="导出列表";z=2;cls="button" };
+lstUrl={ vscroll=1;bgcolor=16777215;bottom=320;color=0;text="listbox";left=8;z=3;top=24;tabstop=1;right=544;
+items={  };edge=1;cls="listbox" };
+btnSetting={ bgcolor=15790320;bottom=148;color=0;text="设置(&O)";left=554;top=122;tabstop=1;right=637;z=4;cls="button" };
+static={ bottom=22;color=0;text="URL列表(双击列表项弹出操作菜单):";left=8;top=8;tabstop=1;right=236;transparent=1;z=5;cls="static" };
+btnStart={ bgcolor=15790320;bottom=50;color=0;text="开始(&S)";left=554;top=24;tabstop=1;right=637;z=6;cls="button" };
+btnAbout={ bgcolor=15790320;bottom=180;color=0;right=637;left=554;top=154;tabstop=1;text="关于(&A)";z=7;cls="button" }
+)
+/*}}*/
+
+import win.clip;
+import process;
+
+frmMain.popmenu = win.ui.popmenu(frmMain);//创建弹出菜单
+frmMain.popmenu.add('在浏览器中打开(&B)',function(id){
+	process.execute( frmMain.lstUrl.selText); 
+});
+frmMain.popmenu.add();//分隔线
+frmMain.popmenu.add('复制URL到剪贴板(&C)',function(id){
+	win.clip.write(frmMain.lstUrl.selText);
+});
+
+import mouse;
+frmMain.lstUrl.oncommand = function(id,event){
+	if(event==2){
+		var x,y = mouse.getPos();
+		frmMain.popmenu.popup(x,y,true);
+	}
+}
+
+frmMain.btnAbout.oncommand = function(id,event){/* 关于...*/
+	about =  '        Web资源地址嗅探器 Ver ' ++ _ver ++ '\n';
+	about += /*****
+	
+		by roking
+
+使用“快手AAuto(www.ecranesoft.com)”开发
+	*****/
+	win.msgbox(about,"关于...");
+}
+
+frmMain.btnExport.oncommand = function(id,event){/* 导出Url列表 */
+	var str = "";
+	for(k,v in dict){
+		str += k ++ '\r\n';
+	}
+	var filename =  fsys.dlg.save("列表文件|*.lst|列表文件|*.lst||","保存URL列表文件" )
+	if(filename){
+		if(string.lower(string.right(filename,4))!=".lst"){
+			filename+= ".lst";
+		}
+		string.save( filename,str);
+	}
+}
+
+frmMain.btnClear.oncommand = function(id,event){/* 清空列表 */
+	frmMain.lstUrl.clear();
+	dict = {};
+}
+
+frmMain.btnStart.oncommand = function(id,event){/* 开始/暂停捕获 */
+	isCapturing = !isCapturing;
+	frmMain.btnStart.text = isCapturing?"停止(&S)":"开始(&S)";
+	
+	frmMain.btnSetting.disabled = isCapturing;
+	frmMain.btnAbout.disabled = isCapturing;
+	//frmMain.btnRemoveDup.disabled = isCapturing;	
+	frmMain.btnExport.disabled = isCapturing;
+	
+	if(isCapturing){	//正在捕获
+		thread.set("buffer","");	//清空共享缓冲区
+		thread.set("stop",false);	//设置线程停止标志false
+
+		thread.resume(thread.create(threadsniff));   //创建并启动捕获线程
+		io.print("启动捕获线程...");
+		
+		frmMain.addtimer(1000,function(hwnd,msg,id,time){	//主窗体添加计时器，用于更新处理界面上的url列表
+			var buffer = thread.get("buffer");		//读共享缓冲区中的捕获内容
+			thread.set("buffer","");	//清空缓冲区
+			
+			buffer = string.trimright(buffer,'\n');
+			var t = string.split(buffer,'\n');
+			
+			for(k,v in t){ 
+				var turl = inet.url.split(v)
+				if(!turl)continue ; ;
+				
+				var tpath = io.splitpath(turl.path)
+				var ext = tpath.ext ;//资源扩展名
+				
+				if((filters.count==0 || (ext && filters[string.lower(string.sub(ext,2))])) && !dict[v]){		//使用设置的目标过滤器过滤捕获的url并进行去重处理
+					frmMain.lstUrl.add(v);
+					dict[v]=true;	//以url为键设置字典项，用于去重复
+				}
+			}
+			timerId = id;	//记录计时器ID，用于停止捕获时关闭计时器
+		});
+	}
+	else{	//停止捕获
+		thread.set("stop",true);	//设置停止标志以使线捕获线程结束
+		frmMain.killtimer(timerId);		//删除计时器
+		io.print("停止捕获线程...");
+	}
+}
+
+frmMain.btnSetting.oncommand = function(id,event){/* 设置*/ 
+	
+ 
+	    /*子窗口{{*/
+		var frmSetting = win.form( bgcolor=15790320;bottom=158;text="捕获资源类型设置";border="dialog frame";exmode="";right=495;mode="popup";title="web资源地址嗅探器 设置";)
+		frmSetting.add( 
+		btnOK={bgcolor=15790320;bottom=137;color=0;right=221;left=142;top=111;tabstop=1;z=0;text="确定";cls="button" };
+		optTypeCommon={bgcolor=15790320;bottom=45;color=0;right=115;left=30;top=28;z=1;text="常见类型:";tabstop=1;cls="radiobutton" };
+		static={bgcolor=15790320;bottom=107;color=0;right=426;left=125;top=90;z=2;text="自定义中以“/”分隔多个类型扩展名";tabstop=1;cls="static" };
+		txtType={bgcolor=16777215;bottom=80;color=0;text="";left=126;top=57;tabstop=1;right=424;z=3;edge=1;cls="edit" };
+		optTypeOther={bgcolor=15790320;bottom=78;color=0;right=115;left=30;checked=1;top=57;z=4;text="自定义:";tabstop=1;cls="radiobutton" };
+		btnCancel={bgcolor=15790320;bottom=137;color=0;right=322;left=243;top=111;tabstop=1;z=5;text="取消";cls="button" };
+		cbType={disabled=1;color=0;right=424;left=126;mode="dropdownlist";cls="combobox";bottom=44;text="combobox";bgcolor=15790320;
+		items={ "视频(flv/avi/mp4/mov/mpeg/rm/rmvb/wmv/3gp/asf)";"音频(wav/mp3/ogg/wma/ape/aac/ac3/rma)";"页面内容(swf/jpg/jpeg/gif/png)";"文件(rar/zip/iso/7z/exe/msi/cab)" };z=6;top=24;edge=1;tabstop=1 }
+		)
+		/*}}*/
+
+		frmSetting.btnOK.oncommand = function(id,event){
+			filters = {count=0};	//用于同主窗口传递设置数据
+			if(frmSetting.optTypeCommon.checked){
+				frmSetting.txtType.text = string.match(frmSetting.cbType.text,"\((.+)\)");
+			}
+			var filterString = string.trim(frmSetting.txtType.text,'/');
+			t = string.split(filterString,"/");
+			for(i=1;#t){
+				filters[string.lower(t[i])] = true;
+			}
+			filters.count = #t;
+		
+			frmSetting.close();
+		}
+		
+		frmSetting.optTypeOther.oncommand = function(id,event){
+			frmSetting.cbType.disabled = true;
+			frmSetting.txtType.disabled = false;
+			win.setFocus( frmSetting.txtType.hwnd )  
+		}
+		
+		frmSetting.optTypeCommon.oncommand = function(id,event){
+			frmSetting.cbType.disabled = false;
+			frmSetting.txtType.disabled = true;
+			frmSetting.cbType.selectIndex = 0;
+			frmSetting.txtType.text = "";
+		}
+		
+		
+		frmSetting.btnCancel.oncommand = function(id,event){
+			frmSetting.close();
+		}
+		
+		var rectFormMain = frmMain.getRect(); 
+	 
+		var currentFilters = "";
+		for(k,v in filters){
+			if(k!="count"){
+				currentFilters += k + "/";
+			}
+		}
+		currentFilters = string.trimright(currentFilters,"/");
+		frmSetting.txtType.text = currentFilters;
+		
+		
+		frmSetting.doModal(frmMain)
+		 
+	 
+}
+
+frmMain.wndproc = function(hwnd,message,wParam,lParam){
+	select(message) {	//判断消息类型
+		case 0x10/*_WM_CLOSE*/	//窗口关闭消息
+		{
+			if(!thread.get("stop")){
+				win.msgbox("请先停止捕获之后再退出程序!","提示");
+				return wParam;
+			}
+		}
+	}
+}
+
+//io.open();     //查看调试信息时去掉此句前的注释
+thread.set("stop",true);
+frmMain.show(true); 
+win.loopMessage( frmMain );

@@ -1,0 +1,68 @@
+//table 表函数扩展
+namespace util.table;
+
+var pop = ..table.pop;	
+var push = ..table.push;
+var escape = ..string.escape;
+var math = ..string.match;
+var next = ..table.next;
+var eachName = ..table.eachName;
+var mixin = ..table.mixin;
+var join = ..string.join;
+
+var stringfyValue, stringifyTable;
+stringfyValue = function(v,keys,ts){
+	var tv = type(v);
+	if( tv == "table" ){
+		if( ! ts[[v]] ){
+			ts[[v]] = true;
+			if( v@ ? v@._tostring ) {
+				v = tostring(v);
+				tv = "string";
+			}
+			else{
+				return stringifyTable(v,keys,"",ts);
+			}
+		}
+	}
+	
+	select(tv) {
+		case "string" {
+			var v,q = escape(v);
+			return q + v + q;
+		}
+		case "number","boolean"{
+			return tostring(v);
+		}  
+	}	 
+}  
+stringifyTable = function(t,keys,line='\n',ts){
+	if( t@ ? t@._tostring ) return tostring(t);
+	
+	if( ! next(t) ) return "{}";
+ 	var s = { "{";line };
+	for k,v in eachName(t, ,keys ? mixin({},keys) ){
+		if( ! ( math(k,"^[\a_]\w*$")  || math(k,"^:+\w*$") ) ){
+			k,q = escape(k);
+			k = "[" + q + k + q + "]"
+		}
+		v = stringfyValue(v,keys,ts);
+		if(v){  push( s,k,"=",v,";",line); }
+	}
+	for(i=1;#t;1){ 
+		push( s,stringfyValue(t[i],keys,ts),";",line);
+	}
+	
+	if( s[#s-1] == ";" ) pop(s,2);
+	push( s,line,"}");
+	
+	return join(s);
+}
+stringify = function(t,line,keys){ 
+	return stringifyTable(t,keys,line?'\n':'',{t});
+}
+
+/**intellisense(util.table)
+stringify( = 将表中的字面值转换为代码文本格式\n仅转换文本、数值、布尔值、表对象\n如果表定义了tostring元方法、则转换为字符串\n忽略其他类型,忽略递归引用的表
+stringify(.(表对象,字段是否换行,默认排序表) = 默认排序表为可选参数,指定一个键名排序数组\n不在默认排序表中的名字按默认字典序排序输出
+end intellisense**/

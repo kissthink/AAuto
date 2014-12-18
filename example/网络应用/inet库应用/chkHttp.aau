@@ -1,0 +1,49 @@
+//HTTP状态码检测(301重定向检测)工具
+import fsys;
+import inet.whttp;
+import process;
+import win.ui;
+/*DSG{{*/
+var winform = ..win.form( bottom=167;parent=...;right=447;text="HTTP状态码检测(301重定向检测)工具 -  AAuto" )
+winform.add( 
+editUrl={ text="http://www.1he.net";bottom=31;right=320;left=43;multiline=1;top=9;z=1;edge=1;cls="edit" };
+btnCheck={ bottom=32;right=388;left=326;top=6;z=2;text="检测";cls="button" };
+richedit={ bottom=158;vscroll=1;color=0;wrap=1;left=12;multiline=1;top=39;font=LOGFONT( name='Microsoft Sans Serif' );link=1;z=3;right=437;hscroll=1;edge=1;cls="richedit" }
+)
+/*}}*/
+
+import inet.httpStatusCode; 
+winform.btnCheck.oncommand = function(id,event){
+
+	//禁用按钮,避免重复点击
+	winform.btnCheck.disabled = true;
+	winform.richedit.text = "请稍候,正在连接......."
+	
+	//创建whttp对象
+	var url = winform.editUrl.text;
+	var whttp = inet.whttp();
+	
+	if(! whttp.beginRequest( url,"HEAD" ) ) {
+		winform.btnCheck.disabled = false; 
+		winform.richedit.text = "无效的请求";
+		return;
+	}
+	whttp.disableRedirects();
+	
+	//读取HTTP状态码
+	whttp.send() 
+	
+	if(whttp.statusCode){ 
+		winform.richedit.text = string.concat( "返回状态码：", whttp.statusCode + '\r\n' 
+			, inet.httpStatusCode[whttp.statusCode] ,'\r\n',whttp.readHeader() );
+	}
+	else {
+		winform.richedit.text = "无效的请求";
+	}
+	
+	whttp.close();
+	winform.btnCheck.disabled = false; 
+}
+
+winform.show() 
+win.loopMessage();

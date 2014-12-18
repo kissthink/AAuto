@@ -1,0 +1,79 @@
+//.. ¼ôÌù°å²Ù×÷
+import win;
+
+namespace win.clip;
+
+/*intellisense(win.clip)*/ 
+OpenClipboard  = ::User32.api("OpenClipboard","int(addr hwnd)" ) ;
+EmptyClipboard = User32.api("EmptyClipboard","int()" ) ;
+GetClipboardData = User32.api("GetClipboardData","pointer (int)" ) ;
+SetClipboardData = User32.api("SetClipboardData","pointer(int wFormat ,pointer hMem )" ) ;
+CloseClipboard = User32.api("CloseClipboard","int()" ) 
+RegisterClipboardFormat = ::User32.api("RegisterClipboardFormat","INT(str format)")
+/*end intellisense*/
+
+read = function(format){ 
+	var txt;
+	if(!OpenClipboard(0))
+		return;	
+
+	if( format === null ) format = 1/*_CF_TEXT*/
+	var hClip =  GetClipboardData(format);
+	if(hClip){
+		var p = ::GlobalLock(hClip)
+		if(p){
+			txt = ..raw.tostring( p )
+			::GlobalUnlock(hClip)
+		}
+	} 
+	CloseClipboard();  
+
+	return txt;
+}
+write = function(str,format){ 
+	if(!OpenClipboard(0))
+		return;	
+			
+	EmptyClipboard();
+		
+	str = tostring(str);
+	var clipbuffer = ::GlobalAlloc(0x2000/*_GMEM_DDESHARE*/, #str + 1);
+    var buffer =  ::GlobalLock(clipbuffer);
+    
+    ::CopyMemory(buffer,str,#str); 
+	::GlobalUnlock(clipbuffer);
+
+	if( format === null ) format = 1/*_CF_TEXT*/
+	var hdl =  SetClipboardData(format,clipbuffer);
+	CloseClipboard();
+	return hdl;
+	 
+}
+writeBitmap = function(hBmp){ 
+	if(!OpenClipboard(0))
+		return;	
+			
+	EmptyClipboard();  
+	var hdl =  SetClipboardData (0x2/*_CF_BITMAP*/,::CopyImage(hBmp,0x0/*_IMAGE_BITMAP*/,0,0,0x4/*_LR_COPYRETURNORG*/) )
+	CloseClipboard();
+	return hdl;
+	 
+}
+readBitmap = function(){ 
+	if(!OpenClipboard(0))
+		return;	
+
+	var hBmp = GetClipboardData(0x2/*_CF_BITMAP*/)   
+	//if(hBmp)
+		//hBmp = CopyImage(hBmp,0x0/*_IMAGE_BITMAP*/,0,0,0x4/*_LR_COPYRETURNORG*/);
+		
+	CloseClipboard();  
+	return hBmp;
+}
+
+/**intellisense(win.clip)
+read() = ¶ÁÈ¡¼ôÌù°åÎÄ±¾
+write(__) = Ð´ÈëÎÄ±¾µ½¼ôÌù°å
+writeBitmap(__/*Î»Í¼¾ä±ú*/) = Ð´ÈëÎ»Í¼µ½¼ôÌù°å
+readBitmap() = ¶ÁÈ¡¼ôÌù°åÎ»Í¼¾ä±ú
+end intellisense**/

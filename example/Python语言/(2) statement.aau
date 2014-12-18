@@ -1,0 +1,76 @@
+//2) 语句
+import console;
+console.open();
+ 
+import py; 
+pyCode = /***
+ 
+print( """
+	python中使用换行分隔语句.
+	虽然也支持用分号分隔语句,但不被推荐.
+	而AAuto大多时候忽略换行,并提倡使用分号分隔.
+	与python一样,分号也是可以忽略的
+	
+	python中使用缩进个语句块,在不是象AAuto那样使用大括号标明语句块
+	使用相同的缩进并对齐表示语句属于相同的语句块.
+	
+	同一语句块的缩进必须完全一致,而不仅仅是外观一致.
+	一个tab与四个空格不被认为是相同的缩进,也不认为是同一语句块.
+	所以你要很小心,不然报错是家常便饭，早年这种特性被认为是一个出色的优点，现如今是python被诟病最多的一个特性。
+""" )
+
+#if语句
+i = 3
+if( i < 3 ): #这类语句块总会以一个冒号开始，你可以把他想象成AAuto中的 { 符号
+	print("i小于3")
+elif i < 4: #在aauto中应当写 elseif, 或者 else if 也可以，可以看出python的语法是极力求短，能少打一个字就少打一个字
+    pass
+else:
+    print("i大于等于3")
+ 
+# 注意python里很多关键字都是首字符大写的，而aauto关键字基本全是小写
+if True: #AAuto里是true,注意是小写
+    print 'Yes, it is true'
+    
+#如果 if语句后面的语句块只有一行，那么可以省略缩进换行直接写到一行
+if True: print 'Yes, it is true' #这类似于AAuto中if等语句后面如果只有一句则可以省略表示语句块的{}是一样的
+    
+#其他控制语句大同小异, 
+#注意以缩进表示语句块,并以冒号开始一个语句块
+#AAuto则以传统的大括号标明语句块
+i = 0
+while i <= 3: 
+    i += 1
+    print( i ) 
+else: #可以添加一个循环语句在循环后执行,当然这个else写不写其实没有区别，AAuto循环语句里也没有这个
+    print '循环已结束' 
+
+#python里没有计数循环，只能用range函数生成一个列表来模拟。
+for i in range(1, 17):
+    print i
+else:
+    print '循环已结束' 
+***/
+
+//运行python代码
+py.exec( pyCode )
+
+//aauto 的流程控制语句与python大同小异，要注意aauto中的while语句有多种格式
+
+var i = 2;
+while( i< 5 ){ //传统的用法
+	i++;
+	console.log("aauto-while  循环",i) 	
+}
+
+while( 
+    var i,j = 0,0;//这部份可以省略，或者放到while语句前面
+    i++; //在循环以前执行
+    i < 10 //循环条件
+) {
+	console.log("aauto-while-var 循环",i) 	
+}
+
+for(i=1;17;1){
+	console.log("aauto-for 循环",i) 
+}

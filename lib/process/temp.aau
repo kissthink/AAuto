@@ -1,0 +1,64 @@
+//temp 自删进程
+import fsys;
+import process; 
+import thread.event;
+import process.mutex;
+import process.file;
+import fsys.mmap;
+import win;
+namespace process.temp;
+
+create = function(uFileName,main){ 
+	if( type(uFileName) != type.string || !..fsys.path.validName(uFileName) ) {
+		error("参数@1必须是合法的文件名",2);
+	}
+	
+	if( type(main) != type.function ) {
+		error("参数@2必须是回调函数",2);
+	}
+	if( _STUDIO_INVOKED ){
+			..io.open()
+			..io.print("请发布后测试该程序")
+			return;
+		}
+	
+	var mmap = ..fsys.mmap(,uFileName+".data",1024); 
+	var evtBoot =  ..thread.event(uFileName+".boot")
+	var eventLock;
+	
+	if( !evtBoot.conflict ){ 
+		var tmpUnistPath = ..fsys.getTempDir();
+		tmpUnistPath = ..fsys.joinpath(tmpUnistPath,uFileName);
+		..fsys.copy( ..io._exepath, tmpUnistPath ); 
+		
+		mmap.writeTable({  pidParent = ..process.getId();argv=_ARGV;srcExe = ..io._exepath  } )  
+		var prcs =	..process( tmpUnistPath
+			,_CMDLINE
+			,{ waitInputTimeout = 0;creationFlag = 0x8/*_DETACHED_PROCESS*/; }
+			);  
+			
+		prcs.free(); 
+		evtBoot.wait();//等待临时进程启动 
+		return ; 
+	}else {
+		var singleton =  ..thread.event(uFileName+".singleton")
+			if( singleton.conflict ) return; 
+	} 
+	
+	var startInfo = mmap.readTable(); 
+	var prcsParent = pidParent ? ..process(startInfo.pidParent); 
+	
+	evtBoot.set();//通知父进程自己已打开
+	if( prcsParent ){  
+		prcsParent.wait(); //等待父进程关闭
+		prcsParent.free(); //释放父进程句柄
+		sleep(10); //等待进程资源彻底释放
+	} 
+	
+	main( startInfo.srcExe, startInfo.argv );
+}
+
+/**intellisense()
+process.temp = 创建可删除自身的临时进程\n可用于卸载更新辅助程序 
+process.temp.create(临时进程文件名,启动函数) = @.create( "__/*应用程序文件名*/-uninstall.exe",\n	function( srcExe,srcArgv ){\n		\n\n		process.file.delete(srcExe); \n	}\n)
+end intellisense**/

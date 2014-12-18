@@ -1,0 +1,18 @@
+//FLASHÍ¸Ã÷¿Ø¼þ
+import win.ui;
+/*DSG{{*/
+var winform = ..win.form(text="åÆÃ÷FLASH";right=562;bottom=355;border="dialog frame";parent=...)
+winform.add(
+button={cls="button";text="button";left=296;top=238;right=488;bottom=301;z=2};
+combobox={cls="combobox";left=76;top=51;right=229;bottom=77;edge=1;items={};mode="dropdown";z=3};
+edit={cls="edit";text="edit";left=82;top=99;right=493;bottom=222;edge=1;multiline=1;z=4};
+flashWnd={cls="custom";text="custom";left=-29;top=147;right=354;bottom=380;autosize=1;center=1;db=1;dl=1;edge=1;transparent=1;z=1}
+)
+/*}}*/
+
+import win.flashBox;
+var flash = win.flashBox( winform.flashWnd );
+flash.movie = "http://update.aau.cn/aauto/samples/transparent.swf";
+
+winform.show(); 
+win.loopMessage(); 

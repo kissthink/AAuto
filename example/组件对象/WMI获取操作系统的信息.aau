@@ -1,0 +1,66 @@
+
+//WMI获取操作系统的信息
+/************************************
+
+Author                : fyy6330
+Time                  : 4,17, 2010
+Version               : V 0.1
+Description           : WMI获取操作系统的信息
+************************************/
+io.open()
+import com
+strComputer = "."
+objWMIService = com.GetObject("winmgmts:{impersonationLevel=Impersonate}!\\" + strComputer + "\root\cimv2")
+colItems = objWMIService.ExecQuery("select * from Win32_NetworkAdapterConfiguration where IPEnabled=true",null,48)
+OS = objWMIService.ExecQuery("Select * from Win32_OperatingSystem")
+if(colItems){
+for index, item in com.each(colItems) {
+        io.print(item.Description())//网     卡
+        io.print(item.DefaultIPGateway(0))//默认网关：
+        io.print(item.DNSHostName(0))//计算机名
+        io.print(item.IPAddress(0))//I   P地址
+        io.print(item.DNSServerSearchOrder(0))//默认 DNS
+       // io.print(item.DNSServerSearchOrder(1))//备用 DNS
+        io.print(item.IPSubnet(0))//子网掩码
+        io.print(item.MACAddress())//M AC地址         
+    }
+ }
+ 
+ for index, o in com.each(OS) {
+   io.print(o.Caption())//操作系统
+   io.print(o.Version())//版本
+ }
+ 
+ wmi=com.GetObject("winmgmts:{impersonationLevel=Impersonate}!\\")
+ board=wmi.instancesof("win32_baseboard") 
+ 
+  for index, bd in com.each(board) {
+  io.print(bd.Manufacturer())//主板
+   io.print(bd.product())//
+ }
+ 
+ cpus=wmi.instancesof("win32_processor")
+ for index, cpu in com.each(cpus) {
+  io.print(cpu.deviceid())//CPU
+   io.print(cpu.name())//
+ }
+ 
+ mem=wmi.instancesof("win32_physicalmemory")
+ 
+ for index, m in com.each(mem) {
+  io.print(m.tag())//内存容量
+   io.print(m.capacity())//
+ }
+
+display=wmi.instancesof("Win32_videocontroller")
+
+ for index, video in com.each(display) {
+
+  io.print(video.deviceid())//显示卡
+   io.print(video.name())//
+ }
+
+disks=wmi.instancesof("win32_diskdrive")
+
+execute("pause") //按任意键继续
+io.close();

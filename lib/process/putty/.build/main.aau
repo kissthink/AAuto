@@ -1,0 +1,12 @@
+import ide;
+import fsys;
+
+var publisDir = ide.getPublisDir();
+if(!#publisDir)return; 
+
+var puttyPubDir =  fsys.joinpath(publisDir,"\lib\process\putty\" ); 
+if( ! io.exist(puttyPubDir) ){ 
+	..fsys.createDir(puttyPubDir);
+	var libPath,libDir = io.libpath("process.putty")
+	..fsys.copy( fsys.joinpath(libDir,"\.res") ,puttyPubDir,0x10/*_FOF_NOCONFIRMATION*/  | 0x200/*_FOF_NOCONFIRMMKDIR*/); 
+}

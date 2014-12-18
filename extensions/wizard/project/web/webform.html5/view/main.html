@@ -1,0 +1,118 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+<!-- html5,css3,canvas begin{{ --> 
+<meta http-equiv="X-UA-Compatible" content="IE=11" />
+<!--[if lt IE 9]> 
+	<script type="text/javascript" src="html5/PIE.js"></script> 
+	<script type="text/javascript" src="html5/html5shiv.js"></script> 
+	<script type="text/javascript" src="html5/excanvas.compiled.js"></script>
+	<script type="text/javascript" src="html5/es5-shim.min.js"></script>
+<![endif]--> 
+<!-- html5,css3,canvas end}} -->  
+<script data-main="js/main" src="js/require.js"></script>
+
+<title>CSS3,HTML5 </title>
+
+<style>
+.tabBox .tabs {
+    margin: 0;
+    padding: 0 10px;
+    overflow: hidden;
+    margin-bottom: -1px;
+    height: 2.25em;
+}
+
+.tabBox .tabs li {
+    float: left;
+    list-style: none;
+    margin: 0;
+    padding: .25em .25em 0;
+    height: 2em;
+    overflow: hidden;
+    position: relative;
+    z-index: 1;
+    border-bottom: 1px solid #FFF;
+}
+
+.tabBox .tabs li.selected {
+    z-index: 3;
+}
+ 
+.tabBox .tabs a {
+    float: left;
+    height: 2em;
+    line-height: 2em; 
+    border-radius: 8px 8px 0 0;
+    background: #EEE;
+    border: 1px solid #CCC;
+    border-bottom: 0;
+    padding: 0 10px;
+    color: #000;
+    text-decoration: none;
+    behavior: url(html5/PIE.htc);
+}
+
+.tabBox .tabs .selected a {
+    background: #FFF; 
+    box-shadow: #CCC 0 0 .25em;
+}
+
+.tabBox .tabs a:hover { 
+    background: linear-gradient(#EEF, #FFF 70%);
+    -pie-background: linear-gradient(#EEF, #FFF 70%);
+}
+
+.tabBox .content {
+    clear: left;
+    position: relative;
+    z-index: 2;
+    padding: 2em 1em;
+    border: 1px solid #CCC;
+    background: #FFF; 
+    border-radius: 3px; 
+    box-shadow: #CCC 0 0 .25em;
+    behavior: url(html5/PIE.htc);
+}
+
+pre { margin: 0; padding: 1em 0; }
+section { border: 0.5em solid #8C8; margin: 1em; padding: 1em; width:80% ;border-radius: 3px;}
+h1 { margin: 1em 2em; }
+ul { font: bold 1.5em sans-serif; margin: 1em; padding: 0 0 0 1.5em; }
+li { margin: 1em; }
+a { color: #66C; text-decoration: none; }
+
+.pass { color: #090; }
+.fail { color: #F00; }
+@media print {
+	section {
+		border-style: dotted;
+	}
+}
+
+</style>
+ 
+</head>
+
+<body>
+<div class="tabBox">
+    <ul class="tabs">
+        <li class="selected"><a href="#">选项一</a></li>
+        <li><a href="#">选项二</a></li>
+        <li><a href="#">选项三</a></li>
+    </ul>
+    <div class="content">
+	<section>
+		<p> 
+			<a href="javascript:void(0);" onclick="javascript:getSysPath();">
+				调用控制器函数 aauto.getSysPath() </a> 
+		</p>
+		<textarea cols="40" rows="5">main.html 自动绑定aauto用户库中的controller.main </textarea>
+	</section> 
+    </div> 
+</div>
+ 
+</body>
+</html>

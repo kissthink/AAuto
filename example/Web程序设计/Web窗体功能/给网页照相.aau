@@ -1,0 +1,48 @@
+import win.ui;
+import web.form;
+/*DSG{{*/
+var winform = win.form( right=349;text="AAuto Form";bottom=249 )
+winform.add(  )
+/*}}*/
+
+//创建web窗体
+var wb = web.form( winform ,0x8/*_UIFLAG_SCROLL_NO 禁用滚动条*/ );
+wb.noScriptErr = true; 
+
+import gdip;
+import com.interface.IViewObject2;
+
+snap = function(url,filepath,q) {
+    wb.go( url )
+    wb.wait("");
+    
+    var viewObject2 = com.interface.IViewObject2.Query(wb._browser)
+    
+    var  height= wb.body.scrollHeight ;
+    var  width = wb.body.scrollWidth;
+    winform.setPos(0,0,width,height + ::GetSystemMetrics(0x4/*_SM_CYCAPTION窗口标题的高度*/) )
+	win.setPos(wb.hwndEmbedding,0,0,width,height); 
+    
+    var hdc = ::GetDC(winform.hwnd)
+    var hBitmap = ::CreateCompatibleBitmap(hdc , width,  height);  
+    var hBitmapDC = ::CreateCompatibleDC(hdc);  
+    ::SelectObject( hBitmapDC , hBitmap ); 
+    
+    var rc = ::RECT(0,0,width,height);
+    viewObject2.Draw(0x1/*_DVASPECT_CONTENT*/,1, null , {}, hdc,  hBitmapDC,rc,{} ,null,0); 
+    ::ReleaseDC(winform.hwnd, hdc);
+    
+    var bmp = gdip.bitmap(hBitmap,0)
+    bmp.save(filepath,q)    
+}
+
+//将网页转换为图片
+snap("http://www.sohu.com"
+    ,"/websnap.jpg",100/*图像质量*/)
+
+//浏览图片
+import process
+process.explore_select("/websnap.jpg");
+
+//进入消息循环
+win.loopMessage();

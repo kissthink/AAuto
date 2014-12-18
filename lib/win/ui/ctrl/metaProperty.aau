@@ -1,0 +1,537 @@
+//metaProperty 控件公用属性
+import util.metaProperty;
+namespace win.ui.ctrl;
+
+metaProperty = class {
+	ctor( meta ){
+		this = ..util.metaProperty(meta);  
+	};
+	@_metaPrototype;
+} 
+namespace metaProperty { 
+
+	commonProperty = {
+		bgcolor = {
+			_get = function(){
+				return owner[["(bgcolor)"]];
+			}
+			_set = function(v){
+				if( owner[["(bgbrush)"]] ){  
+					::DeleteObject(  owner[["(bgbrush)"]]  );
+		 			owner[["(bgbrush)"]]  = null 
+				} 
+				if( ( type(v) == type.number ) && (v!=-1)) { 
+					owner[["(bgcolor)"]] = v;
+					owner[["(bgbrush)"]] := ::CreateSolidBrush( v );
+				}
+			} 
+		};
+		redraw = function( flag = 0x185/*_RDW_ALLCHILDREN | _RDW_INVALIDATE | _RDW_UPDATENOW  | _RDW_ERASE*/ ) { 
+			if( owner[["initializing"]] ) return;
+			::RedrawWindow(owner[["hwnd"]],{},null,flag);
+ 		};
+ 		setRedraw = function(d){
+ 			::SendMessageInt( owner[["hwnd"]],0xB/*_WM_SETREDRAW*/,d?1:0,0)
+ 		};
+ 		redrawTransparent = function(){ 
+ 			if( owner[["initializing"]] ) return;
+ 			var hParent = ..win.getParent(owner.hwnd); 
+ 			if( hParent ? ( owner[["transparent"]]: ..win.getStyleEx(owner.hwnd,0x20/*_WS_EX_TRANSPARENT*/) ) ){  
+				var rc = ..win.getRect(owner.hwnd);
+				::InvalidateRect( hParent,rc,1 ); 
+				::UpdateWindow( hParent ); 
+				if( ..win.getStyle(hParent,0x2000000/*_WS_CLIPCHILDREN*/) ){
+					::RedrawWindow(owner[["hwnd"]],{},null,0x105 /*_RDW_INVALIDATE | _RDW_UPDATENOW*/ );
+				}
+			}	
+			else {
+				::RedrawWindow(owner[["hwnd"]],{},null,0x185/*_RDW_ALLCHILDREN | _RDW_INVALIDATE | _RDW_UPDATENOW  | _RDW_ERASE*/);
+			} 
+ 		};
+ 		invalidate = function(rc,erase=1){ 
+ 			rc := {} 
+ 			var hwnd = rc.hwnd; 
+ 			if(hwnd)
+ 		    	rc = ..win.getRect(hwnd);
+ 			
+ 			::InvalidateRect(owner.hwnd,rc,erase?1:0); 
+ 		};
+ 		update = function(){
+ 			::UpdateWindow(owner[["hwnd"]])
+ 		};
+ 		capture = { 
+			_set = function( v ){ 
+				if(v)
+					..win.setCapture(owner[["hwnd"]])
+				else 
+					..win.releaseCapture(); 
+			} 	
+		}; 	 
+		text = {
+			_get = function(){ 
+				return ..win.getText( owner[["hwnd"]] );
+			}
+			_set = function(v){
+				..win.setText( owner[["hwnd"]],v !== null ? tostring(v) : "" );  
+				var transParent = owner[["transparent"]];
+				if( transParent === null ){
+					transParent = !!..win.getStyleEx(owner.hwnd,0x20/*_WS_EX_TRANSPARENT*/);
+					owner[["transparent"]] = transParent;
+				}
+				if( transParent ) owner.redrawTransparent();
+			}
+		};
+		hide = {
+			_get = function(){ 
+				return ! ..win.getStyle(owner[["hwnd"]],0x10000000/*_WS_VISIBLE*/ ) 
+			}
+			_set = function(v){ 
+				owner.show(!v ? true:0x0/*_SW_HIDE*/)
+			}
+		
+		};
+		msgbox = function(str,title,style){
+			return ..win.msgbox(str,title,style,owner[["hwnd"]] )
+		};
+		close = function(){ 
+			if(owner._closed or ( !..win.isWindow(owner.hwnd) ) ){
+				owner._closed = true; 
+				return;
+			}
+			var p = owner[["_parentForm"]];
+			if( p  ){
+				p._ctrlHwnd[owner.hwnd]=null;
+				p._ctrlId[owner.id]=null;
+				p._ctrlAutoResize[owner.hwnd]=null;
+				if( ! owner.isForm ){
+					owner._closed = true;//控件窗口不考虑阻止 WM_CLOSE
+					
+					if( owner._onDestroy ) owner._onDestroy();
+					if( owner.onDestroy ) owner.onDestroy();
+					if( owner.bgBrush )::DeleteObject( owner[["bgBrush"]]  );
+				}  
+			}
+			::PostMessage(owner[["hwnd"]],0x10/*_WM_CLOSE*/,0,0);
+		};
+		autoResize = { 
+			_get = function(){
+				return !!owner[["_parentForm"]][["_ctrlAutoResize"]][[owner.hwnd]]
+			} 
+			_set = function(v){ 
+				var p = owner[["_parentForm"]];
+				if( p  ){
+					p._ctrlAutoResize[owner.hwnd] = v?owner:null;
+				} 
+			} 
+		};
+		modifyStyle = function(remove=0,add=0,flags){
+				return ..win.modifyStyle(owner[["hwnd"]],remove,add,flags);
+		}; 
+		modifyStyleEx = function(remove=0,add=0,flags){
+				return ..win.modifyStyleEx(owner[["hwnd"]],remove,add,flags);
+		}; 
+		show = function(flag) {    
+			..win.show(owner[["hwnd"]],flag);
+		};
+		showChildren = function(flag){
+			for hwnd in ..win.eachChild(owner[["hwnd"]]) {
+			    ..win.show(hwnd,flag);
+			}
+		};
+		disabled = {
+			_get = function(){
+				return ..win.getStyle(owner[["hwnd"]],0x8000000/*_WS_DISABLED*/ ) 
+			}
+			_set = function(v){
+				..win.enable(owner[["hwnd"]],!v?1:0);  
+			}
+		
+		};
+		tailWndproc = {
+			_set = function(v){
+				var pre = owner[["wndproc__"]];
+				owner[["wndproc__"]] = null;
+				owner.wndproc = v;
+				if( pre ){
+					owner.wndproc = pre;
+				}
+			};
+		};
+		wndproc = { 
+			//追加式赋值,可赋值为回调函数,或者键为消息ID,值为回调函数的表对象
+			_set = function(v){  
+				if( v === null){
+					owner[["wndproc__"]] = null;
+					return;
+				};
+				
+				var this = owner; 
+				var tv = type(v);
+				if( tv == type.table ){
+					if( owner[["_defaultProc"]] ){
+						..table.mixin( owner[["_defaultProc"]],v );
+						return;
+					}
+					else{
+						owner[["_defaultProc"]] = v;
+						v = function(hwnd,message, wParam, lParam){
+							var proc = this[["_defaultProc"]][message];
+							if(proc)return proc(hwnd,message,wParam,lParam);
+						}  
+					};
+				}
+				elseif( tv != type.function ) 
+					error("消息回调函数必须是一个函数对象!",2) 
+			 		
+				var pre = owner[["wndproc__"]];
+				if( pre ){ 
+					owner[["wndproc__"]] = function(...){
+						var ret = v(...);
+						if( ret!==null )
+							return ret;
+								
+						return pre(...); 
+					}
+					return;
+				} 
+			 	else{
+					owner[["wndproc__"]] = v;
+				}
+			 	
+				//真正的回调函数只能创建一次
+				if(owner[["_wndproc_c"]] )
+					return;
+					  
+				var wndproc = function(hwnd,  message, wParam , lParam){ 
+					if( this[["wndproc__"]] ){
+						var result; 
+						result = this.wndproc__( hwnd,  message, wParam , lParam);
+						if( result !== null ) return result;
+					}
+					return  ::CallWindowProc( this._wndproc_c_prev,  hwnd,message, wParam , lParam ); 
+				}
+				owner[["_wndproc_c"]] = ..raw.tostdcall( wndproc , "addr(addr,INT,ADDR,addr)",owner)
+				owner._wndproc_c_prev =  ::SetWindowPointer(owner[["hwnd"]],0xFFFFFFFC/*_GWL_WNDPROC*/,  owner[["_wndproc_c"]]  ); 
+			};
+			_get = function(){
+				return owner[["wndproc__"]];
+			};
+		};
+		//追加式赋值
+		adjust = {
+			_set = function(v){
+				if( v===null ){
+					owner[["adjust__"]] = null;
+					return;
+				}
+				if(type(v) != type.function ) error("adjust函数必须是一个函数对象!",2) 
+				
+				var pre = owner[["adjust__"]];
+				if( !pre  ){ 
+					owner[["adjust__"]] = v;
+				}
+				else {
+					owner[["adjust__"]] = function(...){
+						var ret = pre(...);
+						if( ret!==null )
+							return ret;
+								
+						return v(...); 
+					} 
+				} 
+			}
+			_get = function(){
+				return owner.__adjust__;
+			} 
+		};
+		__adjust__ = function(cx,cy,wParam){
+			if( cx === null ) _,_,cx,cy = ..win.getPos(owner.hwnd);
+			if( wParam === null ) wParam = 0;
+			if( owner[["_adjust"]] ) owner._adjust(cx,cy,wParam);
+			if( owner[["adjust__"]] ) owner.adjust__(cx,cy,wParam);
+		}; 
+		left = {
+			_get = function(){
+				return ..win.getRect( owner.hwnd ).left; 
+			}
+			_set = function(x2){
+				var x,y,cx,cy = owner.getPos(); 
+				owner.setPos( x2,y,x-x2+cx,cy );
+			} 
+		};
+		right = {
+			_get = function(){
+				return ..win.getRect( owner.hwnd ).right; 
+			}
+			_set = function(v){
+				var x,y,_,cy = owner.getPos(); 
+				owner.setPos( , ,v-x,cy );  
+			}
+		
+		};
+		top = {
+			_get = function(){
+				return ..win.getRect( owner.hwnd ).top; 
+			}
+			_set = function(y2){
+				var x,y,cx,cy = owner.getPos(); 
+				owner.setPos( x,y2,cx,y-y2+cy ); 
+			} 
+		}; 
+		bottom = {
+			_get = function(){
+				return ..win.getRect( owner.hwnd ).bottom;  
+			}
+			_set = function(v){
+				var x,y,cx = owner.getPos(); 
+				owner.setPos( , ,cx,v-y );
+			}
+		}; 
+		height = {
+			_get = function(){
+				var x,y,cx,cy = owner.getPos();
+				return cy;
+			}
+			_set = function(v){
+				var x,y,cx  = owner.getPos() 
+				owner.setPos( , ,cx,v );
+			} 
+		};
+		width = {
+			_get = function(){
+				var x,y,cx = owner.getPos();
+				return cx;
+			}
+			_set = function(v){
+				var x,y,cx,cy = owner.getPos() 
+				owner.setPos( , ,v,cy );
+			} 
+		};
+		getPos = function(){
+			return ..win.getPos(owner.hwnd)
+		};
+		setPos = function(...){  
+			var restoreRatio = owner._savePosRatio();
+			..win.setPos(owner.hwnd,...)
+			
+			if(restoreRatio){
+				restoreRatio();
+				if(owner.adjust){
+					var x,y,cx,cy = owner.getPos();
+					owner.adjust(cx,cy);
+				}
+			} 
+		};
+		center = function(hTarget){
+			var restoreRatio = owner._savePosRatio();
+			..win.center(owner.hwnd,hTarget[["hwnd"]] : hTarget )
+			
+			if(restoreRatio){
+				restoreRatio();
+				if(owner.adjust){
+					var x,y,cx,cy = owner.getPos();
+					owner.adjust(cx,cy);
+				}
+			} 	
+		};
+		getRect = function(screen){ 
+			return ..win.getRect( owner.hwnd,screen );
+		};
+		setRect = function(rc,screen){  
+			var restoreRatio = owner._savePosRatio();
+			..win.setRect(owner.hwnd,rc,screen) 
+			if(restoreRatio){
+				restoreRatio(); 
+				if(owner.adjust){
+					var x,y,cx,cy = owner.getPos();
+					owner.adjust(cx,cy);
+				}
+			} 
+		};
+		getClientRect = function(){
+			return ..win.getClientRect(owner.hwnd)
+		}; 
+		_savePosRatio = function(){ 
+			var defRc = owner[["_defRect"]];
+			if(defRc){ 
+				var this = owner;
+				var rc = this.getRect();
+				if( !  ..win.getStyle(this.hwnd,0x40000000/*_WS_CHILD*/) ){
+					..win.toClientRect(this._parentForm.hwnd,rc)
+				}
+				var xr,tr,rr,br = rc.left?( rc.left / defRc.left),rc.top ? (rc.top / defRc.top) ,rc.right / defRc.right,rc.bottom / defRc.bottom
+				return function(){
+					rc = this.getRect();
+					if( ! ..win.getStyle(this.hwnd,0x40000000/*_WS_CHILD*/) ){
+						..win.toClientRect(this._parentForm.hwnd,rc);
+						this.cacheOrphanWindowRect__ = rc;
+					}
+					defRc.left  = xr?(rc.left / xr); 
+					defRc.top  = tr?(rc.top / tr);
+					defRc.right  = rr?(rc.right / rr);
+					defRc.bottom  = br?(rc.bottom / br);
+				} 
+			}	
+		};
+		getParent = function(){
+			return owner.parent;
+		};
+		setParent = function(parent){
+			if( parent[["hwnd"]] && ( (parent._parentForm == owner._parentForm) || (parent == owner._parentForm) ) ){ 
+				var rc = owner.getRect(true);
+				..win.toScreenRect(owner.parent.hwnd,owner[["_defRect"]] ) 
+				..win.setParent(owner.hwnd,parent[["hwnd"]] );
+				owner.parent = parent;
+				..win.toClientRect(owner.parent.hwnd,owner[["_defRect"]] )  
+				//不要调用owner.setRect(),以避免调用_setPosRatio() 记录错误的相对位置
+				..win.setRect(owner.hwnd,rc,true);
+			}
+			else 
+				error("父窗口必须在同一窗体内!",2);
+		};
+		addCtrl = function(param){
+			if( owner.isForm )
+				return owner.add(param) ; 
+			return owner._parentForm.add(param,owner);
+		};
+		setFocus = function(){
+			..win.setFocus(owner.hwnd)
+		}; 
+		vScroll = function(pos = 0x7/*_SB_BOTTOM*/){ 
+			::SendMessageInt(owner[["hwnd"]],0x115/*_WM_VSCROLL*/ , pos, 0); 
+		};
+		hScroll = function(pos = 0x7/*_SB_RIGHT*/ ){
+			::SendMessageInt(owner[["hwnd"]],0x114/*_WM_HSCROLL*/ , pos, 0);
+		}; 
+		getFont = function(){
+			var font = ..gdi.getFont(owner[["hwnd"]])
+			if(font){
+				font.color = owner.color
+				return font;
+			}
+		};
+		setFont = function(f,own = true ){
+			if(f[["color"]]) owner.color = f.color;
+			var hfont = ..gdi.setFont( owner[["hwnd"]],f ); 
+			
+			if(hfont){
+				if( owner[["transparent"]] && ..win.getParent(owner.hwnd) ) owner.redrawTransparent();
+			 
+				if( own ){
+					if(owner[["(ownFontHandle)"]]){
+						::DeleteObject(owner[["(ownFontHandle)"]]); 
+					}
+					owner[["(ownFontHandle)"]] = hfont;
+					if( f[["handle"]] ){
+						f[["handle"]] = null; 
+					} 
+				}
+				return true; 
+			}
+		};  
+		theme = { 
+			_get = function(){ 
+			}
+			_set = function(v){
+				if(..win.setWindowTheme){
+					if(v === true )
+						v =   "Explorer";
+						
+					var subid = " ";
+					if(v)subid=null;
+						..win.setWindowTheme(owner[["hwnd"]],v:" ",subid); 
+				}
+			}
+		}; 
+		rect = { //废弃
+			_get = function(){ return owner.getRect(); } 
+		};
+		clientRect = { //废弃
+			_get = function(){ return owner.getClientRect() }  
+		};
+		font = { //废弃
+			_get = function(){ return owner.getFont() }
+			_set = function(v){ owner.setFont(v) }
+		}; 
+		messageOnly = function(){
+			..win.setParent( owner.hwnd,-3/*_HWND_MESSAGE*/);
+			owner._messageOnly = true;
+		};
+		isForm = {
+			_get = function(){ return false } 
+		};
+		getForm = function(){
+			return owner._parentForm;
+		};
+		addtimer = function(...){
+			return owner._parentForm.addtimer(...);
+		};
+		killtimer = function(...){
+			return owner._parentForm.killtimer(...);
+		};
+		settimer = function(...){
+			return owner._parentForm.settimer(...);
+		};
+		orphanWindow = function(trans){
+			if( owner._parentForm ){ 
+				if( ! ..win.getStyle(owner.hwnd,0x40000000/*_WS_CHILD*/) ){ 
+					return true;
+				}
+				owner.show(false);
+				var rc = owner.getRect();
+				owner.cacheOrphanWindowRect__ = rc;
+				var x,y = ..win.toScreen(owner._parentForm.hwnd,rc.left,rc.top); 
+				owner.modifyStyle(0x40000000/*_WS_CHILD*/,0x80000000/*_WS_POPUP*/ );
+				..win.setParent(owner.hwnd,0);
+				..win.setOwner(owner.hwnd,owner._parentForm.hwnd);
+				..win.setPos(owner.hwnd,x,y, , ,,0x1C/*_SWP_NOACTIVATE |  _SWP_NOZORDER | _SWP_NOREDRAW*/ );
+				
+				if( trans ) owner.modifyStyleEx(,0x80000/*_WS_EX_LAYERED*/);
+				if( ..win.isVisible(owner._parentForm.hwnd) ){
+					owner.show(true);
+				}
+				return true;
+			}
+		};
+		createEmbed = function(progId,embedObject,connet=true){
+		
+			if(! ..com[["CreateEmbed"]] )
+				error("未导入com支持库!",2);
+				
+			embedObject := {};
+			var ok,err = call(..com.CreateEmbed,, embedObject ,owner,progId );
+			if(!ok) error(err,2)
+			
+			owner._embedObject = embedObject;
+			owner._onDestroy = function(){ 
+				//必须按以下顺序释放资源
+				collectgarbage("collect") 
+				if( ..com.IsObject(embedObject._object) ){
+					..com.ReleaseConnection(embedObject._object); 
+					..com.Release(embedObject._object) 
+				}
+				embedObject._host.close();
+			};
+			
+			owner.translateAccelerator = function(msg){ 
+				return embedObject._host.tranacc(msg)
+			}; 
+			owner.isDialogMessage = function(hwnd,msg){ };
+			owner._adjust = function( cx,cy) {	 
+				embedObject._host.adjust();
+			}; 
+		
+			var sink, cookie = connet ? ..com.Connect(embedObject._object, embedObject )
+			return embedObject,sink,cookie;
+		}
+		
+	};
+	
+	_metaPrototype = { _get = commonProperty  }; 
+}
+
+
+/**intellisense(win.ui.ctrl)
+metaProperty = 属性元表
+metaProperty(__) = @.metaProperty(\n\n	属性 = {\n		_get = function(){ \n			/*读取属性代码写在这里*/\n			return null;\n		}\n		_set = function( v ){\n			/*写入属性代码写在这里*/\n			..io.print( owner,v)\n		} 	\n	};\n)
+end intellisense**/ 

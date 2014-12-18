@@ -1,0 +1,65 @@
+//9) 属性存取器
+
+import console;
+console.open();
+
+import py; 
+pyCode = /***
+
+class C(object):
+    def __init__(self):
+        self.__x = None;
+
+    @property
+    def x(self):
+        return self.__x
+
+    @x.setter
+    def x(self,value):
+        self.__x=value
+
+    @x.deleter
+    def x(self):
+        del self.__x
+
+obj = C();
+obj.x = "test";
+print obj.x;
+
+***/
+py.exec( pyCode ) //运行python代码
+
+//下面是类似的AAuto代码
+//=========================================================
+
+import util.metaProperty;
+
+class c{
+	ctor(){
+		this.x__ = null;//这句可以省略
+	};
+	
+	@_metaProperty; //创建属性表
+}
+
+namespace c {
+
+	_metaProperty = ..util.metaProperty(
+	
+		//aauto中的属性表非常方便,如果有大量的属性字段,这种写法代码可以很清晰
+		x = {
+			_get = function(){  
+				return owner.x__; //属性表里用owner代替this,这里的owner等价于python中的self参数
+			}
+			_set = function( value ){
+				owner.x__ = value;
+			} 	
+		}; 
+	)
+}
+
+obj = c();
+obj.x = "test-aauto";
+io.print( obj.x );
+
+ 

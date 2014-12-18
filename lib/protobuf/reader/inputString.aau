@@ -1,0 +1,43 @@
+
+import protobuf.reader.input;
+namespace protobuf.reader;
+ 
+class inputString {
+	 
+	ctor(str) {
+	
+		this = ..protobuf.reader.input(str);
+		this.str = str;
+		this.length = #str;
+		
+		if(#str)
+			this.pointer = 1;
+	} 
+  
+	next = function( is_string ) {
+		var package = ''; 
+		 
+		while (true) {
+			if (this.pointer > this.length) {
+				return false;
+			}
+  
+			var chr = this.str[ this.pointer ];	 
+		  
+			this.pointer = this.pointer + 1 ;
+		 
+			if ( is_string )
+				return chr;
+
+			var value = ..string.format("%08b",chr );
+			
+			if ( chr >= 2_10000000 && ! is_string ) {
+				package += value; 
+			}
+			else {
+				return this.codecBase128.get_value(package ++ value); 
+			}
+		}		
+	}
+	 
+}  

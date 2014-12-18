@@ -1,0 +1,32 @@
+//QQ2011/2010自动登录 
+import key;
+import winex;
+import process
+import fsys.lnk;
+
+//查找QQ安装路径
+qq  = fsys.lnk.search("qq.exe") or fsys.lnk.search("QQProtect.exe")
+if( ! qq ) error("未安装QQ",2)
+
+//运行qq
+var prcs = process(qq);
+
+//等待QQ窗口创建并激活该窗口,支持QQ2010,QQ2011 中文版,英文版
+qqhwnd,qqnumber,tid,pid = winex.waitActive( "<QQ201>|<QQ Internation>" , ,"TXGuiFoundation","<ATL\:\d+>|<TXEdit>", ,prcs.id/*指定进程ID*/)
+
+//输入QQ号
+winex.say("829056",qqnumber)
+
+//查找密码输入框
+qqpwd = winex.findEx(qqhwnd,1,"Edit")
+
+//按退格20次，清除原来的密码
+key.repeat('\t',20)
+
+//输入密码
+key.send('abc123&^#5')
+
+key.press("ENTER")
+
+//等待登录窗口关闭
+//winex.waitClose( qqhwnd ) 

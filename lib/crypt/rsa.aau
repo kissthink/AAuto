@@ -1,0 +1,40 @@
+//rsa 算法
+import crypt;
+namespace crypt;
+
+class rsa{
+	ctor( provider,provType=0x1/*_PROV_RSA_FULL*/ ){
+		this = ..crypt( provider : "Microsoft Enhanced Cryptographic Provider v1.0",provType)
+		if(!this) return null,..lasterr(,"创建密钥容器");
+		this.allocBuffer(128);
+		
+		this.__genKey = this.genKey;
+	}; 
+	encrypt = function(str,final=true,hHash,flags=0){
+		if( !str ) error("参数@1错误",2);  
+		if(!this.hasKey()) error("未指定正确的密钥",2);
+	
+		var t = {};
+		for(s in this.eachEncrypt(str,117,final,hHash,flags ) ){ 
+			..table.push(t,s);
+		} 
+	
+		if(#t) return ..string.join(t);
+	};
+	decrypt = function(str,final=true,hHash,flags=0){
+		if( !str ) error("参数@1错误",2);
+		if(!this.hasKey()) error("未指定正确的密钥",2);
+	
+		var t = {};
+		for(s in this.eachDecrypt(str,128,final,hHash,flags ) ){ 
+			..table.push(t,s);
+		} 
+	
+		if(#t) return ..string.join(t) 
+	}
+}
+
+/**intellisense()
+crypt.rsa = RSA加密算法支持库
+crypt.rsa() = 创建RSA加密容器\n!crypt.
+end intellisense**/

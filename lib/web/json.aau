@@ -1,0 +1,320 @@
+//json 编解码
+//Author: namwonsta
+
+namespace web.json
+var push = ..table.push;
+var indexAny = ..string.indexAny;
+var find = ..string.find;
+var sub = ..string.sub;
+var match = ..string.match;
+var replace = ..string.replace;
+var concat = ..string.concat;
+var join = ..string.join;
+var format = ..string.format;
+var repeat = ..string.repeat;
+var fromUnicode = ..string.fromUnicode;
+var toUnicode = ..string.toUnicode;
+
+var scanWhiteSpace = function(s,pos){
+	if(!#s)return;
+	var whiteSpace = '\t \n\r\xA1';//空格不能放在字串起始处
+ 
+	for(i=1;#s){
+	    if( not indexAny(  whiteSpace , s[pos])  )
+	       break;
+	    pos ++;
+	}
+ 
+	return pos;
+}
+
+var scanComment = function(str,pos){ 
+	var endPos = find(str,"*/",pos+2);
+	assert(endPos != null,"Unterminated comment in string at "+pos);
+	return endPos+2;
+}
+ 
+var scanObject = function(str,unescape,pos){ 
+	var object = { @{ _defined = {};_jsonType="object" } };
+	var len = #str;
+	var key,value; 
+	pos++;
+	
+	do{
+		pos = scanWhiteSpace(str,pos);
+			
+		if( str[pos] == ','# || str[pos] == ';'# )
+			pos = scanWhiteSpace(str,pos+1);
+	
+	 	if( str[pos] == '}'# )
+			return object,pos+1;
+			
+	    if(pos > len )error("json格式错误 - 溢出",2)
+	    
+	    //是注释的话跳过
+	    if(str[pos] == '/'# && str[pos+1] == '*'# ){
+	    	pos = scanComment(str,pos);
+	    }
+	    else{	    
+	    	//扫描key
+			key,pos = scanAny(str,unescape,pos,true);
+			if(pos>len || (key===null) )
+				error("json格式错误 - 读取key时溢出" ,2)
+	    	 
+	    	pos = scanWhiteSpace(str,pos);	    
+	    	if( str[pos] != ':'# && str[pos] != '='#)
+	    		error("json格式错误 - 预期':',靠近:" + sub(str,pos,pos+10),2)
+	 
+	    	pos = scanWhiteSpace(str,pos+1);	 
+	    	value,pos = scanAny(str,unescape,pos);
+	    	object[key] = value;  
+	    	..table.push( object@._defined,key );
+	    }
+	}while(true)
+}
+
+var ind=0;
+var scanArray = function(str,unescape,pos){ 
+	var array = { @{_jsonType="array"} }; 
+	var strLen = #str; 	
+	pos ++; 
+	while(pos <= strLen ){
+		pos = scanWhiteSpace(str,pos); 
+		if( str[pos] == ','# || str[pos] == ';'# ){
+			pos = scanWhiteSpace(str,pos+1);
+	    } 
+	    if( str[pos] == ']'# ){ 
+			return array,pos+1;
+		} 
+	    
+	    //是注释的话跳过
+	    if(str[pos] == '/'# && str[pos+1] == '*'# ){
+	    	pos = scanComment(str,pos);
+	    }else{
+	    	object,pos = scanAny(str,unescape,pos); 
+	    	push(array,object);
+	    }
+	} 
+	error("json格式错误 - 溢出",2)
+}
+ 
+
+var scanString = function(str,unescape,pos=1){ 
+ 
+	var startChar = str[pos + 0 /*非数字强制出错*/]; 
+	if(str[pos+1]==startChar)
+		return "",pos+2;
+	var endPos=pos+1;   
+	var chr;
+	var escaped;
+	for(i=pos+1;#str;1){ 
+		chr = str[i] 
+		if(chr=='\\'#){ 
+			if(str[i+1]<0x80){ i++;escaped=true; };
+		}
+		elseif(chr==startChar){ 
+			break;
+		}
+		elseif(chr>0x80){ 
+			i++;
+		}
+		
+		endPos = i;
+	}
+	var s = sub(str,pos+1,endPos);
+	if( escaped ? unescape ){
+		s = decodeString(s);
+	} 
+	
+	return s,endPos+2;
+}
+
+var consts = {
+	["true"] = true;
+	["false"] = false; 
+	["null"] = null;
+};  
+
+var scanConstant = function(str,pos,isKey){ 
+	if(str[pos]==','#)
+		return null,pos;
+	 
+	var nextStr = sub(str,pos); 	
+	var n,l = tonumber( nextStr );
+    if(n!==null) return n,pos+l;
+	
+    var token = match(nextStr,"^[_$\a]\w*");
+    if( token ){ 
+    	if( isKey ) return token,pos+#token;
+    	
+    	var const = consts[token];  
+    	if( const===null && token!="null" ){ 
+    		return token,pos+#token;
+    	}
+    		
+    	return const,pos+#token; 
+    }  
+    
+	error("json格式错误 - 常量"+sub(str,pos),3)
+}
+ 
+decodeString = function(s){
+	if( !find(s,":") ){ //不允许混用编码与非编码宽字符
+		s = replace( s, "<\\u\x\x\x\x>+", 
+    		function(u){
+        		return fromUnicode( eval("'" + u + "'"))
+    		}
+		)   
+	}
+	
+	return replace(s, '(<:+>|<\\\\[\x01-\x7f]>|.)', { 
+		["\b"] = '\b';
+		["\f"] = '\f';
+		["\n"] = '\n';
+		["\r"] = '\r';
+		["\t"] = '\t';
+		['\\"'] = '"';
+		["\\"] = "\";
+		["\/"] = "/";
+		["\0"] = '\0';
+	} ) 
+} 
+
+var toJsonString = function(v,fm,unicodeEscaped){
+    select(type(v)) {
+    	case type.table {
+        	return stringify(v,fm);
+    	} 
+    	case type.string{ 
+    		v = replace(v, '(<\x80-\xFF.>|.)', { 
+				['\\'] = "\\" ;
+				['"'] = '\\"' ;
+				['\0'] = "\0" ;
+				['\r'] = "\r" ;
+				['\n'] = "\n" ;
+				['\t'] = "\t" ;
+				['\b'] = "\b" ;
+				['\f'] = "\f" ;
+			} ) 
+    	    if( unicodeEscaped ){ 
+    	    	v = replace( v, '(<\x80-\xFF.>+)', 
+    				function(c){ 
+    					return replace( toUnicode(c,,false),"(..)",function(c){
+    						return format("\u%02x%02x", c[2],c[1])
+    					}) 
+    				}
+				)   
+    	    } 
+        	return concat('"',v,'"'); 
+    	} 
+    	else{
+        	return  tostring(v)
+    	}
+    
+    }
+}
+
+var levels = 0;
+var indent = '\32\32\32\32';
+stringify = function(tab,fm,unicodeEscaped) {
+	if( unicodeEscaped === null ) unicodeEscaped = !fm;
+	
+	if( type(tab) != "table" )
+		return ( tostring(tab) ) ;
+	
+	var LFCR = "";
+	var curIndent;
+	if(fm){
+		levels++;
+		LFCR = '\r\n';
+		curIndent = repeat(levels,indent);
+	}
+		
+	var len = #tab;  
+	var jsonType = tab@[["_jsonType"]];
+	if( ( len && (jsonType != "object") ) || jsonType == "array" ){ 
+		var array = {}
+		for(i=1;len ){ 
+			var s = ( fm ? concat( curIndent, toJsonString( tab[i],fm,unicodeEscaped ) ) : toJsonString( tab[i],fm,unicodeEscaped  ) );
+   			push( array, s );
+		} 
+		if(fm){
+			levels--;
+			curIndent = repeat(levels,indent);
+		}
+   		return concat("[", LFCR, join( array, ","+LFCR ), LFCR, curIndent, "]");
+	}
+	
+	var map = {}
+	for k,v in ..table.eachName(tab){ 
+   		push( map
+   			, concat( curIndent, toJsonString( k,fm,unicodeEscaped  ), ":", toJsonString( v,fm,unicodeEscaped  ) )
+   			); 
+	}
+	
+	if(fm){
+		levels--;
+		curIndent = repeat(levels,indent);
+	}
+	return  concat("{", LFCR, join( map, ","+LFCR ), LFCR, curIndent, "}" );
+}
+
+scanAny = function(s,unescape,idx,isKey){
+	var pos = scanWhiteSpace(s,idx); 
+
+    select(s[pos]) {
+    	case '{'#
+       		return scanObject(s,unescape,pos);
+    	case '['#
+    		return scanArray(s,unescape,pos); 
+    	case '\"'#,39 
+    		return scanString(s,unescape,pos);
+    	case '/'#{
+    		if(s[pos+1] == '*'#)
+    			return scanComment(s,pos); 
+    	}
+    	case '('# {
+    		var exp,e = ..string.match(s,"(%())()",pos);
+    		if( exp ) return eval(exp),e + 1;
+    	}
+    }
+    
+    if( idx == 1 ){
+    	var s = ..string.match(s,"^\s*<\a\w*>*\s*\((.+)\)[\s\;]*$"); //JSONP,Js expression
+    	if( s ) return scanAny(s,unescape,idx)
+    }
+
+	return scanConstant(s,pos,isKey);
+}
+
+parse = function(s,unescape=true){ 
+	if( type(s) != "string" ){
+		if(!s) return; error("参数错误",2)
+	}	
+	if( !#s ) return; 
+	if( s[1] == 0xEF  && s[2] == 0xBB && s[3] == 0xBF ){
+		s = ..string.fromto( ..string.right(s,-4) );
+	}
+	elseif( #s%2 == 0 ){
+		if ( s[1] == 0xFF  && s[2] == 0xFE ){
+			s = ..string.fromUnicode( ..string.right(s,-3) );
+		}
+		elseif( s[2] == 0 && s[4] == 0 ) { //RFC4627
+			s = ..string.fromUnicode(s);
+		}
+	}
+	
+	var ok,data,pos = call(scanAny,self,s,unescape,1);
+	if(!ok) error(data,2);
+
+	return data;
+}
+
+encode = stringify;
+decode = parse;
+/**intellisense() 
+web.json.decodeString(__/*json数据*/) = unicode转义串转换为string
+web.json.stringify( = 转换为json文本
+web.json.stringify(.(表对象,是否格式化,是否使用UNICODE编码) = 表对象可在元表_defined字段中预定义可能为null值的键,\n参数@2,@3可选,默认不格式化,启用UNICODE编码\n如果指定格式化,参数@3则默认为false
+web.json.parse(__/*json数据*/) = 使用宽松的JSON语法解析并返回表对象,\n元素分隔符可使用分号或逗号,也可以省略,\n键值分隔符可使用冒号,也可以使用等号,键名可省略引号,\n值置于圆括号中可使用简单的表达式，\n其他错误语法的JSON抛出异常。\n返回对象的元表_defined字段记录了所有已定义的键,\n参数传入空值或空字符串返回空值
+end intellisense**/

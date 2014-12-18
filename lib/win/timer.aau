@@ -1,0 +1,70 @@
+//timer 定时管理器
+import win.ui;
+namespace win;
+
+class timer{
+	ctor( winform,interval = 100 ){
+		if( ! (winform[["hwnd"]] && winform.addtimer) ){
+			winform = ..win.form( {} );
+			winform.messageOnly();
+		}
+		
+		var timeId;
+		var proc = function(...){
+			if(this.onTimer){
+				var ret = this.onTimer(...);
+				if( ret !== null)
+					return ret;
+			} 
+			return interval
+		}  
+	};
+	
+	enable = function(){
+		if( timeId ) return;
+		timeId = winform.addtimer( interval, proc); 
+	};
+	
+	disable = function(){
+		if( timeId ){
+			winform.killtimer(timeId)
+			timeId = null;
+		}
+	}; 
+	
+	getInterval = function(){
+		return interval;
+	}; 
+	
+	setInterval= function(v){
+		if( type(v) != type.number){
+			error("参数必须指定毫妙数的数值.",2)
+		};
+		
+		var needReset = timeId && v <  interval 
+		interval = v;
+		if(needReset){
+			this.disable();
+			this.enable();
+		}
+	};
+	 
+	_getId = function(){
+		return timeId;
+	}; 
+}
+
+/**intellisense()
+win.timer = 定时管理器
+win.timer(.(winform,间隔时间) = 创建定时器\n如果不指定窗体对象,则创建消息窗体\n间隔时间以毫秒为单位,可选参数,默认为100毫秒
+win.timer() = !win_timer.
+?win.timer() = !win_timer.
+!win_timer.onTimer = @.onTimer = function(hwnd,msg,id,tick){
+	__/*设置定时器触发函数*/
+}
+!win_timer.enable() = 启用定时器
+!win_timer.disable() = 禁用定时器
+!win_timer.setInterval(1__) = 修改定时器间隔时间,\n以毫秒为单位
+!win_timer.getInterval() = 读取定时器间隔时间 
+!win_timer._getId() = 返回ID
+end intellisense**/

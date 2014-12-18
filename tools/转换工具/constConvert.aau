@@ -1,0 +1,115 @@
+//WINAPI常量转换工具
+import win.ui;
+/*DSG{{*/
+var winform = ..win.form(text="WINAPI 常量查询转换工具";right=500;bottom=435;parent=...)
+winform.add(
+btnConvert={cls="button";text="转换";left=254;top=378;right=426;bottom=421;db=1;dr=1;z=2};
+editCode={cls="richedit";text="可在下面随意按任意格式输入C语言中表示数值的宏或常量
+该工具可查询常量值，也可以用于转换为适用于AAuto的格式
+
+#define EN_SETFOCUS 0x0100
+#define EN_KILLFOCUS 0x0200
+#define EN_CHANGE 0x0300
+#define EN_UPDATE 0x0400
+#define EN_ERRSPACE 0x0500
+";left=12;top=9;right=484;bottom=332;db=1;dl=1;dr=1;dt=1;edge=1;hscroll=1;multiline=1;vscroll=1;z=1};
+radioComment={cls="radiobutton";text="注释格式";left=134;top=348;right=216;bottom=370;checked=1;db=1;dr=1;z=3};
+radioConst={cls="radiobutton";text="常量声明格式";left=338;top=348;right=441;bottom=370;db=1;dr=1;z=5};
+radioIntell={cls="radiobutton";text="智能提示格式";left=224;top=348;right=327;bottom=370;db=1;dr=1;z=4}
+)
+/*}}*/
+
+template = /****
+
+	#include <stdio.h>
+	#include <stdlib.h> 
+	#include <windows.h>
+	#include <winuser.h> 
+	#include <basetsd.h> 
+	#include <basetyps.h> 
+	#include <winbase.h> 
+	#include <wincon.h> 
+	#include <windef.h> 
+	#include <windows.h> 
+	#include <winerror.h> 
+	#include <wingdi.h> 
+	#include <winnetwk.h> 
+	#include <winnls.h> 
+	#include <winnt.h> 
+	#include <winreg.h> 
+	#include <winsvc.h> 
+	#include <winuser.h> 
+	#include <winver.h> 
+	int getDef (){    
+   		return ${DEF};
+	} 
+
+****/
+
+import tcc;  
+//创建TCC编译器
+
+convert = function( proc ){
+	var tResult = {}
+	 
+	for DEF in string.gmatch( winform.editCode.text,"[_a-zA-Z][\w_]+") { 
+		var vm = tcc( );
+		DEF = string.trimleft(DEF,"_")
+		if(tResult[DEF])
+			continue 
+		tResult[DEF]=true;
+		
+		var code = string.replace(template,"@${DEF}",DEF )
+		try{
+			vm.compile(code);  
+			var getDef_c = vm.getCdecl("getDef","int()")
+			table.push(tResult, proc(getDef_c(),DEF ) ) 
+		}
+		vm.close()
+	} 
+	 
+	return string.join(tResult,'\r\n') 
+}
+ 
+
+winform.btnConvert.oncommand = function(id,event){
+	winform.btnConvert.disabled = true;
+	
+	var str
+	if( winform.radioConst.checked ){
+		str = convert(
+			function(value,name){
+				if( value <= 0 )return string.format("_%s = %d",name,value )
+				return string.format("_%s = 0x%X",name,value )
+			}
+		)
+			
+	}
+	elseif( winform.radioComment.checked ){
+		str = convert(
+			function(value,name){
+				if( value <= 0 )return string.format("%d/*_%s*/",value,name )
+				return string.format("0x%X/*_%s*/",value,name )
+			}
+		) 	
+	}
+	elseif( winform.radioIntell.checked ){
+		str = convert(
+			function(value,name){
+				if( value <= 0 )return string.format("_%s=@%d/*_%s*/",name,value,name )
+				return string.format("_%s=@0x%X/*_%s*/",name,value,name )
+			}
+		) 
+		str ='/**intellisense()\r\n' + str + '\r\nend intellisense**/'	
+	}
+	winform.editCode.text = str;
+	
+	winform.btnConvert.disabled = false;
+}
+
+winform.radioComment.oncommand = winform.btnConvert.oncommand  
+winform.radioConst.oncommand = winform.btnConvert.oncommand  
+winform.radioIntell.oncommand = winform.btnConvert.oncommand 
+
+winform.show() 
+win.loopMessage();

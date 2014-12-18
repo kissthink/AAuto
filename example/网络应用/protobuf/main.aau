@@ -1,0 +1,44 @@
+io.open();//打开控制台
+
+//编译proto文件,生成类库
+import protobuf.parser;
+if(!protobuf.parser)
+	return; 
+
+var p = protobuf.parser();
+p.parseFile("\res\test.proto",,false)
+
+//导入生成的类库
+import AddressBook
+import Person
+ 
+//读取数据文件
+book = AddressBook();
+var str = string.load("\res\test.pb" );
+book.parseFromString(str); 
+  
+io.print("-------------------") 
+//试试
+io.print("book.personLength",book.personLength);  
+io.print("-------------------") 
+person = book.person(1)
+io.print("用户名",person.name );
+io.print(person.id );
+io.print(person.email );
+io.print("电话号码数目",person.phoneLength); 
+ 
+io.print("-------------------") 
+person = book.person(2) 
+io.print("用户名",person.name );
+io.print(person.id );
+io.print(person.email );
+io.print("电话号码数目",person.phoneLength); 
+
+for( i=1;person.phoneLength ){ 
+	io.print(i,person.phone(i).number )
+} 
+io.print("-------------------")  
+
+io.print("请右键点击'工程->用户库',在弹出菜单中点击'刷新目录' ")
+execute("pause") //按任意键继续
+io.close();//关闭控制台

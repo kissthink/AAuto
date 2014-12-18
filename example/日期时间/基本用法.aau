@@ -1,0 +1,47 @@
+io.open();//打开控制台
+
+io.print( time.tick(),"系统运行时间(毫秒数)")
+
+tm = time.now();
+
+tm.year += 2;
+io.print(tm,"增加2年")
+
+tm.addsecond(30)
+io.print(tm,"增加30秒")
+
+tm.addminute(180)
+io.print(tm,"增加180分")
+
+tm.addhour(2)
+io.print(tm,"增加两小时")
+
+tm.addday(365)
+io.print(tm,"增加365天")
+
+tm.addmonth(-24)
+io.print(tm,"倒退24个月")
+
+tm2 = time.now()
+
+io.print( tm2.diffmonth(tm) ,"相差月份")
+io.print( tm2.diffday(tm) ,"相差天数")
+io.print( tm2.diffhour(tm) ,"相差小时数")
+io.print( tm2.diffminute(tm) ,"相差分钟数")
+io.print( tm2.diffsecond(tm) ,"相差秒数")
+io.print( tonumber(tm) - tonumber(tm2) ,"相差秒数,作用同上")
+
+io.print('\n关系运算符，相等、不等')
+io.print( "tm2==tm", tm2 == tm  )
+io.print( "time.now()== time.now()", time.now()== time.now() )
+
+io.print('\n关系运算符，大于、小于')
+io.print( "tm2>tm", tm2 > tm  )
+io.print( "time.now() > time.now()", time.now() > time.now() )
+
+io.print('\n关系运算符，大于等于、小于等于')
+io.print( "tm2 <= tm", tm2 <= tm  )
+io.print( "time.now() <= time.now()", time.now() <= time.now() )
+
+execute("pause","按任意键继续")
+io.close();//关闭控制台

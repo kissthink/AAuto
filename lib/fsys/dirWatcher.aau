@@ -1,0 +1,103 @@
+//dirWatcher 目录监控
+import fsys.file;
+namespace fsys;
+
+class dirWatcher{
+	ctor( dir ){
+		if( ! ..io.exist(dir) )
+			error("请指定正确的目录参数",2);
+			
+		this = ..fsys.file(dir,0x1/*_FILE_LIST_DIRECTORY*/
+			,7/*_FILE_SHARE_READ | _FILE_SHARE_WRITE | _FILE_SHARE_DELETE*/ //允许其他进程删除、重命名该目录下的文件
+			,0x3/*_OPEN_EXISTING*/
+			,0x2000000/*_FILE_FLAG_BACKUP_SEMANTICS*/ );
+		
+		//缓冲区必须32位对齐,不可大于64KB	
+		var buffer = ..raw.malloc(0x10000/*64KB*/); 
+	};
+	readDirectoryChanges = function( flags = 0x5F/*_FILE_NOTIFY_CHANGE_NORMAL_ALL*/,subTree=true){ 
+		var bufLen = #buffer; 
+		var ok,size = ReadDirectoryChangesW( owner.hfile,buffer,bufLen,subTree,flags,0,{} );
+		if( ok ){
+			var offset = 0; 
+			var entry = { 
+				INT NextEntryOffset;
+				INT Action;
+    			INT FileNameLength;
+			}
+			var changes = {}; 
+			var convert = ..raw.convert;
+			var push = ..table.push;
+			do{
+				convert( buffer, entry,offset);  
+				var path = ..raw.tostring(buffer,offset + 13,offset + 12 + entry.FileNameLength );  
+				push(changes,{filename = ..string.fromUnicode(path);action=entry.Action});
+				offset = entry.NextEntryOffset;  
+			}while(offset ? ( offset + 16 < bufLen ) ) 
+			return changes;
+		}  	
+	}; 
+	eachChanges = function( flags = 0x5F/*_FILE_NOTIFY_CHANGE_NORMAL_ALL*/,subTree=true){
+		var shift = ..table.remove; 
+		var changes = this.readDirectoryChanges();
+		var item,action;
+		return function(){
+			var item = shift(changes);
+			if(!item){
+				changes = this.readDirectoryChanges();
+				item =  shift(changes);
+			}
+			action = item.action;
+			return item.filename,action,ACTION_TEXT[action]
+		} 	
+	};
+}
+ 
+namespace dirWatcher{
+	//setprivilege('SeBackupPrivilege',true);
+	//setprivilege('SeRestorePrivilege',true); 
+	ReadDirectoryChangesW = ::Kernel32.api( "ReadDirectoryChangesW", "bool(pointer hDir,pointer buf,INT len,bool subtree,INT filter,INT& bytesRet,  struct overlapped, pointer completionRoutine)");
+ 
+	class FILE_NOTIFY_INFORMATION{
+    	INT NextEntryOffset;
+    	INT Action;
+    	INT FileNameLength;
+	} 
+		
+	class OVERLAPPED {
+    	INT Internal;
+    	INT InternalHigh;
+    	union offset = {
+        	struct Number = {
+            	INT Offset;
+            	INT OffsetHigh;
+            };
+        	pointer Pointer;
+        };
+    	poiter hEvent;
+    } 
+    
+    ACTION_TEXT = {
+		[ 1/*_FILE_ACTION_ADDED*/ ] = "添加文件";
+		[ 2/*_FILE_ACTION_REMOVED*/ ] = "移除文件";
+		[ 3/*_FILE_ACTION_MODIFIED*/ ] = "文件被修改";
+		[ 4/*_FILE_ACTION_RENAMED_OLD_NAME*/ ] = "重命名:原文件名";
+		[ 5/*_FILE_ACTION_RENAMED_NEW_NAME*/ ] = "重命名:新文件名";
+	}	 
+}
+
+/**intellisense()
+fsys.dirWatcher = 目录监控对象
+fsys.dirWatcher("__/*目录路径*/") = 创建目录监控对象
+fsys.dirWatcher() = !dirWatcher.
+!dirWatcher.eachChanges(选项,是否监控子目录) = @for( filename,action,actionText in ??.eachChanges() ){
+	io.print( filename,actionText,action & 0x10/*_FILE_NOTIFY_CHANGE_LAST_WRITE*/ ) 
+}
+!dirWatcher.readDirectoryChanges(.(选项,是否监控子目录) = 读取目录发生的变更\n返回值为数组,数组成员为一个table对象\nfilename字段表明变更的目录,action字段表明变更类型\naction为 _FILE_NOTIFY_CHANGE_ 前缀的常量标志
+
+_FILE_ACTION_ADDED=@1/*_FILE_ACTION_ADDED*/
+_FILE_ACTION_REMOVED=@2/*_FILE_ACTION_REMOVED*/
+_FILE_ACTION_MODIFIED=@3/*_FILE_ACTION_MODIFIED*/
+_FILE_ACTION_RENAMED_OLD_NAME=@4/*_FILE_ACTION_RENAMED_OLD_NAME*/
+_FILE_ACTION_RENAMED_NEW_NAME=@5/*_FILE_ACTION_RENAMED_NEW_NAME*/
+end intellisense**/

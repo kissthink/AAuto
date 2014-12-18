@@ -1,0 +1,49 @@
+//struct 原始结构体
+namespace raw
+
+class struct {
+	ctor( cls ) { 
+		var tcls = type(cls);
+		var struct = class {
+			ctor( ... ){
+				if( tcls = "class"){
+					this[["_object"]] = cls( ... )
+				}
+				else {
+					this[["_object"]] = ..table.mixin({},cls,...);
+				}
+				
+				this[["_struct_cdata"]] = ..raw.malloc(this[["_object"]])
+			};
+			@_meta;
+		}
+		struct._meta =  _meta;
+		return struct;
+	};  
+}
+ 
+namespace struct{
+	var convert = ..raw.convert;
+	var mixin = ..raw.mixin;
+	
+	_meta = {
+		_topointer = function(){  
+			return owner[["_struct_cdata"]]; 
+		}
+		_get = function(k){  
+			var obj = owner[["_object"]]; 
+			convert(owner[["_struct_cdata"]],obj); 
+			return obj[k]
+		}
+		_set = function( k, v ){ 
+			var obj = owner[["_object"]]; 
+			var handle = owner[["_struct_cdata"]];
+			mixin(handle,obj,{[k] = v } ) 
+		} 
+	} 
+} 
+
+/**intellisense()
+raw.struct = 将结构体转换为原始结构体\n原始结构体创建的对象会分配一块固定的内存\n可用于API参数pointer类型实参并自动转换为C指针
+raw.struct(__/*结构体*/) = 分配内存,创建并返回静态类,\n参数可以是定义了静态类型的类(结构体)\n也可以是声明了静态类型的table原型表,\n如果参数是原型表,则会创建一个默认的构造函数\n默认构造函数将接收参数混入原型创建新对象
+end intellisense**/

@@ -1,0 +1,81 @@
+//调用C#程序集 
+import dotNet; 
+import console;
+
+//启动CLR运行时
+var clr,err = dotNet.clr( "v2.0" ); 
+if( !clr ){
+	console.log("当前系统未安装.Net Framework 2.0", err )
+	return;
+}
+
+//创建应用程序域
+var appDomain = clr.createAppDomain();
+
+//引用程序集,注意凡AAuto扩展的接口函数首字母小写,凡C#对象提供的接口函数首字母大写
+var system = appDomain.load("System");
+var CSharpCodeProvider = system.createInstance( "Microsoft.CSharp.CSharpCodeProvider" )
+
+//加载应用程序目录下的程序集( 或 "/bin/" 目录下的程序集 )
+var CSNET2ClassLibrary = appDomain.load("CSNET2ClassLibrary");
+var simpleObject = CSNET2ClassLibrary.createInstance("CSNET2ClassLibrary.CSSimpleObject") 
+
+//直接指定文件路径，资源文件路径，或内存数据加载程序集
+var Interop = appDomain.loadFile($"~/lib/dotNet/.res/AAuto.InteropServices.dll");
+var csProxy = Interop.createInstance("AAuto.InteropServices.CSharp");
+ 
+//加载程序集并创建实例,支持添加多个构造参数
+var CSSimpleObject = appDomain.createInstance( "CSNET2ClassLibrary","CSNET2ClassLibrary.CSSimpleObject");
+console.log( "创建实例并获取值",CSSimpleObject.FloatProperty )
+
+//指定文件路径加载程序集并创建实例
+var CSSimpleObject = appDomain.createInstanceFrom( "/CSNET2ClassLibrary.dll","CSNET2ClassLibrary.CSSimpleObject");
+console.log( "创建实例并获取值",CSSimpleObject.FloatProperty )
+
+//调用类的静态方法
+var ret  = appDomain.invokeStaticMember( 
+    "\CSNET2ClassLibrary.dll" //指定程序集，写路径或程序集名都可以
+    ,"CSNET2ClassLibrary.CSSimpleObject" //类名称
+    ,"GetStringLength" //静态方法名
+    ,"HelloWorld" //支持不定个数参数
+    ); 
+
+io.print( "静态方法返回值",ret )
+
+//卸载应用程序域
+appDomain.unload();
+
+
+/****
+
+\CSNET2ClassLibrary.dll 的 C#源码如下：
+
+namespace CSNET2ClassLibrary
+{
+    using System;
+    using System.Runtime.InteropServices;
+
+    [ComVisible(true), ClassInterface(ClassInterfaceType.AutoDual), IDispatchImpl(IDispatchImplType.InternalImpl)]
+    public class CSSimpleObject
+    {
+        private float fField = 13456.78f;
+
+        public static int GetStringLength(string str)
+        {
+            return str.Length;
+        }
+
+        public float FloatProperty
+        {
+            get
+            {
+                return this.fField;
+            }
+            set
+            {
+                this.fField = value;
+            }
+        }
+    }
+}
+****/

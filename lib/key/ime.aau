@@ -1,0 +1,104 @@
+//ime 输入法
+namespace key.ime{
+	::Imm32 := ..raw.loadDll("Imm32.dll")
+	GetKeyboardLayout = ::User32.api("GetKeyboardLayout","pointer(int idThread)") 
+	GetKeyboardLayoutList = ::User32.api("GetKeyboardLayoutList","int(int nBuff,struct& lpList)")
+	ImmIsIME = ::Imm32.api("ImmIsIME","bool(pointer hKL)")  
+	ImmGetDescription = ::Imm32.api("ImmGetDescriptionA","int(pointer hKL,str &lpsz,int uBufLen)")
+	ActivateKeyboardLayout = ::User32.api("ActivateKeyboardLayout","int(pointer hKL,int flags)")
+	GetKeyboardLayoutName = ::User32.api("GetKeyboardLayoutNameA","bool(str& pwszKLID)")
+	LoadKeyboardLayout = ::User32.api("LoadKeyboardLayoutA","pointer(STRING pwszKLID,int flags)")
+	 
+	getDescription = function(hk){
+		if( ImmIsIME( hk ) ){ 
+			var size = ImmGetDescription(hk, 25, 0)  
+			if(size){
+				var size,str = ImmGetDescription(hk, size, size) 
+				return str;
+			}
+		} 		
+	}
+	
+	getLangId = function(hkl){
+		return tonumber(hkl) & 0xFFFF;
+	}
+	
+	getName = function(hkl){
+		if( type(hkl)!=type.pointer ) 
+			error("参数必须是输入法句柄",2);
+		
+		if(hkl){
+			//activate(hkl,0);
+			return ..string.format("%08X",tonumber(hkl) )
+		};
+		var ok,name = GetKeyboardLayoutName(10) ;
+		if( ok ) return name;
+	}
+
+	getList = function() {
+		var hKbList = { pointer array[25] }
+		var len = GetKeyboardLayoutList(25, hKbList)
+		return ..table.slice( hKbList.array,1,len );
+	}
+	
+	getCurrent = function(threadId = 0 ){
+		return GetKeyboardLayout(threadId);
+	}
+	
+	activate = function(hkl,flag= 0x00000101/*_KLF_SETFORPROCESS | _KLF_ACTIVATE */){
+		if( type(hkl)!=type.pointer ) 
+			error("参数必须是输入法句柄",2);
+			  
+		return ActivateKeyboardLayout(hkl,flag)
+	}
+	
+	loadByName = function(kln,flag = 0x8/*_KLF_REORDER*/){
+		if( type(kln)!=type.string ) 
+			error("参数必须是名称字符串",2);
+			
+		 return LoadKeyboardLayout(kln,flag )
+	}
+	
+	loadActivate = function(kln){ 
+		if( type(kln) == type.pointer ){
+			kln = getName(kln);
+		}
+		
+		if( type(kln)!=type.string ) 
+			error("参数不是有效的输入法句柄或名称",2);
+
+		var hkl = loadByName( kln,0x8/*_KLF_REORDER*/ );
+		activate(hkl);  
+	}
+	 
+	each = function(){ 
+		var i = 1;
+		var keyList = getList();
+		return function(){
+			if( i < #keyList ){
+				hk = keyList[i];i++;
+				return hk,getLangId(hk),getName(hk),getDescription( hk )
+			}
+			
+		};  
+	} 
+}
+
+/**intellisense(key)
+ime = 输入法相关操作
+ime.each() = @for(hKeyboardLayout,langId,name,description in ??.each() ){
+	io.print( id,langId,name,description )__
+}
+ime.loadByName(.("输入法名",选项) = 载入指定的输入法\n参数二可省略,使用 _KLF_ 前缀常量指定选项
+ime.activate(.(输入法句柄,选项) = 激活指定的输入法\n参数二可省略,使用 _KLF_ 前缀常量指定选项
+ime.loadActivate(.("输入法名") = 参数也可以是输入法句柄\n加载并激活指定输入法
+ime.getCurrent(.(线程ID) = 返回当前输入法句柄,\n参数可选,默认参数为当前线程ID
+ime.getName(.(输入法句柄) = 返回输入法名称
+ime.getDescription(.(输入法句柄) = 返回输入法描述
+ime.getLangId(.(输入法句柄) = 返回语言代码
+_WM_INPUTLANGCHANGE=@0x51/*_WM_INPUTLANGCHANGE*/
+end intellisense**/
+
+ 
+
+ 

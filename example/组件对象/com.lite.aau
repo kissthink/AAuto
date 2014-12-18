@@ -1,0 +1,12 @@
+//未注册组件调用
+
+io.open()
+
+import com.lite; 
+var mscomm32;
+try { mscomm32 = com.lite("mscomm32.ocx") } //参数与 raw.loadDLL 相同
+if( !mscomm32 ) error("未找到 mscomm32.ocx ",2)
+
+var comm = mscomm32.createObject("{648A5600-2C6E-101B-82B6-000000000014}"); 
+comm.AboutBox();
+   

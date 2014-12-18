@@ -1,0 +1,49 @@
+//regex 正则表达式
+namespace string;
+
+import com; 
+
+class regex{
+	ctor(pattern){
+		this = ..com.CreateObject("{3F4DACA4-160D-11D2-A8E9-00104B365C9F}")  ;
+		this.Pattern = pattern; 
+		this.global = 1;
+	}; 
+	gmatch = function(str,pattern){
+		if(pattern)
+			this.Pattern = pattern
+			
+		var colMatches = this.Execute(str); 
+		return ..com.each(colMatches)  
+	}
+	find = function(str,pattern){
+		if(pattern)
+			this.Pattern = pattern
+		return this.Test(str);
+	}
+	
+}
+
+
+/**intellisense()
+!regex_match.Value = 匹配结果
+!regex_match.FirstIndex = 位置
+!regex_match.Length = 长度
+!regex_match.SubMatches(__/*索引*/) =  匹配子串(用括号指定的分组)
+!regex.find(__/*目标字符串*/,".+") = 搜索字符串,成功返回true
+!regex.find(__/*目标字符串*/) = 搜索字符串,成功返回true
+!regex.gmatch(str,pattern) = @for i,regex_match in regex.gmatch(__/*要匹配的字符串*/,".+"){
+	
+}
+!regex.gmatch(str) = @for i,regex_match in regex.gmatch(__/*要匹配的字符串*/){
+	
+}
+!regex.gmatch() = !regex_match.
+!regex.replace(.(源字符串,替换字符串) = 替换
+!regex.pattern = 设置或返回用于搜索的正则表达式
+!regex.ignoreCase = 是否忽略大小写
+!regex.global = 是否全局匹配\n只能设为0或1\n默认为1表示启用全局匹配
+?string.regex = !regex.
+string.regex("__/*正则表达式*/") = 创建正则表达式
+string.regex = VBS正则表达式支持库
+end intellisense**/

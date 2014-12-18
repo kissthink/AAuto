@@ -1,0 +1,92 @@
+//gdiRender 绘图模块
+import gdi;
+namespace web.kit;
+
+class gdiRender{
+	ctor( wkeView,hwnd ){
+		if( ! wkeView[["hWebView"]] ) error("参数@1必须是web.kit.view视图对象",2);
+		this.wkeView = wkeView;
+		
+		if( hwnd ){
+			var hdc = ::GetDC(hwnd);
+			this.compatibleDc = ::CreateCompatibleDC(hdc); 
+			::ReleaseDC(hwnd,hdc);
+		}
+		else{
+			this.compatibleDc = ::CreateCompatibleDC(null); 
+		}
+	};
+	delete = function(){
+		if (this.compatibleDc){
+            ::DeleteDC(this.compatibleDc);
+            this.compatibleDc = null;
+		}
+		
+        if (this.memBitmap){
+            ::DeleteObject(this.memBitmap);
+            this.memBitmap = null;
+        }
+	}
+	draw = function(hwnd){
+	
+		var wkeView = this.wkeView;
+		var w,h = wkeView.getWidth(),wkeView.getHeight();
+		if(! ( w && h ) ) return;
+		
+        if ( w!=this.width || h!=this.height ){
+            var hbmp,bits = createBitmap(w,h);
+            ::SelectObject(this.compatibleDc, hbmp);
+
+        	if (this.memBitmap)
+            	::DeleteObject(this.memBitmap);
+            	
+        	this.memBitmap = hbmp;
+        	this.memPixels = bits;
+        	this.width = w;
+        	this.height = h;
+		}
+		
+        wkeView.paint(this.memPixels, w*4);
+        
+        var hdc = ::GetDC(hwnd);
+        if( hdc ){
+        	::BitBlt(hdc, 0, 0, w, h, this.compatibleDc, 0, 0, 0xCC0020/*_SRCCOPY*/  );
+        	::ReleaseDC(hwnd,hdc);
+        }
+    }
+}
+
+import gdi;
+namespace gdiRender{
+	createBitmap = function(w,h){
+		var bi = {
+    		struct bmiHeader = {
+				INT biSize;     
+				int biWidth;    
+				int biHeight;    
+				WORD biPlanes;    
+				WORD biBitCount;
+				INT biCompression;  
+				INT biSizeImage;   
+				int biXPelsPerMeter;  
+				int biYPelsPerMeter;  
+				INT biClrUsed;  
+				INT biClrImportant; 
+    		}
+    		INT bmiColors[1];
+		}  
+		
+		bi.bmiHeader.biSize = ..raw.sizeof(bi);
+		bi.bmiHeader.biWidth = w;
+		bi.bmiHeader.biHeight = -h;
+		bi.bmiHeader.biPlanes = 1;
+		bi.bmiHeader.biBitCount = 32;
+		bi.bmiHeader.biCompression = 0x0/*_BI_RGB*/;
+		
+		var bits = {pointer pixels}
+		var hbmp = ::Gdi32.CreateDIBSection(0, bi, 0x0/*_DIB_RGB_COLORS*/, bits, null, 0);
+		return topointer(hbmp),bits.pixels
+	}	
+}
+
+

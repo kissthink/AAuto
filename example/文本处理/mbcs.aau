@@ -1,0 +1,51 @@
+//宽字符串扩展函数库
+import console;
+ 
+//string.mbcs 将宽字符转换为数组操作
+//=========================================
+import string.mbcs;
+
+	 //创建一个宽字符串对象,以字符（而非字节）为单位创建数组
+	var mbStr = string.mbcs("请输入一行文本，然后回车")
+	
+	//这个字符串与AAuto内置的字符串不同,可以直接读写每个索引位置的值
+	mbStr[2] = "[插入字符串]" 
+ 	
+	//重新计算字符串长度
+	mbStr.reset()
+	
+	//字符长度(不是字节长度)
+	console.log( #mbStr,mbStr ) 
+	
+	console.log( mbStr.left(3) );  
+
+//mbs支持库针对宽字符增加了一些专用函数
+//=========================================
+import mbs;
+ 
+	console.log( mbs.indexAny("字符串","查找字符") ) 
+	
+	//使用指定的分隔符拆分字符串(中文字为一个拆分符而不是按两个字节作为两个拆分符)
+	for(tok in mbs.tokenize("dddd字测试a","字a")){
+		console.log( tok );
+	}
+	
+	/*
+	mbs.split("待拆分字符串","分隔符",拆分次数)
+	如果不指定分隔符,使用默认分隔符：' \t\n\r\0\v\xA1\xA1'
+	拆分次数指定拆分次数,超过拆分次数的字符串保持不变,如果为负数
+	则限制尾部的拆分次数,前面的其他字符保持不变
+	*/
+	
+	console.log("拆分全部分组")
+	var arr = mbs.split("第一分组停第二分组aa第三分组停第四分组","停a "  )
+	console.varDump(arr)
+	
+	console.log("aa从前面拆分最大允许两个分组,其他字符不变")
+	var arr = mbs.split("aa第一分组停aa第二分组a第三分组停aaaa第四分组","停a " ,2 )
+	console.varDump(arr)
+	
+	console.log("从前面拆分最大允许两个分组,其他字符不变")
+	var arr = mbs.split("第一分组停aa第二分组a第三分组停aaaa第四分组aaaaaaaa","停a " ,-2 )
+	console.varDump(arr)
+

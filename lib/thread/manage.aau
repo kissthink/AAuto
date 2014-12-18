@@ -1,0 +1,155 @@
+//manage 线程管理器
+import win.guid;
+namespace thread;
+
+class manage {
+
+	ctor( limit = 63 ){ 
+		this._guid = tostring(..win.guid.create()); 
+		var threads = {}  
+	}; 
+	
+	getSlot = function(){
+		for(slot,thrd in threads)
+			if(!thrd.handle )  
+				return thrd;
+		 
+		var len = #threads
+		if( len >= limit)  
+			return this.waitOne(); 
+		 	
+		var slot = len+1;
+		threads[slot] = { _name = ..string.format("%s[%d]",this._guid, slot ) }  	
+		return threads[slot]
+	};
+	
+	getHandles = function(){
+		var handles ={}
+		for(slot,thrd in threads){
+			..table.push( handles,thrd.handle ) //support push null   
+		} 
+		return handles;	
+	}; 
+	
+	create = function( tfunc,...){  
+		var thrd = this.getSlot(); 
+		if(!thrd) return {};
+ 	 	thrd.handle,thrd.id = ..thread.create(
+		function(tfunc,name,...){  
+			var ret = { tfunc(...) }  
+			..thread.set(name, ret)  
+		},tfunc,thrd._name ,...);
+		delay(1);  
+		return thrd;
+	};  
+	
+	createLite = function( tfunc,...){  
+		var thrd = this.getSlot();  
+		if(!thrd) return {};
+ 	 	thrd.handle,thrd.id = ..thread.create(tfunc ,...);  
+ 	 	return thrd;
+	};  
+	
+	suspend = function(){
+		var handles = this.getHandles();
+		for(i,hdle in handles){ 
+			..thread.suspend(hdle)
+		} 
+	}; 
+	
+	resume = function(){
+		var handles = this.getHandles();
+		for(i,hdle in handles){ 
+			..thread.resume(hdle)
+		} 	
+	}; 
+	
+	quitMessage = function(){
+		if( ! ..win[["quitMessage"]] )
+			error("使用 quitMessage() 函数之前请执行import win语句!",2)
+		 
+		for(slot,thrd in threads){
+			if( thrd.handle ){ 
+				..thread.resume( thrd.handle )
+				::PostThreadMessage(thrd.id,0x12/*_WM_QUIT*/ ,0,0);
+				..raw.closehandle( thrd.handle ); 
+			} 
+		} 
+		threads = {}; //stop waiting 
+	};
+	
+	busy = function(){
+		for(slot,thrd in threads){
+			if( thrd.handle )
+				return true;  
+		} 
+	};
+	
+	waitOne = function(){   
+		var handles = this.getHandles();
+		if(!#handles)
+			return;
+			
+		var pos  = ..thread.waitOne(handles)
+		if(!pos){
+			this.quitMessage(); //return null; 
+			return;
+		}
+		 
+		var handle = handles[pos];  
+		for(slot,thrd in threads){
+			if( thrd.handle == handle ){ 
+				..raw.closehandle(handle); 
+				thrd.handle = null;  
+				thrd.id = null;
+				if( thrd.onEnd ){ 
+					var result = ..thread.get( thrd._name )   
+					if(result){
+						var _,ubound = ..table.range(result);
+						thrd.onEnd( ..table.unpack(result,1,ubound ) )  
+						..thread.set( thrd._name,null ) //Remove  
+					}
+					else {
+						thrd.onEnd()
+					} 
+					thrd.onEnd = null;
+				}  
+				return thrd;
+			}
+		}  
+		return false;
+	}; 
+	
+	waitClose = function(){ 
+		while( this.waitOne() ) { 
+		} 
+	};
+}
+
+namespace manage{
+	delay = ..win[["delay"]] : sleep
+}
+
+/**intellisense()
+thread.manage = 线程管理器
+thread.manage() = 创建线程管理器\n可使用一个参数指定线程池大小\n默认为63,该值必须小于64\n!thread_mg.
+?thread.manage = !thread_mg.
+!thread_mg.create(.(线程函数,任意个启动参数) = 该函数参数与thread.create()函数的参数一致.\n返回对象可指定onEnd成员函数,线程函数结束将返回值作为参数回调该函数.
+!thread_mg.createLite(.(线程函数,任意个启动参数) = 返回对象可指定onEnd成员函数,\n线程函数结束将返回数值(必须是数字)作为参数回调该函数.
+!thread_mg.waitClose() = 等待所有线程返回\n并关闭所有线程句柄
+!thread_mg.waitOne() = 等待任一线程返回\n并关闭相应线程句柄\n失败返回null
+!thread_mg.suspend() = 所有线程暂停\n注意线程是否正在使用互斥锁
+!thread_mg.resume() = 所有线程继续执行
+!thread_mg.busy() = 如果所有线程结束返回false,\n否则返回true
+!thread_mg.quitMessage() = 向所有线程发送_WM_QUIT消息\n线程内win.delay()函数可接受该消息并返回false值
+!thread_mg.create() = !_thread_mg_c. 
+!thread_mg.createLite() = !_thread_mg_cl. 
+!_thread_mg_c.onEnd = @.onEnd = function(...__){
+	
+}
+!_thread_mg_cl.onEnd = @.onEnd = function( exitCode ){
+	__
+}
+
+end intellisense**/
+ 

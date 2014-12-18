@@ -1,0 +1,91 @@
+//declare 原型类
+import util;
+namespace util;
+
+class declare{
+	ctor( ... ){
+		var t = {...};
+		var meta;
+		for(k=1;#t;1){ 
+			var v = t[k];
+			if( v@ == _metaClass && v._prototype ){
+				t[k] =  v._prototype;
+			}	
+			elseif(v@[["_get"]]){
+				if( !meta ) meta = {}
+				for(name,value in v@){
+					if(!meta[name]) meta[name] = value; 
+				}
+			}
+		}
+		
+		var base = (#t>1)?t[1]:null
+		var p = ..table.mixin( { _base = base }, ..table.unpack(t) ) 
+		p@ = meta;
+		p.constructor = ..util.connect( p,p.constructor,base[["constructor"]]);
+		p.destructor = ..util.connect( p,p.destructor,base[["destructor"]]);
+		
+		p.inherited = function(f,...){
+			var ret = p._base[f]
+			if( type(ret) == type.function ){
+				var inherited = p.inherited
+				owner.inherited = p._base.inherited
+				var ok,ret = call(ret,owner,...);
+				owner.inherited = inherited;
+				
+				if(!ok)
+					error(ret,2)
+				
+			} 
+			return ret;	
+		};
+		this._prototype = p; 
+	};
+	extend = function(...){
+		..table.mixin(this._prototype,...) 
+	};   
+	@_metaClass
+}
+
+namespace declare{
+	_metaClass = {
+		_call = function(...) { 
+			var obj = { @{_get = owner._prototype} };
+		   	
+			if(obj.destructor ){ 
+				..table.gc(obj,"destructor");  
+			}
+			if(obj.constructor){
+				var ret = obj.constructor( ...)
+				if( ret !== null )
+						return ret;
+			}
+			return obj;
+		}
+	} 
+	_type = "declare.class"
+}
+
+/**intellisense(util)
+declare = 原型类
+declare( 原型表 ) = @.declare(  __/*可添加任意个原型表或其他原型基类*/,{\n    constructor = function( ... ){\n        owner.member = "成员属性值";\n    constructor = function( ... ){\n        io.print("析构完成");\n    } \n} )
+declare._metaClass = util.declare定义的类使用的元表
+end intellisense**/
+
+/**intellisense()
+owner.inherited() = @.inherited("__/*函数名字*/",...)\n//用于在原型类中调用基类函数
+util = AAuto语言扩展函数库
+?util.declare = !liteClass.
+!liteClass.extend(.(任意个混入表) = 扩展原型类
+!liteClass._prototype = 原型表
+!liteClass._prototype.constructor = 构造函数
+!liteClass._base =  基类\n也即util.declare的第一个参数
+constructor = @constructor = function(...){
+	__/*建议将构造函数写在原型链的最后面*/
+	owner.member = "对象成员";
+}
+destructor = @destructor = function(...){
+	__/*析构函数在对象销毁时将自动调用*/ 
+	..io.print("正在销毁",owner)
+}
+end intellisense**/

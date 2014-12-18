@@ -1,0 +1,4 @@
+
+var filepath = ...;
+import process;
+process.execute("notepad.exe",filepath)

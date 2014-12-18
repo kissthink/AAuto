@@ -1,0 +1,175 @@
+//works 任务分派
+import win.guid;
+import thread.table;
+
+namespace thread
+
+class works{
+	ctor( limit,func,waitTime,fInit,...){
+		var guid = tostring(..win.guid.create())
+		this._gArg = guid; 
+		this._gRet = guid + "_R"; 
+		this._gWorked = guid + "_W"
+		this._gSign = guid + "_S"
+		
+		this._tArgs = ..thread.table( this._gArg )
+		this._tRet = ..thread.table( this._gRet ) 
+		this._tWorked = ..thread.table( this._gWorked )
+		
+		..thread.set(this._gSign ,true )   
+		var threads = {} 
+		for(i=1;limit;1){
+			var thrd = {}
+			thrd.handle,thrd.id = ..thread.create(
+				function(func,fInit,waitTime,gSign,gArg,gRet,gWorked,...){
+					import thread.table; 
+					var tArgs = thread.table( gArg )
+					var tRet = thread.table( gRet )
+					var tWorked = thread.table( gWorked )
+					var arg;
+					
+					if(fInit) fInit(...);
+					while( thread.get(gSign) ){ 
+						if( tArgs.len() > 0 ){ 
+							arg = tArgs.remove() 
+							if(arg){
+								tWorked.push(1)
+								tRet.insert( func(arg) ); 
+								tWorked.pop(1)
+								continue ;
+							}
+						}
+						sleep(waitTime);
+					}  
+				},func,fInit,waitTime : 1000 ,this._gSign,this._gArg,this._gRet,this._gWorked,...
+			)
+			..table.push(threads,thrd);
+		
+		} 
+		..table.gc(this,"quit");
+	};
+	each = function(){
+		this.suspend()
+		return function(k){
+			return this._tArgs.next(k);
+		},function(){
+			this.resume();
+		} ;
+	};
+	update = function(idx,args){
+		this._tArgs.set(idx,args);
+	};
+	push = function(...){
+		this._tArgs.push(...)
+	};
+	pop = function(n){ 
+		if(this._tRet.len())
+			return this._tRet.pop(n)	
+	};
+	getHandleById = function(id){
+		var handles ={}
+		for(slot,thrd in threads){
+			if( thrd.id = id) return thrd.handle; 
+		} 
+	};
+	getHandles = function(){
+		var handles ={}
+		for(slot,thrd in threads){
+			..table.push( handles,thrd.handle ) //support push null   
+		} 
+		return handles;	
+	};
+	suspend = function(id){
+		if( id ){ 
+			var handle = this.getHandleById(id) ;
+			return handle ? ..thread.suspend( handle )
+		}
+		
+		var handles = this.getHandles();
+		for(i,hdle in handles){ 
+			..thread.suspend(hdle)
+		} 
+	}; 
+	resume = function(id){
+		if( id ){ 
+			var handle = this.getHandleById(id) ;
+			return handle ? ..thread.resume( handle )
+		}
+		
+		var handles = this.getHandles();
+		for(i,hdle in handles){ 
+			..thread.resume(hdle)
+		} 	
+	};
+	quit = function(){ 
+		if( #threads ){ 
+			delay = ..win[["ui"]] ?  ..win[["delay"]] : sleep
+			var handles = this.getHandles(); 
+			for(i=1;#handles){ 
+				..raw.closehandle(handles[i])
+			} 
+			threads = {};
+			..thread.set(this._gSign, null ) 
+ 
+			delay(100);  
+			while( this._tWorked.len() > 0 ) { 
+				delay( 100  )
+			} 
+			this._tArgs.pop( this._tArgs.len() );
+		}
+	};
+	queueCount = function(){
+		return this._tArgs.len();
+	};
+	busy = function(){
+		return ( this._tArgs.len() > 0 || this._tWorked.len() > 0 )
+	};
+	wait = function(f){ 
+		var r;
+		delay = ..win[["ui"]] ?  ..win[["delay"]] : sleep;
+		while( this.busy() ) { 
+			if( ! delay( 100  ) ){
+				return;
+			}
+			if( f ){
+				r = this.pop(1);
+				if(r)f(r);
+			}
+		}
+		if(f){
+			r = this.pop(1);
+			while( r && delay(10) ){
+				f(r);
+				r = this.pop(1);
+			} 
+		}
+		return true; 
+	};
+	waitClose = function(f){
+		var r = this.wait(f);
+		this.quit();
+		return r;
+	}; 
+}  
+
+/**intellisense()
+thread.works = 线程工作项管理
+thread.works(线程数,工作函数,等待延时,初始化函数,->->->) = @.works( 20,\n	function( args ) {\n		__\n		return "返回值"\n	} \n);
+thread.works() = !thread_wk.
+?thread.works = !thread_wk.
+!thread_wk.queueCount() = 排队等候执行的任务数目
+!thread_wk.push(__) = 添加调用实参到任务列表尾部\n可使用table对象传递多个参数给任务函数\n工作函数将自动获取参数并执行任务.
+!thread_wk.pop(__) = 弹出工作函数完成任务后的返回值
+!thread_wk.quit() =  通知所有线程退出\n并等待线程关闭
+!thread_wk.wait() =  等待所有任务完成,\n可指定一个回调函数作为参数接收工作项返回值
+!thread_wk.waitClose() =  等待所有任务完成\通知所有线程退出,并等待所有线程关闭.\n可指定一个回调函数作为参数接收工作项返回值
+!thread_wk.busy() = 是否有未完成任务
+!thread_wk.suspend() = 所有线程暂停\n可选在参数中指定线程ID\n注意线程是否正在使用互斥锁
+!thread_wk.resume() = 所有线程继续执行\n可选在参数中指定线程ID
+!thread_wk.getHandleById(.(线程ID) = 使用线程ID返回线程句柄\n不可关闭该句柄
+!thread_wk.update(.(索引,参数) = 更新任务参数\该函数只能在each循环内部使用
+!thread_wk.each = @for( idx,args in ??.each() ){
+	__/*遍历所有待执行任务,\n该函数会暂停所有任务*/
+}
+end intellisense**/
+ 

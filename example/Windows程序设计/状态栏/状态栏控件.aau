@@ -1,0 +1,37 @@
+
+import win.ui;
+import win.ui.statusbar;
+
+/*DSG{{*/
+var winform = win.form(parent=...; bottom=135;text="AAuto Form";border="resizable";right=287 )
+winform.add( 
+button={ bottom=40;right=264;left=24;top=16;font=LOGFONT( name="宋体";h=-12 );z=1;text="设置状态栏文本（无分块）";cls="button" };
+btnAddItem={ bottom=72;right=128;left=24;top=48;font=LOGFONT( name="宋体";h=-12 );z=2;text="添加分块";cls="button" };
+btnReset={ bottom=104;text="调节器";left=24;top=80;font=LOGFONT( name="宋体";h=-12 );z=4;right=264;cls="button" };
+btnSetText={ bottom=72;right=264;left=136;top=48;font=LOGFONT( name="宋体";h=-12 );z=3;text="设置分块文本";cls="button" }
+)
+/*}}*/
+
+win.ui.statusbar( winform ).addItem("测试", 100/*宽度*/)
+
+winform.button.oncommand = function(id,event){
+	var t = time(, "%H:%M:%S");
+	winform.statusbar.setText("现在的时间是：" + tostring(t));
+}
+
+winform.btnAddItem.oncommand = function(id,event){
+	winform.statusbar.addItem("a", 20);
+}
+
+winform.btnSetText.oncommand = function(id,event){
+	for (i = 1; winform.statusbar.count(); 1)
+		winform.statusbar.setText( tostring(i),i) 
+}
+
+winform.btnReset.oncommand = function(id,event){  
+	winform.statusbar.close();
+	win.ui.statusbar( winform );
+}
+
+winform.show(true);
+win.loopMessage();

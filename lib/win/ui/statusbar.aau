@@ -1,0 +1,115 @@
+//statusbar 状态条
+/************************************
+Author		: lujjjh
+Date		: 2010.9
+************************************/
+
+namespace win.ui {
+	import util.metaProperty;
+	import win.ui.ctrl.common
+	
+	statusbar = class {
+		ctor (winform) {
+			if( ! winform[["hwnd"]] ){
+				if(type(winform)==type.number){
+					winform = {hwnd=winform;_mapCommandProc={}}
+				}
+				else {
+					error("第一个构造参数必须指定有效窗口",3)
+				} 
+			} 
+			this.parent = winform;
+			this.hParent = winform.hwnd 
+			
+			if(!winform.hwnd )
+				error("在构造参数中指定父窗体",2);
+			
+			this.hwnd = ::CreateWindowEx(0, "msctls_statusbar32", "", 
+										 0x40000000/*_WS_CHILD*/ | 0x10000000/*_WS_VISIBLE*/ | 0x4000000/*_WS_CLIPSIBLINGS*/, 
+										 0 ,0 ,0 ,0, winform.hwnd , 0);
+										 
+			if(!this.hwnd)
+				error("创建状态栏失败！",2); 
+			winform.statusbar = this;
+			
+			var items = {};  
+		}
+		adjust = function(){
+			::SendMessage(this.hwnd, 0x5/*_WM_SIZE*/);
+		} 
+		updateItems = function () { 
+			var tbl = {};
+			var n = 0;
+			for (k, v in items ) {
+				..table.push(tbl, v == -1 ? -1 : n + v);
+				n += v;
+			} 
+			::SendMessageByStruct( this.hwnd, 0x404, #(tbl), {int arr[] = tbl} ); 
+		}
+		addItem = function ( text, width = -1 ) { 
+			var p = ..table.push( items, width ); 
+			var len = #items; 
+			this.updateItems();
+			this.setText( text,p );
+			return this, p;
+		}
+		insertItem = function ( text ,position = 1, width = -1 ) {
+			var p = ..table.insert( items, width, position ); 
+			this.updateItems();
+			this.setText( text,position );
+			return this, p;
+		}
+		count = function () {
+			return #items;
+		}
+		getItemWidth = function ( index ) {
+			return items[index];
+		}
+		setItemWidth = function ( index, width = -1 ) {
+			items[index] = width;
+			this.updateItems();
+			return this;
+		}
+		getText = function ( index ) { 
+			if ( #(items) == 0 ) {
+				return ..win.getText( this.hwnd )
+			} else {
+				var re, buffer = ::SendMessageByString( this.hwnd, 0x402, index - 1, 255 );
+				return ..string.str(buffer);
+			}
+		}
+		setText = function ( text, index ) { 
+			var len = #(items);
+			if ( #(items) == 0 || (!index)  )
+				..win.setText( this.hwnd,text );
+			else{ 
+				SendMessageByString( this.hwnd, 0x401, index - 1, text );
+			}
+			return this;
+		}
+		close = function () { 
+			::SendMessage( this.hwnd, 0x10/*_WM_CLOSE*/);
+			this = null;
+		}
+	}
+}
+
+/**intellisense()
+win.ui.statusbar = 状态栏
+win.ui.statusbar(__/*父窗口*/) = 创建一个状态栏
+?win.ui.statusbar = !statusbar.
+win.ui.statusbar() = !statusbar.
+end intellisense**/
+
+/**intellisense(!statusbar.)
+addItem(__/*文本*/, /*宽度*/) = 创建一个状态栏分块
+insertItem(__/*文本*/, /*插入位置*/, /*宽度*/) = 插入一个状态栏分块，插入位置从 1 开始
+getItemWidth(__/*第几个分块*/) = 获取指定分块的宽度，分块从 1 开始
+setItemWidth(__/*第几个分块*/, /*宽度*/) = 设置指定分块的宽度，分块从 1 开始
+getText() = 获取状态栏的文本（无分块）
+getText(__/*第几个分块*/) = 获取指定分块的文本，分块从 1 开始
+setText(__/*文本*/) = 设置状态栏的文本（无分块）
+setText(__/*文本*/, /*第几个分块*/) = 设置指定分块的文本，分块从 1 开始
+count() = 获取分块的数量
+close() = 清除状态栏
+end intellisense**/

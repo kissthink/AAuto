@@ -1,0 +1,37 @@
+//注册表读写
+
+import win.reg
+
+reg = win.reg("HKEY_CURRENT_USER\Software\ECranesoft\abcd") //创建新的注册表路径
+reg.setDwValue("testaaa",123) //设置新值
+reg.delValue("testaaa"); //删除指定的值
+reg.save("/backup.bin") //导出注册表
+reg.load("/backup.bin") //导入注册表
+ 
+reg.close();
+
+reg = win.reg("HKEY_CURRENT_USER\Software") 
+reg.delKey("ECranesoft")
+reg = win.reg("HKEY_CURRENT_USER\Software\ECranesoft\nofound",true) //仅打开已存在的路径
+//assert(reg,"HKEY_CURRENT_USER\Software\ECranesoft\nofound不存在")
+
+io.open()
+
+//枚举并删除子节点
+reg = win.reg("HKEY_CURRENT_USER\Software\ECranesoft") //打开注册表
+//枚举子项、以及子项的所有子项
+reg.enumKey(
+
+	function(
+		reg, /*这是某个子节点(win.reg对象)*/
+		keyname/*这是reg子节点的一个子项的名字*/
+	){  
+		if( reg.delKey(keyname)  )
+			io.print("删除" + keyname + "成功") 
+	}  
+)
+
+reg.close();
+
+reg = win.reg("HKEY_CURRENT_USER\Software\ECranesoft\nofound",true) //仅打开已存在的路径
+assert(reg,"HKEY_CURRENT_USER\Software\ECranesoft\nofound不存在")

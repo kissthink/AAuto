@@ -1,0 +1,20 @@
+//重置解释器 
+import php;
+
+//打开控制台
+io.open()
+
+php.begin()
+
+	php.eval("$a=123");
+	io.print( php.a );
+	
+php.end()
+
+php.begin()
+
+	php.eval("$b=456");
+	io.print( php.a,php.b );//注意这里PHP中的变量$a已经失效
+	
+php.end()
+

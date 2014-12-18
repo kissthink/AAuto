@@ -1,0 +1,78 @@
+//EXE命令行探测器
+
+/*
+作者laorenI  http://www.ecranesoft.com/bbs/showtopic-7409.aspx
+$Id$
+*/
+
+import win.ui; 
+import win.ui.menu;
+import com.picture;
+/*DSG{{*/
+var winform = win.form(parent=...; bgcolor=13160660;bottom=466;topmost=1;text="EXE命令行参数探测器";left=0;right=332;min=1;exmode="";title="AAuto Form";max=1;top=0;cls="AFORM" )
+winform.add( 
+static2={ dl=1;bgcolor=13160660;bottom=44;color=0;text="窗口标题";left=9;dt=1;top=18;acceptfiles=1;z=3;right=69;help=1;tabstop=1;cls="static" };
+edit={ dr=1;dl=1;bgcolor=16777215;color=0;right=230;left=73;dt=1;cls="edit";bottom=37;hidesel=1;multiline=1;top=13;acceptfiles=1;z=0;text=".*";edge=1;tabstop=1 };
+labUrl={ dr=1;transparent=1;bottom=463;color=16711680;right=307;left=19;notify=1;top=431;font=LOGFONT( underline=1;h=-12;name="Microsoft Sans Serif";out=3;family=34;clip=2;quality=1 );align="right";z=5;db=1;text="本程序使用快手(AAuto Quicker)编写
+点这里查看源代码";cls="static" };
+static={ dl=1;bgcolor=13160660;bottom=70;color=0;text="查询结果：";left=12;dt=1;top=54;acceptfiles=1;z=2;right=93;help=1;tabstop=1;cls="static" };
+button={ dr=1;bgcolor=13160660;color=0;right=314;left=246;dt=1;help=1;cls="button";bottom=39;text="开始寻找";multiline=1;top=13;acceptfiles=1;tabstop=1;z=1 };
+edit2={ dr=1;dl=1;bgcolor=16777215;vscroll=1;color=0;right=318;border=1;dt=1;db=1;cls="edit";bottom=427;text="";left=8;multiline=1;top=74;acceptfiles=1;z=4;hidesel=1;hscroll=1;edge=1;tabstop=1 }
+)
+/*}}*/
+
+//设置超链接上的鼠标指针为手形指针
+import win.cur;
+var curhand = win.cur.load(32649/*_IDC_HAND*/)
+winform.labUrl.wndproc = function(hwnd,message,wParam,lParam){
+	if(message==0x200/*_WM_MOUSEMOVE*/)
+		win.cur.setCur(curhand); 
+}//endproc
+
+
+winform.labUrl.oncommand = function(id,event){
+	//win.msgbox( winform.labUrl.text );
+	import process;
+	process.execute("https://svn.ecranesoft.com/svn/aauto/Example/API与CALL/command spy.aau");
+	
+}//endproc
+
+
+import winex;
+
+ 
+winform.button.oncommand = function(id,event){
+    //win.msgbox( winform.button.text );
+    var 查找标题模式串 = winform.edit.text 
+    var 命令行列表 = {}
+    
+    //遍历所有窗口
+	for hwnd,title,theadId,processId in winex.each( 类名模式串,  查找标题模式串 ) { 
+		if(title != "") {//如果标题不为空
+			
+			//win7上个别系统进程会失败，用try容错
+			try{ 
+				//在外部EXE进程创建函数    
+				var getCommandLine_call = raw.remoteApi(processId,"string()","Kernel32.dll","GetCommandLineA") 
+				table.push(命令行列表,getCommandLine_call() )
+			}
+		} 	
+	}
+      
+    if( #命令行列表  == 0 ){
+    	 winform.edit2.text = "没有您要找的窗口，请确认输入正确再找！"  
+    	 return;
+    }
+    
+    winform.edit2.text = string.join(命令行列表,'\r\n');  
+     
+}//endproc
+
+winform.edit2.text = '    网游一般都是先运行update.exe更新数据，\r\n\r\n
+  选择服务器后，再运行game.*程序，进入游戏。\r\n\r\n
+  所以我们想直接运行游戏，就首先要得到game.*\r\n\r\n
+  的命令行参数。本工具软件就是为了方便大家获得\r\n\r\n
+  命令行参数的！\r\n\r\n  （.* 为寻找所有 有标题 的窗口）'
+
+winform.show(true) 
+win.loopMessage( winform );

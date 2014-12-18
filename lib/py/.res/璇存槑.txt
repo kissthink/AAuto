@@ -1,0 +1,10 @@
+import console; 
+import fsys;
+import py;
+
+console.open();
+fsys.setCurDir("~\lib\py\.res\Lib");
+py.main( "-OO","compileall.py","-f",".");
+
+É¾³ýËùÓÐ py,pyc
+É¾³ý curses(linux)£¬test£¬idlelib£¬ plat-...

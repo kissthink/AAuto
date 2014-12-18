@@ -1,0 +1,46 @@
+namespace web; 
+
+mapurl = function(url){
+ 	var local = ..io.localpath(url)
+	if( local ){  
+		if(not ..io.exist(local) ){  
+			url = ..string.upper(
+			..string.replace(url,"@\","/")
+			)
+			return ..string.concat( "res://", ..io._exepath , "/RES/" ,url); 
+		} 
+		return local
+	} 
+	return url;
+}
+
+joinHeaders = function(h,...){
+
+	if( type(h) == "table" ){
+		if( ! #h ){
+			var lst = {};
+			for(k,v in h){ 
+				..table.push( lst,k,..string.endWith(k,":",true)?"":":",tostring(v),'\r\n' )
+			}
+			h = lst; 
+		}
+		h = ..string.join(h ); 
+	}
+	elseif( #h ) {
+		if( ..string.startWith(h,'\r\n',true) ){
+			h = ..string.right(h,-3);
+		}
+		
+		if( ! ..string.endWith(h,'\r\n',true)  ){
+			h = h + '\r\n';
+		}
+	}
+ 
+	if(!...) return h;
+	return ..string.concat( h, joinHeaders(...) )
+}
+
+/**intellisense(web)
+mapurl(__/*根目录相对路径*/) = 将根目录下的相对路径转换为正确的URL\n支持发布后的内嵌资源文件
+joinHeaders(.(http头,->->->) = 拼接http头,支持任意个参数\nhttp头可以是字符串,数组,或键值对
+end intellisense**/

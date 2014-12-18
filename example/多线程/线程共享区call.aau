@@ -1,0 +1,14 @@
+commonThreadFunc = function(a,b){
+    io.print("参数",owner,a,b)
+    io.print("线程变量",threadvar)
+    return 1,2,a + b
+}
+//将一个函数写入线程共享区（通常应当在主线程中一次性写入）
+thread.set("threadfUNC", commonThreadFunc);
+thread.set("threadvar", 123);
+
+io.open()
+
+//调用线程共享区函数，用法类似call函数
+//第一个参数以字符串形式指定函数名字，第二个参数显式指定owner参数，后面可以是任意多个其他参数
+io.print( thread.call("threadfUNC","owner",3,11) ) //在控制台输出所有返回值。

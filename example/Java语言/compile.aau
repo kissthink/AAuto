@@ -1,0 +1,47 @@
+//编译java源码
+ 
+javacode = /*
+//filename  HelloworldApp2.java   
+import java.io.*; //引入Java包   
+
+    
+public class HelloworldApp2 {   
+	static native String aauto(String code); 
+	 
+	public static String main(String[] args) {   
+		System.out.println("Hello this is a simply test"); //输出字符串，字符串用引号括起来 
+		System.out.println( args[0]  );  
+		System.out.println( args[1]  ); 
+		return "AAuto,你好,这是给你的返回值"; 
+	}  
+	public String name = "HelloworldApp2";
+	public static int static_num = 123;
+	public int test(int a) {   
+		return a + 123;
+	} 
+	public String test_aauto() {  
+		return aauto("import win;win.msgbox('我是Java,我正在执行AAuto代码');return true;") ; 
+	}      
+}  
+*/
+
+import fsys;
+fsys.createDir("\java\")
+string.save( "\java\HelloworldApp2.java",javacode)
+
+import win;
+//win.setenv("JAVA_HOME","C:\Program Files\Java\jdk1.6.0_45"); //可以手动指定绿色版JDK目录
+
+import java; 
+var home,ver = java.getJavaHome();
+io.print("当前JDK编译器版本",ver);
+io.print("当前JDK编译器路径",java.getJavacPath () );
+io.print("当前使用的JRE运行库",java.getJrePath() )
+io.print("如果JDK与JRE版本不一致,编译后的JAVA程序可能无法正常运行")
+	
+io.open()
+java.compile("\java\HelloworldApp2.java")
+
+io.print("如果控制台没有显示错误,则编译成功")
+io.print("如果运行了编译后的class,重新编译必须重启EXE进程")
+execute("pause")

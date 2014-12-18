@@ -1,0 +1,28 @@
+import fsys;
+import ide; 
+
+var publishFile;
+
+if( ide.getPublishPath ){
+	publishFile = ide.getPublishPath()
+} 
+else{
+	publishFile = fsys.joinpath( ide.getPublisDir(), ide.getProjectProperty("name") + ".exe"  )
+}
+
+var zipPath = ..io.exist("~\lib\py\.res\Lib.zip") 
+if(zipPath){
+	var fileZip = ..io.open(zipPath,"rb");
+	if(!fileZip)return;
+	var fileExe = ..io.open(publishFile,"a+b");
+	if(!fileExe)return;
+	
+	var buffer = ..raw.malloc(0x2800);
+	var len = fileZip.readBuffer(buffer);
+	while(len){
+		fileExe.writeBuffer(buffer,len);
+		len = fileZip.readBuffer(buffer);
+	}
+	fileZip.close();
+	fileExe.close();
+} 

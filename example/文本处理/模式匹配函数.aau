@@ -1,0 +1,21 @@
+//模式匹配函数
+
+//查找字符串的
+io.open(); //打开控制台窗口
+
+var i,j = string.find("abc456d" ,"c\d+");
+
+if( i ) //如果找到i为大于0的数值
+   io.print("在 'abc456d' 中找到 c\d+" ，"从" + i + "到" + j);
+
+
+if(not string.find("abcd" ,"不可能") ) 
+    io.print("没有从 'abcd' 中找到 '不可能' ");
+
+// 在模式匹配中 .圆点标记匹配任意字符
+str = string.replace("abcd",".","k");
+io.print(str); //输出kkkk
+
+str = string.replace("abcd",".","k",1);
+io.print(str); //输出kbcd 
+ 

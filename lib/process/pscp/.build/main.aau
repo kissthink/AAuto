@@ -1,0 +1,12 @@
+import ide;
+import fsys;
+
+var publisDir = ide.getPublisDir();
+if(!#publisDir)return; 
+
+var pscpPubDir =  fsys.joinpath(publisDir,"\lib\process\pscp\" ); 
+if( ! io.exist(pscpPubDir) ){ 
+	..fsys.createDir(pscpPubDir);
+	var libPath,libDir = io.libpath("process.pscp")
+	..fsys.copy( fsys.joinpath(libDir,"\.res") ,pscpPubDir,0x10/*_FOF_NOCONFIRMATION*/  | 0x200/*_FOF_NOCONFIRMMKDIR*/); 
+}

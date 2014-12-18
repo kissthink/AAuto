@@ -1,0 +1,60 @@
+//临视文件 fsys.dirWatcher
+import win.ui;
+/*DSG{{*/
+var winform = ..win.form( bottom=399;parent=...;right=599;text="AAuto Form" )
+winform.add( 
+btnWatch={ dr=1;bottom=380;text="监视目录";left=354;dt=1;top=342;z=1;right=526;cls="button" };
+editChange={ dr=1;dl=1;bottom=322;vscroll=1;right=564;left=23;dt=1;top=21;multiline=1;z=2;db=1;hscroll=1;edge=1;cls="edit" }
+)
+/*}}*/
+
+//监视线程 
+watch_t = function( dir ){
+	import fsys.dirWatcher;
+	import thread.command;
+	import thread.event;
+	import fsys;
+	
+	watcher = fsys.dirWatcher( dir )
+ 	var evt = thread.event("watching");
+ 	
+	for( filename,action,actionText in watcher.eachChanges() ){ 
+		thread.command.post("onFileChange",..fsys.joinpath(dir,filename) ,action,actionText ); 
+		if(  evt.wait(1) )break;
+	}
+} 
+
+//响应文件变更事件 
+import thread.command;
+thread.command().onFileChange = function(filename,action,actionText ){
+	winform.editChange.appendText( filename," -> ",actionText,'\r\n')
+}
+
+//启动文件监控
+import fsys.dlg;
+import process;
+winform.btnWatch.oncommand = function(id,event){
+	
+	winform.watchDir = fsys.dlg.opendir(,winform.hwnd,"请选择要监视的目录");
+	if( winform.watchDir ) {
+		winform.btnWatch.disabled = true;
+		thread.create( watch_t,winform.watchDir  ) //创建监视线程
+		process.explore( winform.watchDir )
+	}
+}
+
+//停止文件监控
+import fsys.file;
+import thread.event;
+winform.onClose = function(hwnd,message,wParam,lParam){
+	if(!winform.watchDir) return;
+	
+    var evt = thread.event("watching");
+    evt.set()
+    
+    //制造一个文件变更触发监视线程的循环语句 
+    fsys.file.temp( fsys.joinpath(winform.watchDir,"__fire.~") ).close();
+}
+
+winform.show() 
+win.loopMessage();

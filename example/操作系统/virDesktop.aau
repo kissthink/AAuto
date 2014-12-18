@@ -1,0 +1,40 @@
+//虚拟桌面
+
+import win.ui;
+import win.util.desktop;
+/*DSG{{*/
+var winform = win.form(parent=...; text="AAuto Form";right=262;bottom=179 )
+winform.add( 
+btnToMyDesktop={ bottom=97;color=0;right=202;left=53;top=64;font=LOGFONT( name="Microsoft Sans Serif";h=-12;out=3;family=34;clip=2;quality=1 );z=2;text="切换到myDesktop";cls="button" };
+static={ bottom=62;color=255;right=229;left=59;top=27;font=LOGFONT( name="宋体";h=-21;out=3;family=2;clip=2;quality=1 );transparent=1;text="ctrl + D 试试";z=1;cls="static" };
+btnDefault={ bottom=143;color=0;right=202;left=53;top=110;font=LOGFONT( name="Microsoft Sans Serif";h=-12;out=3;family=34;clip=2;quality=1 );z=3;text="切换到默认桌面";cls="button" }
+)
+/*}}*/
+
+var virDesktp = win.util.desktop();
+virDesktp.create("myDesktop") //创建桌面 
+
+hkid = winform.reghotkey(function(id,mod,vk){
+    virDesktp.switch( ) //切换桌面   
+}
+,0x2/*_MOD_CONTROL*/,'D'#); 
+
+winform.btnDefault.oncommand = function(id,event){
+	virDesktp.switch("Default" ) 
+} 
+
+winform.btnToMyDesktop.oncommand = function(id,event){
+	virDesktp.switch("myDesktop" ) //切换桌面
+}
+
+winform.wndproc = function(hwnd,message,wParam,lParam){
+    select(message) {//判断消息类型
+        case 0x10/*_WM_CLOSE窗口关闭消息*/{
+            virDesktp.close()
+        }
+    } 
+}
+
+winform.show() 
+win.loopMessage();
+

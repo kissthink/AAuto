@@ -1,0 +1,48 @@
+import win;
+
+io.open();
+var str = /*
+有3个人去投宿,一晚30元.
+ 三个人每人掏了10元凑够30元交给了老板.
+后来老板说今天优惠只要25元就够了,拿出5元命令服务生退还给他们,
+ 
+服务生偷偷藏起了2元,
+然后,把剩下的3元钱分给了那三个人,每人分到1元.
+这样,一开始每人掏了10元,现在又退回1元,也就是10-1=9,每人只花了9元钱
+ 
+3个人每人9元,3 X 9 = 27 元 + 服务生藏起的2元=29元，还有一元钱去了那里？？？
+ */  
+io.print(str);
+
+io.print('\n想一想？++++++++想不出来就按回车键让计算机来算一下！');
+var k = io.stdin.read(); //var发明局部变量，不用var即全局变量
+
+
+guesthouse={boss=0;waiter=0};
+guest={a = 10;b=10;c=10};
+
+//我们给老板三十元
+guesthouse.boss =  (guest.a + guest.b + guest.c);
+guest.a = guest.a -10;
+guest.b = guest.b -10;
+guest.c = guest.c -10
+
+//老板给服务员五元
+guesthouse.boss = guesthouse.boss - 5;
+guesthouse.waiter = guesthouse.waiter + 5;
+
+//服务员给每人一元
+guesthouse.waiter = guesthouse.waiter - 3; 
+
+guest.a = guest.a + 1;
+guest.b = guest.b + 1;
+guest.c = guest.c + 1;
+  
+io.print('老板现在有'+guesthouse.boss)
+io.print('服务员现在有'+guesthouse.waiter)
+io.print('客人a有'+guest.a)
+io.print('客人b有'+guest.b)
+io.print('客人c有'+guest.c)
+io.print('\n\n现在知道那一元去了哪里吧')
+
+sleep(100000);

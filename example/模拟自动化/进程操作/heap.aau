@@ -1,0 +1,20 @@
+//例出进程堆信息
+
+io.open();//打开控制台
+
+import fsys
+import process.heap;
+
+//列出堆信息(不能用于开发环境自身进程)
+for heapList in process.heap.eachList() { 
+   for heapEntry in process.heap.each(heapList) { 
+    	io.print( heapEntry.dwAddress,fsys.formatSize(heapEntry.dwBlockSize ) )
+   }
+   io.print( heapList.th32HeapID )
+}
+ 
+if(_STUDIO_INVOKED)
+	io.print("请注意：process.heap.each不能用于开发环境自身进程")
+ 
+execute("pause") //按任意键继续
+io.close();//关闭控制台

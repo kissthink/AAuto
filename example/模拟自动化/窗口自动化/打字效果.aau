@@ -1,0 +1,16 @@
+import process;
+import winex;
+import string.mbcs;
+
+
+sendinput = function( str ){
+	var mbcs = string.mbcs(str);
+	for(i=1;#mbcs){
+		winex.say(mbcs[i]);
+		sleep(200)
+	}
+	
+}
+
+process.execute_waitInput("notepad.exe");
+sendinput( "这样就可以了实现打字效果了." )

@@ -1,0 +1,181 @@
+import fsys.file;
+import sys.info;
+namespace fsys;
+
+class mmap {
+
+	ctor( path,name,lowSize,hiSize,desiredAccess,flProtect,secAttrib  ){
+		
+		if(lowSize===null) lowSize=0x4000000;
+		if(desiredAccess===null) desiredAccess = 0x2/*_FILE_MAP_ALL_ACCESS*/;
+		if(flProtect===null) flProtect = 0x4/*_PAGE_READWRITE*/;
+		if(!secAttrib) secAttrib = {};
+		
+		var hFileMapping = name ? OpenFileMapping(desiredAccess,false,name);
+		if(!hFileMapping) {
+		
+			if( path ){ 
+				var file,err = ..fsys.file( path,"w+b",3/*_FILE_SHARE_READ | _FILE_SHARE_WRITE*/,creation, 0x8000000/*_FILE_FLAG_SEQUENTIAL_SCAN*/,secAttrib);
+				if(!file) return null,err;
+				
+				hFileMapping = CreateFileMapping( file.handle,secAttrib,flProtect,hiSize:0,lowSize:0,name);
+				file.close(); 
+			}
+			else {
+				hFileMapping = CreateFileMapping( _INVALID_HANDLE_VALUE,secAttrib,flProtect,hiSize:0,lowSize:0,name); 
+			}
+			
+			if(!hFileMapping) return null,..lasterr(); 
+		}
+		else {
+			this.conflict = "该映射文件已存在" 
+		}
+		
+		
+		var offset = ..math.size64(0); 
+		var ptr2map = {}
+		..table.gc(this,"close");
+	}
+	close = function(){
+		for(ptr,hMap in ptr2map){ 
+			UnmapViewOfFile(hMap);
+		}
+		if( hFileMapping ){
+			..raw.closehandle(hFileMapping);
+			hFileMapping = null;
+		};
+	};
+	seek = function(mode,off,hiOff){
+		if( mode === null ) mode = "cur";
+		if( mode == "set"){ 
+			offset.reset(0);
+			if( off ?  off < 0 ) error("错位的指针地址",2);
+		}
+		if( hiOff === null ){
+			if( !off && mode = "cur") return offset;  
+			offset.add( off );  
+		}
+		else {
+			offset.add( ..math.size64(off,hiOff) ); 	
+		} 
+	}
+	mapView = function(len){
+	    offsetReal =  tonumber( offset % __allocationGranularity ); 
+	    offsetMap = offset - offsetReal; 
+
+	    var lowOffsetMap,hiOffsetMap = offsetMap.split32();
+		var hMap = MapViewOfFile( hFileMapping,0x2/*_FILE_MAP_ALL_ACCESS*/,hiOffsetMap,lowOffsetMap,len + offsetReal );
+		if( hMap ){
+			offset.add(len);
+			var ptr =  topointer(hMap,offsetReal);
+			ptr2map[ptr] = hMap;
+			return ptr; 
+		} 
+	};
+	unmapView = function(ptr){
+		var hMap = ptr2map[ptr];
+		if(!hMap) error("错误的内存地址参数",2);
+		return UnmapViewOfFile(hMap)
+	};
+	read = function(len){ 
+		var tArg = type(len);
+		if( tArg !=type.number){  
+			if( tArg == type.table && len[["_struct"]] ){
+				var s = len;
+				var l =  ..raw.sizeof(s)
+				
+				var p = this.mapView(l);
+				if( p ){  
+					..raw.convert(p,s);
+					this.unmapView(p);
+					return s;
+				} 
+				return;
+			}
+			error("不支持的参数",2)
+		} 
+		if(len<0) {
+			error("不支持的参数",2);
+		} 
+		var p =  this.mapView(len)
+		if( p ){  
+			var r = ..raw.tostring(p,1,len);
+			this.unmapView(p);
+			return r;
+		};
+			
+		return null,..lasterr(); 
+	}
+	writeTable = function(tab){
+		var s = ..table.tostring(tab);
+		this.write( {INT len=#s} );
+		this.write(s);
+	};
+	readTable = function(){
+		var st = this.read({INT len});
+		if( st && st.len){
+			var s = this.read(st.len);
+			if(s) return eval(s);
+		}
+	};
+	write = function(s){ 
+		var st = type(s);
+		
+		if( st == "table") {
+			if( s._struct ){ 
+				var l =  ..raw.sizeof(s);
+				var p = this.mapView(l);
+				if( p ){
+					::CopyMemoryByStruct(p,s,l);
+					this.unmapView(p);
+					return true,l;
+				} 
+				else {
+					return false;
+				} 	
+			}
+			else return false;
+		} 
+		elseif( st === null ){
+			return false,"参数不能为空";
+		}
+		elseif( st == "number")
+			s = tostring(s);
+		
+		var l = #s;
+		var p = this.mapView(l);
+		if( p ){ 
+			::CopyMemory(p,s,l);
+			this.unmapView(p);
+			return true,l;
+		}
+		
+		return false,..lasterr();
+	};  
+}
+
+namespace mmap {
+
+	CreateFileMapping = ::Kernel32.api( "CreateFileMapping", "pointer(pointer hFile,struct lpAttributes,INT flProtect,INT dwMaximumSizeHigh,INT dwMaximumSizeLow,str lpName)");
+	OpenFileMapping = ::Kernel32.api( "OpenFileMapping", "pointer(INT desiredAccess,bool bInheritHandle,string lpName)");
+	MapViewOfFile = ::Kernel32.api( "MapViewOfFile", "pointer(pointer hFileMappingObject,INT desiredAccess,INT dwFileOffsetHigh,INT dwFileOffsetLow,INT dwNumberOfBytesToMap)");
+	UnmapViewOfFile = ::Kernel32.api( "UnmapViewOfFile", "bool(pointer lpBaseAddress)"); 
+	
+	__allocationGranularity = ..sys.info().dwAllocationGranularity; 
+}
+
+/**intellisense()
+fsys.mmap = 内存映射
+fsys.mmap(.(文件名,共享名字,文件大小,文件大小高位,访问属性,内存保护属性) = 创建内存映射文件,\n所有参数可选,文件大小默认为64MB
+fsys.mmap() = !fsys_mmap.
+!fsys_mmap.conflict = 如果打开已存在的内存映射,该属性为真
+!fsys_mmap.mapView(.(内存大小) = 映射内存并返回指针
+!fsys_mmap.unmapView(.(内存指针) = 取消映射,\n参数必须是mapView函数返回的指针地址
+!fsys_mmap.seek(.("cur",偏移量,偏移量高位) = 移动文件指针,\n参数一为"cur"表示相对当前位置\n参数三为可选参数
+!fsys_mmap.seek(.("set",偏移量,偏移量高位) = 移动文件指针,\n参数一为"set"表示相对开始位置\n参数三为可选参数,参数二默认为0
+!fsys_mmap.read(__) = 自当前位置读取数据,\n读取成功向后移动指针指向已读取数据尾部\n参数可以为读取长度,也可以是结构体
+!fsys_mmap.write(.(写入数据) = 参数可以是结构体或字符串、或可转换为数值的类型\n该函数不支持多个参数,读取成功返回true,以及长度,\n失败返回false,以及错误信息
+!fsys_mmap.writeTable(.(table对象) = 写入table对象,仅支持可序列化为字面量的对象
+!fsys_mmap.readTable() = 读入table对象
+!fsys_mmap.close() = 关闭文件映射对象
+end intellisense**/

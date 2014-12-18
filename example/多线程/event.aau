@@ -1,0 +1,41 @@
+//使用事件对象同步
+
+import thread.event;
+evt = thread.event("事件对象名称 GUID:32DA0FC7-A96D-4850-9A28-DA1DD4464B44")
+
+io.open()
+thread.create( 
+	function(){ 
+		import thread.event;
+		evt = thread.event("事件对象名称 GUID:32DA0FC7-A96D-4850-9A28-DA1DD4464B44")
+		
+		io.print("工作线程:","不客气,您先吧") 
+		sleep(1000)
+		evt.set()
+		evt.wait()
+		
+		..io.print("工作线程:您可真啰嗦") 
+		sleep(1000)
+		evt.set()
+		evt.wait()
+		
+		..io.print("工作线程:无语,很无语............") 
+		sleep(1000)
+		evt.set()
+	}
+)
+
+
+io.print("主线程: 您先请") 
+thread.wait( evt ) //也可以作为thread.wait()的参数使用
+io.print("主线程:那我就不客气了......#_#~!@")
+
+io.print("主线程:还是您先吧")
+evt.set()
+evt.wait();
+
+io.print("主线程:小子欠抽是吧?...............")
+evt.set()
+evt.wait();
+
+io.print("完了完了............")

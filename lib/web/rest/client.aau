@@ -1,0 +1,307 @@
+import inet.whttp;
+import web.multipartFormData;
+import inet.httpStatusCode;
+
+namespace web.rest; 
+
+class client {
+
+	ctor( ... ) { 
+		this._http = ..inet.whttp(...)  
+		
+		this.stringifyRequestParameters = ..inet.url.stringifyParameters;
+		this.parseResponseResult = parseResponseResult; 
+		this.charset = "UTF-8"; 
+		this.contentType = "application/x-www-form-urlencoded"; 
+		this.defaultContentType = "application/x-www-form-urlencoded"; 
+		var fileSend,fileReceive;
+	}; 
+	setAuth = function(user,pwd){
+		this._http.username = user;
+		this._http.password = pwd;
+	};
+	request = function( url,param,httpMethod){
+		this.lastRequestUrl = url : urlDefalut;  
+		this.lastRequestMethod = !httpMethod ? owner._defaultHttpMethod  : httpMethod;
+		
+		var utf8 = ..string.cmp("UTF-8",this.charset ) == 0; 
+		if(param){ 
+			param = this.stringifyRequestParameters( param,utf8 );  
+		}; 
+
+		this.lastResponseData = null;
+		this.lastStatusCode = null;
+		this._http.beforeSend = this.beforeSend;
+		this._http.afterSend = this.afterSend;
+		
+		var contentType = this.contentType || this.defaultContentType ;
+		if( contentType ==  this.defaultContentType ) contentType = contentType + '; charset=' + this.charset; 
+		var ret,errMsg,errCode = this._http.down( this.lastRequestUrl,param
+			,'\r\nContent-Type:' + contentType ,,this.acceptType,this.lastRequestMethod ); 
+		this.contentType = this.defaultContentType;
+		
+		//关闭上传下载文件	
+		if( fileSend ){
+			fileSend.close(); //兼容 io.file,web.multipartFormData
+			fileSend = null;
+			
+			this._http.onSendBegin = null;
+			this._http.onSend = null;
+		}
+		if( fileReceive ){
+			fileReceive.close();
+			fileReceive = null;
+			
+			this._http.onReceiveBegin = null;
+			this._http.onReceive = null;
+		}
+		
+		//处理返回值
+		this.lastStatusCode = this._http.statusCode; 
+		if( ret ) {
+			if( ret === true ) return ret;
+			if( utf8 ){
+				if(  ret[1] == 0xEF  && ret[2] == 0xBB && ret[3] == 0xBF ) ret = ..string.right(ret,-4) ; 
+			    ret = ..string.fromto( ret,65001,0); 
+			}
+			this.lastResponseData = ret;
+			return this.parseResponseResult(ret);
+		}
+		else {
+			if( utf8 && type(errMsg) == type.string ) errMsg = ..string.fromto( errMsg,65001,0); 
+			this.lastResponseData = errMsg;
+			return null,errMsg,errCode;
+		}
+	};
+	head = function(url,param){
+		return this.request(url,param,"HEAD");	
+	};
+	get = function(url,param){
+		return this.request(url,param,"GET");
+	};
+	post = function(url,param){
+		return this.request(url,param,"POST");	
+	};
+	put = function(url,param){
+		return this.request(url,param,"PUT");	
+	};
+	delete = function(url,param){
+		return this.request(url,param,"DELETE");	
+	};
+	patch = function(url,param){
+		return this.request(url,param,"PATCH");	
+	};
+	ok = function(){
+		var statusCode = this._http.statusCode;
+		return statusCode ? ( statusCode >= 200 ) ? statusCode < 300
+	};
+	lastStatusMessage = function(){
+		if(this.lastStatusCode)return ..inet.httpStatusCode[this.lastStatusCode],this.lastStatusCode;
+	};
+	lastResponse = function(){
+		var s = this.lastResponseData;
+		if( ..console && _STUDIO_INVOKED ) ..console.log(s) else ..io.print(s);
+		return s;
+	};
+	lastResponseHeaders = function(name){
+		return this._http.responseHeaders; 
+	};
+	declareApi = function(urlTemplate,httpMethod="POST",httpMethod2 ){
+		return { 
+			_defaultHttpMethod = ..string.upper( httpMethod2 : httpMethod );
+			_urlTemplate = urlTemplate;
+			_urlReal = ..string.replace( urlTemplate ,"%{}", "");  
+			_request = this.request;
+			@_meta;
+		}
+	}; 
+	sendMultipartForm = function(fields,stepProc,blockSize = 0x2000 ){
+		if(!fields) error("请指定上传表单字段参数",2);
+		
+		//这个对象需要在request函数中检测关闭
+		fileSend = ..web.multipartFormData();
+		
+		for(k,v in fields){
+			fileSend.add(k,v);
+		} 
+		
+		var contentLength;
+		this._http.onSendBegin = function(){
+			contentLength = fileSend.size(); 
+			return contentLength;
+		}
+		this._http.onSend = function(remainSize){  
+			var str = fileSend.read(blockSize); 
+			if( stepProc ) stepProc(str,#str,contentLength,remainSize);
+			return str; 
+		}
+		
+		this.contentType = fileSend.contentType();
+		return true;
+		
+	};
+	sendFile = function(path,stepProc,mime,blockSize = 0x2000 ){
+		if(!path) error("请指定路径参数",2);
+		
+		var err;
+		fileSend,err =  ..io.open(path,"rb");
+		if( !fileSend ) return null,err;
+		
+		var contentLength;
+		this._http.onSendBegin = function(){
+			contentLength = fileSend.size(1); 
+			return contentLength;
+		}
+		this._http.onSend = function(remainSize){  
+			var str = fileSend.read(blockSize); 
+			if( stepProc ) if( stepProc(str,#str,contentLength,remainSize) === false ) return;
+			return str; 
+		}
+		
+		this.contentType = mime or ..fsys.mime.fromFile(path);
+		return true;
+	}; 
+	receiveFile = function(path,stepProc){
+		if(!path) error("请指定路径参数",2);
+		
+		var err;
+		fileReceive,err =  ..io.open(path,"w+b");
+		if( !fileReceive ) return null,err;
+		
+		this._http.onReceive = function(str,reciveSize,contentLength){
+			fileReceive.write(str);
+			if( stepProc ) return stepProc(str,reciveSize,contentLength);
+		}
+		return true;
+	}; 
+	reciveFile = function(path,stepProc){
+		return this.receiveFile(path,stepProc);
+	}
+	close = function(){
+		this._http.close();
+	};
+}
+
+namespace client { 
+ 
+	parseResponseResult = function(ret){
+		return ret; 
+	} 
+	 
+	_httpStatusCode = ..inet.httpStatusCode;
+	_defaultMethod = { head = "HEAD";get = "GET"; post = "POST"; put = "PUT"; delete = "DELETE"; patch ="PATCH"} ;
+	
+	_meta = {
+		_get = function( k ){
+
+			if( _defaultMethod[k] ){
+			
+				var api = {
+					_defaultHttpMethod = _defaultMethod[k];
+					_urlTemplate = owner._urlTemplate;
+					_urlReal = owner._urlReal; 
+					_request = owner._request;
+					@_meta;
+				} 
+				owner[[k]] = api;
+				return api;
+			}
+			else { 
+			
+				if( type(k) == "string" && k[1]=='_'# ) return; 
+				k = tostring(k); 
+				if(!k) return;
+				
+				var repk = ..string.replace(k,"@@\","\\");
+				var urlTemplate,count = ..string.replace(owner[["_urlTemplate"]],"\{\s*\w+\s*\}", repk,1); 
+				if(!count){
+					urlTemplate,count = ..string.replace(owner[["_urlTemplate"]],"\{\s*\.\.\.\s*\}",  repk + "/{...}",1); 
+ 
+					if( !count ){
+						urlTemplate = owner[["_urlTemplate"]]
+						if( urlTemplate[#urlTemplate] != '/'#  ){
+							urlTemplate = urlTemplate + "/";
+						}
+						urlTemplate = urlTemplate ++ k;
+					}
+				}
+				
+				var urlRequest = urlTemplate; 
+				urlRequest = ..string.replace(urlRequest,"/\{\s*\.\.\.\s*\}","",1);  
+				urlRequest = ..string.replace(urlRequest ,"%{}", "");
+				
+				var api = {
+					_defaultHttpMethod = owner._defaultHttpMethod;
+					_urlTemplate = urlTemplate;
+					_urlReal =  urlRequest; 
+					_request = owner._request;
+					@_meta;
+				} 
+				
+				owner[[k]] = api;
+				return api;
+			}   
+		} 
+		_call = function( ... ){ 
+			return owner._request( owner._urlReal,...) ;
+		}
+	} 
+}
+
+/*
+如果URL模板中的变量出现在URL路径中,因为web.rest调用inet.whttp,
+而inet.whttp请求URL的路径中的中文字符会自动以UTF8编码并URLEncode编码发送,这是比较通用的实现方式,与具体的页面编码无关。
+如果服务器设置或其他原因不接受UTF8编码的URL，请事先调用URL编码URL中的中文字即可( 也就是rest中的资源名 ）
+
+如果模板变量出现在附加参数中,web.rest不处理任何编码。
+对于调用方法时的提交参数，则一律URLEncode，如果指定页面编码为UTF8,则UTF8编码后URLEncode
+*/
+
+/**intellisense()
+web.rest.client = REST客户端
+web.rest.client() = 创建REST客户端,\n!web_restClient.
+!web_restClient.stringifyRequestParameters(提交参数,是否UTF8编码) = @.stringifyRequestParameters = function(param,utf8){
+	__/*可以在该函数中修改提交数据,\n或在此添加默认参数,添加数据签名,必须返回字符串值\n注意返回的文本格式应与 owner.contentType 一致\n在该函数中可获取或修改对象的 lastRequestUrl, astRequestMethod 属性*/
+	return param;
+} 
+!web_restClient.acceptType = 期望返回的MIME内容类型,多个类型用逗号分隔
+!web_restClient.contentType = 写入HTTP头ContentType属性的内容类型\n设为null空值,或每次请求完成将自动重置为defaultContentType
+!web_restClient.defaultContentType = 默认内容类型
+!web_restClient.charset = 获取或修改编码,\n默认为"UTF-8" 
+!web_restClient.setAuth(.("用户名","密码") = 设置HTTP登录用户名,密码
+!web_restClient.ok() = 最后一次请求是否成功\n服务器应答并且状态码为2XX该函数返回真
+!web_restClient.lastStatusCode = 获取最近一次请求返回的HTTP状态码\n100 ~ 101 为信息提示\n200 ~ 206 表示请求成功\n300 ~ 305 表示重定向\n400 ~ 415 表求客户端请求出错\n500 ~ 505 表示服务端错误
+!web_restClient.lastStatusMessage() = 获取最近返回的HTTP状态码文本描述\n第二个返回值为状态码
+!web_restClient.lastResponseHeaders() = 如果调用了head方法\n该函数返回所有应答HTTP头,文本格式,每行以冒号分隔的名值对
+!web_restClient.lastResponse() = 获取最后一次服务器返回的原始数据,\n如果控制台已打开或在开发环境中导入console库则在控制台输出数据\n下载文件时该值为空
+!web_restClient.lastRequestUrl = 获取最后一次请求的URL
+!web_restClient.lastRequestMethod = 最后一次请示使用的HTTP方法
+!web_restClient._http = !whttp.
+!web_restClient.close() = 关闭对象释放资源
+!web_restClient.beforeSend = @.beforeSend = function(){
+	__/*已准备向服务器发送数据触发此回调函数*/ 
+}
+!web_restClient.afterSend = @.afterSend = function(statusCode,contentLength){
+	__/*向服务器发送数据结束触发此回调函数*/ 
+}
+!web_restClient.sendMultipartForm(上传表单,上传进度回调函数) = @.sendMultipartForm( {\n		file = "@__/*上传文件路径字段首字符为@*/"\n	},function(str,sendSize,contentLength){\n        ..io.print("正在上传",sendSize,contentLength);\n    }\n); 
+!web_restClient.sendFile("上传文件路径",上传进度回调函数) = @.sendFile( "上传文件路径" \n    ,function(str,sendSize,contentLength){\n        ..io.print("正在上传",sendSize,contentLength);__\n    }\n); 
+!web_restClient.reciveFile("下载文件路径",下载进度回调函数) = @.reciveFile( "下载文件路径" \n    ,function(str,reciveSize,contentLength){\n        ..io.print("正在下载",reciveSize,contentLength);__\n    }\n); 
+!web_restClient.request(.(网址,参数表,"HTTP动词") = 发送请求,\n该函数不会解析URL中的替换占位符\n省略参数三则使用默认的调用方法\n成功返回数据,失败返回空值,错误信息,错误代码
+!web_restClient.head(.(网址,参数表) = 使用该HEAD方法提交请求\n如果该函数返回非null值为成功,请使用lastResponseHeaders获取应答HTTP头\n成功返回数据,失败返回空值,错误信息,错误代码
+!web_restClient.get(.(网址,参数表) = 使用该GET方法提交请求,获取资源\n成功返回数据,失败返回空值,错误信息,错误代码
+!web_restClient.post(.(网址,参数表) = 使用该POST方法提交请求,新增或修改资源\n成功返回数据,失败返回空值,错误信息,错误代码
+!web_restClient.delete(.(网址,参数表) = 使用该DELETE方法提交请求,删除资源\n成功返回数据,失败返回空值,错误信息,错误代码
+!web_restClient.put(.(网址,参数表) = 使用该PUT方法提交请求,替换或更新资源\n成功返回数据,失败返回空值,错误信息,错误代码
+!web_restClient.patch(.(网址,参数表) = 使用该PATCH方法提交请求,更新资源\n成功返回数据,失败返回空值,错误信息,错误代码
+!web_restClient.declareApi(.("网址模板","默认HTTP动词") = 定义API对象:\n默认HTTP调用方法为可选参数,默认为"POST"\n\n网址模板可使用{x}格式指定模板变量,模板变量可以是任意数值或字母.\n占位符在实际使用中将被替换为任意的成员名字参数\n而{...}表示任意个数的成员名字占位符,多个替换参数将使用斜杠拼接为实际URL\n如果未指定{...}占位符,则自动在尾部杠拼接任意个数的成员名字参数
+!web_restClient.declareApi() = !web_rest_api.
+
+!web_rest_api.资源名字(请求参数表,"POST") = 使用资源名字替换URL模板中的占位符
+!web_rest_api.head = 使用该HEAD方法提交请求\n如果该函数返回非null值为成功,请使用lastResponseHeaders获取应答HTTP头
+!web_rest_api.get = 使用该GET方法提交请求,获取资源\n该对象本身可作为一个函数,也可以调用 get.成员函数名 获取成员函数\n成员函数替换URL中{x}占位符,并使用名字前缀显示指定HTTP请求方法\n!web_rest_api.
+!web_rest_api.post = 使用该POST方法提交请求,新增或修改资源\n该对象本身可作为一个函数,也可以调用 get.成员函数名 获取成员函数\n成员函数替换URL中{x}占位符\n!web_rest_api.
+!web_rest_api.delete = 使用该DELETE方法提交请求,删除资源\n该对象本身可作为一个函数,也可以调用 get.成员函数名 获取成员函数\n成员函数替换URL中{x}占位符\n!web_rest_api.
+!web_rest_api.put = 使用该PUT方法提交请求,替换或更新资源\n该对象本身可作为一个函数,也可以调用 get.成员函数名 获取成员函数\n成员函数替换URL中{x}占位符\n!web_rest_api.
+!web_rest_api.patch = 使用该PATCH方法提交请求,更新资源\n该对象本身可作为一个函数,也可以调用 get.成员函数名 获取成员函数\n成员函数替换URL中{x}占位符\n!web_rest_api.
+end intellisense**/

@@ -1,0 +1,152 @@
+//windowCommand 窗口命令
+import win.ui.minmax;
+import web.layout.behavior.windowSizer;
+namespace web.layout.behavior.windowCommand;
+
+onAttach = function( ltOwner ){
+	var form = ltOwner.getForm();
+	if( !form.initHtmlayoutWindowCommand ){
+		form.initHtmlayoutWindowCommand = true;
+		
+		begin
+			var elMax = ltOwner.root().querySelector('[command="window-max"],[command="window-restore"]');
+			if(!..win.getStyle(form.hwnd,0x10000/*_WS_MAXIMIZEBOX*/) ){ 
+				if( elMax ) elMax.style.display = "none";
+				
+			}
+			elseif(elMax){
+				var ltBody = ltOwner.root().querySelector("body");
+				if( ltBody ) ltBody.insertAdjacentHTML("beforeEnd",'<div style="behavior:windowSizer"/>')
+			}
+	
+			if(!..win.getStyle(form.hwnd,0x20000/*_WS_MINIMIZEBOX*/) ){
+				var elMin = ltOwner.root().querySelector('[command="window-min"]') ;
+				if( elMin ) elMin.style.display = "none";
+			}
+		end;
+		
+		form.adjust = function( cx,cy,wParam ) {
+		 	var ltRoot = ltOwner.root();	
+		 	var ltBody = ltRoot.querySelector("body"); 
+		 	if( wParam == 0x2/*_SIZE_MAXIMIZED*/ ){
+		 		var elMax = ltRoot.querySelector('[command="window-max"]')
+				if( elMax ){
+					elMax.command = "window-restore"; 
+					if( ..string.cmp( elMax.style["font-family"],"Marlett") == 0 ) elMax.innerText = "2";
+					if(ltBody)ltBody.maximize = "true";
+				}
+				
+				ltRoot.enumQuery(
+					function(ltBorder){
+					 	ltBorder.style.display = "none";
+					},"[windowSizer] [sizer-command]"
+				)
+		 	}
+		 	elseif( wParam == 0x0/*_SIZE_RESTORED*/ ){
+		 		var elRestore = ltOwner.root().querySelector('[command="window-restore"]')
+				if( elRestore ) {
+					elRestore.command = "window-max"; 
+					if( ..string.cmp( elRestore.style["font-family"],"Marlett") == 0 ) elRestore.innerText = "1";
+					if(ltBody)ltBody.maximize = null;
+				}
+				ltRoot.enumQuery(
+					function(ltBorder){
+					 	ltBorder.style.display = "block";
+					},"[windowSizer] [sizer-command]"
+				)
+		 	}
+		};
+		if( form.onGetMinMaxInfo === null ){
+			..win.ui.minmax( form ); 
+		}
+	}
+	return true;
+}
+
+onMouseUp = function (ltTarget,ltOwner,x,y,mouseParams) {
+	var cmd = ltTarget.command or ltOwner.command;
+	var form = ltTarget.getForm(); 
+	
+	select(cmd) {
+		case "window-max"{
+			form.hitmax();
+		}
+		case "window-restore"{
+			form.hitmax();
+		}
+		case "window-min" {
+			form.hitmin();
+		}
+		case "window-close" {
+			form.close();
+		} 
+		else {
+			return;
+		} 
+	}
+	
+	ltTarget.state.hover = false;
+	return true;
+}
+
+/*  
+-command:window-caption //允许拖动,节点可指定command但不是此属性禁止拖动
+*/
+var titleClickableTags = { li=1;button=1;widget=1;input=1;a=1 }
+var isTitleBar  = function(ltTarget,ltOwner){
+	var cmdTarget = ltTarget.getCustomAttribute("command");
+	var cmd = ltOwner.getCustomAttribute("command");  
+	var c = cmdTarget : cmd
+	if( （ c== "window-caption"） || !c ){
+		if( !cmdTarget ){
+			var ltParent = ltTarget;
+			while(ltParent){ 
+				var customCmd = ltParent.getCustomAttribute("command") ;
+				if( customCmd ){ 
+					if( customCmd != "window-caption" )
+						return false;
+						
+					break;
+				}
+				else {  
+					if( ltParent.style.behavior ) {
+						if( ltParent != ltOwner ){ 
+							return false; //other behavior;
+						}
+						break;
+					}
+				 
+					if( titleClickableTags[ltParent.tagName]   ){
+						return false;
+					} 
+				}
+				
+				ltParent = ltParent.parent();
+			}
+		}
+		return true;
+	};
+}
+
+onMouseDown = function (ltTarget,ltOwner,x,y,mouseParams) {  
+	if( isTitleBar(ltTarget,ltOwner) ){  
+		var form = ltTarget.getForm();    
+		var x,y = form.getPos();
+		if( ( x<= 0 || y <= 0 ) && ( ! ..win.isZoomed(form.hwnd) ) ){ 
+			form.setPos(1,1); 
+		}
+			
+		form.hitCaption();
+		return true;
+	}
+}
+
+onMouseDblClick = function (ltTarget,ltOwner,x,y,mouseParams) { 
+	if( isTitleBar(ltTarget,ltOwner) ){ 
+		var doc = ltOwner.root();
+		if( doc.querySelector( '[command="window-max"]') || doc.querySelector( '[command="window-restore"]' ) ) {
+			ltOwner.getForm().hitmax();
+			return true;
+		}
+	}
+}

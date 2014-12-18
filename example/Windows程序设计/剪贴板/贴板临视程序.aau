@@ -1,0 +1,41 @@
+import win.ui;
+import win.clip;//导入剪贴板支持库
+/*DSG{{*/
+var winform = win.form(parent=...; min=1;bottom=249;max=1;text="AAuto Form";right=349 )
+winform.add( 
+edit={ bottom=175;right=314;left=47;multiline=1;top=31;z=0;text="剪贴板改变会显示在这里";edge=1;cls="edit" }
+)
+/*}}*/
+
+//声明剪贴板监视器用到的API
+SetClipboardViewer = ::User32.api( "SetClipboardViewer", "int(int hWndNewViewer)") 
+ChangeClipboardChain = ::User32.api( "ChangeClipboardChain", "int(int hWndRemove,int hWndNewNext)") 
+
+//注册加入成为监视窗口,nextClipboardViewer为上一个监视窗口
+var nextClipboardViewer  =  SetClipboardViewer( winform.hwnd );
+
+//窗口消息回调函数,在设计器中鼠标左键双击窗体会自动生成下面的函数
+winform.wndproc = function(hwnd,message,wParam,lParam){
+    select(message) {//判断消息类型
+        case  0x308/*_WM_DRAWCLIPBOARD*/  {
+            //剪贴板内容改变了,读取剪贴板数据
+            winform.edit.text = win.clip.read() 
+            //然后发送给下一个窗口
+            ::SendMessageInt( nextClipboardViewer,message,wParam,lParam );
+        } 
+        case  0x30D/*_WM_CHANGECBCHAIN*/ {
+            //监视剪贴板的窗口组成一个链表,如果链表发生改变,在下面处理之
+            if (wParam == nextClipboardViewer)
+                nextClipboardViewer = lParam;
+            else
+                ::SendMessageInt( nextClipboardViewer,message,wParam,lParam );
+        
+        }
+    } 
+}//endproc
+
+//显示窗口
+winform.show(true) 
+//进入消息循环
+win.loopMessage();
+return winform;

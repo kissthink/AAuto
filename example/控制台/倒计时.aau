@@ -1,0 +1,12 @@
+import console;
+ 
+//打开控制台
+console.open();
+
+console.stdout.write("倒计时:",100 );
+ 
+for(i=100;1;-1){ 
+	console.writeBack("%03d",i);
+	sleep(1)
+}
+

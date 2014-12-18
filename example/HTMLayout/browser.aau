@@ -1,0 +1,56 @@
+//简单浏览器
+import win.ui;
+/*DSG{{*/
+var winform = ..win.form(text="AAuto论坛极速浏览器";right=763;bottom=549;parent=...)
+winform.add(
+btnBack={cls="button";text="后退";left=517;top=4;right=622;bottom=29;disabled=1;dr=1;dt=1;z=3};
+btnForward={cls="button";text="前进";left=632;top=4;right=737;bottom=29;disabled=1;dr=1;dt=1;z=2};
+btnOpen={cls="button";text="打开";left=403;top=4;right=508;bottom=29;dr=1;dt=1;z=4};
+eBrowser={cls="custom";left=3;top=33;right=761;bottom=545;cp=1;db=1;dl=1;dr=1;dt=1;edge=1;hscroll=1;multiline=1;notify=1;readonly=1;vscroll=1;z=1};
+editUrl={cls="edit";left=10;top=4;right=393;bottom=30;dl=1;dr=1;dt=1;edge=1;multiline=1;z=5}
+)
+/*}}*/
+
+import web.layout;
+wbLayout = web.layout( winform.eBrowser );
+winform.modifyStyle(,0x2000000/*_WS_CLIPCHILDREN*/); 
+
+var history = { index = 0 } ; 
+wbLayout.onDocumentComplete = function() {
+	var index = history.index + 1; 
+	history.index = index 
+	
+	var url = wbLayout.location;
+	history[ index ] = url 
+	winform.editUrl.text = url; 
+	
+	winform.btnBack.disabled = index < 2;
+	winform.btnForward.disabled =(  index == #history ) ; 
+}
+
+winform.btnOpen.oncommand = function(id,event){
+	wbLayout.go( winform.editUrl.text )
+}
+
+winform.btnForward.oncommand = function(id,event){
+	var url = history[ history.index + 1 ]
+	if( url ){ 
+		wbLayout.go(url)
+	}
+}
+
+winform.btnBack.oncommand = function(id,event){
+	var url = history[ history.index - 1 ] 
+	if( url ){
+		history.index-=2;
+		wbLayout.go(url)
+	}
+}
+
+wbLayout.go("http://wap.baidu.com")
+
+cx,cy = win.getScreen();
+winform.setPos( cx-610,10 ,600,cy-60)
+
+winform.show() 
+win.loopMessage();

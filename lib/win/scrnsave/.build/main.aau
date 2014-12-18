@@ -1,0 +1,15 @@
+import fsys;
+import ide;
+ 
+if( ide.setPublishName ){
+	var path = ide.getPublishPath();
+	
+	var tpath = io.splitpath(path); 
+	if( string.cmp(tpath.ext,".src") ){
+		var newname = tpath.name + ".scr";
+		var newpath = fsys.path.replaceFile(path,newname); 
+		
+		fsys.rename(path, newpath );
+		ide.setPublishName(newname);
+	}
+}

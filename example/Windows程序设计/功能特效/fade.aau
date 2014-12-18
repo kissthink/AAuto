@@ -1,0 +1,40 @@
+//淡入淡出效果
+import win.ui;
+/*DSG{{*/
+var winform = win.form(parent=...; text="AAuto Form";right=602;bottom=411 )
+winform.add(  )
+/*}}*/
+
+trans = 10
+var tmId = winform.addtimer( 
+	5,
+	function(hwnd,msg,id,tick){
+		trans += 5
+		winform.transparent( trans ) 
+		if( trans > 240 ){
+			winform.transparent(false)
+    		return false
+		}
+	} 
+)
+
+winform.onClose = function(hwnd,message,wParam,lParam){
+	trans = 255
+	var tmId = winform.addtimer( 
+		5,
+		function(hwnd,msg,id,tick){
+			trans -= 5
+			winform.transparent( trans ) 
+			if( trans < 10 ){
+				winform.onClose = null;
+				winform.close()
+    			return false
+			}
+		} 
+	)  
+	return false
+}
+
+winform.transparent( 1 ) 
+winform.show() 
+win.loopMessage();

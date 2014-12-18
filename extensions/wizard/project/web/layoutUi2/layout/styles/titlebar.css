@@ -1,0 +1,62 @@
+﻿#header .title-bar{
+    margin-right:95px;
+    padding-left:15px;
+    height:28px;
+    line-height: 28px;
+    font:system;
+    color:#fff; 
+} 
+
+#header .titlebox{  
+    width:max-intrinsic; 
+    height:28px; 
+    float:right; 
+    margin-right:8px; 
+    overflow-x:hidden;
+}
+
+#header .titlebox a{ 
+    display:inline-block; //显示为块节点 
+    width:max-intrinsic; 
+    height:14px;
+    font-family:"Marlett";/*该字体显示按钮符号*/  
+    font-size:14px;
+    padding:4px;
+    color:#fff; 
+    cursor:default; 
+}
+
+/*CSS选择器中,方括号指定节点拥有的属性*/
+#header .titlebox a[command]:hover{ 
+    background:#6ebccf; 
+}
+
+#header .titlebox a[command]:active{ 
+    background:#FF0000; 
+} 
+
+#header a[command="window-restore"]{ 
+    content:"2";/*Marlett字体为还原按钮符号*/ 
+} 
+
+#header .window-menu{ 
+  display:block;  
+  float:right;
+  behavior:popup-menu; 
+  width:max-intrinsic; 
+  height:14px;
+  font-family:"Marlett";/*该字体显示按钮符号*/  
+  font-size:14px;
+  padding:4px;
+  color:#fff;
+}
+
+#header .window-menu:hover{
+  background:#6ebccf;
+}
+
+#header .window-menu:owns-popup /*菜单已弹出*/
+{ 
+    background-color: #FF0000;
+    color: #FFFFFF;
+}

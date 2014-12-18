@@ -1,0 +1,35 @@
+//module 模块
+namespace py
+
+class module{
+	ctor( object ){
+	
+		if(!object) return;
+		this = ..py.object( object );
+		
+		// 避免调用 set 元方法
+		this[["getDict"]] = function(){
+			return ..py.dict( PyModule_GetDict(owner.pyObject) );
+		};
+	};  
+}
+
+namespace module{
+	var dll = assert( ..py._dll,"请先导入py支持库" );
+	PyModule_GetDict = dll.api("PyModule_GetDict","pyObject(PyObject mod)","cdecl")   
+}
+
+/**intellisense() 
+!pyModule.parseString() = 解析为字符串
+!pyModule.parseNumber() = 解析为数值
+!pyModule.getDict() = 如果对象是一个模块,返回字典对象\n!pyDict.
+!pyModule.get("__/*属性名*/") = 读写属性成员\n属性值为python对象
+!pyModule.has("__/*属性名*/") = 是否存在指定的属性
+!pyModule.get() = !pyModule.
+!pyModule.callObject(__/*参数*/) = 该对象为函数对象时支持此方法\n参数支持python对象,或字符串、数值
+!pyModule.call(__/*不定个数参数*/) = 该对象为函数对象时支持此方法\n参数为不定个数的字符串或数值
+!pyModule.callObject() = !pyModule.
+!pyModule.call() = !pyModule.
+!pyModule.getFuncDesc() = 获取函数原型
+!pyModule.getFuncName() = 获取函数名
+end intellisense**/

@@ -1,0 +1,26 @@
+//控制台扩展库
+
+//console库可根据需要自动打开控制台
+import console;
+
+console.box(,,60,10,31,"请输入文本:" ) 
+var str = console.getText( "请输入文本:" )
+
+console.clearScreen ()
+var num = console.getNumber( "请输入数值:" ); //输入错误数值自动重试
+var arr = { str;num }
+
+//输出变量类型和值
+console.dump( arr )
+
+//将控制台窗口的文本再读到字符串中
+str = console.readOutputCharacter()
+console.log( "--------------------------" )
+console.log( str )
+
+for(i=1;25;1){
+	console.printf("%d -> 20",i );
+	console.more( 10 ); //分页显示
+}
+
+console.pause()

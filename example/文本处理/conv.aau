@@ -1,0 +1,38 @@
+//¼ò·±×ª»»ÑÝÊ¾
+import win.ui;
+/*DSG{{*/
+var winform = ..win.form( bottom=473;text="¼ò·±×ª»»ÑÝÊ¾";right=653 )
+winform.add( 
+btnGbk2Big5={ bottom=440;right=451;left=322;top=397;z=4;text="GBK×ªBIG5·±";cls="button" };
+btnF2j={ bottom=440;right=301;left=172;top=397;z=3;text="GBK·±×ª¼ò";cls="button" };
+btnJ2f={ bottom=440;right=151;left=22;top=397;z=2;text="GBK¼ò×ª·±";cls="button" };
+btnBig52Gbk={ bottom=440;right=602;left=473;top=397;z=5;text="BIG5·±×ªGBK¼ò";cls="button" };
+richedit={ bottom=374;right=628;left=14;multiline=1;top=14;z=1;edge=1;cls="richedit" }
+)
+/*}}*/
+
+import string.conv;
+
+winform.btnBig52Gbk.oncommand = function(id,event){
+	winform.richedit.text = string.conv.big5ToGbk(winform.richedit.text) 
+}
+
+
+winform.btnGbk2Big5.oncommand = function(id,event){
+	winform.richedit.text = string.conv.gbkToBig5(winform.richedit.text)
+}
+
+
+winform.btnF2j.oncommand = function(id,event){
+	winform.richedit.text = string.conv.simplized(winform.richedit.text,true)
+	
+}
+
+
+winform.btnJ2f.oncommand = function(id,event){
+	winform.richedit.text = string.conv.traditionalized(winform.richedit.text,true)
+}
+
+
+winform.show() 
+win.loopMessage();

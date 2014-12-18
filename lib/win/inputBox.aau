@@ -1,0 +1,60 @@
+//inputBox 输入框
+namespace win; 
+
+class  inputBox{
+	ctor(parent,password){  
+		
+/*DSG{{*/
+this = ..win.form(cls="";text="AAuto Form";right=425;bottom=119;mode="popup";parent=parent)
+this.add(
+btnCancel={cls="button";text="取消";left=265;top=75;right=339;bottom=103;z=2};
+btnOk={cls="button";text="确定";left=180;top=74;right=254;bottom=102;style=1;z=1};
+info={cls="static";text="请输入";left=25;top=13;right=355;bottom=31;notify=1;transparent=1;z=4};
+input={cls="edit";left=45;top=36;right=396;bottom=61;edge=1;password=password;z=3}
+)
+/*}}*/
+
+		this.base_doModal = this.doModal; 
+		this.doModal = function(...){
+			this.input.setFocus();
+			return this.base_doModal(...);
+		}
+		
+		this.btnCancel.oncommand = function(id,event){
+			this.endModal() 
+		};
+		
+		this.btnOk.oncommand = function(id,event){ 
+			this.endModal( this.input.text )
+		};  
+	} 
+}
+
+namespace inputBox{
+	//类有自已的名字空间，将外部名字空间导入类里面，这样就不需要加上..前缀访问了
+	import win;
+	import win.ui;   
+}
+ 
+/***intellisense()
+win.inputBox() = 创建一个输入对话框
+win.inputBox(__/*可选在此指定父窗口*/) = 创建一个输入对话框
+win.inputBox(0__/*可选在此指定父窗口*/,true) = 创建一个输入密码的对话框
+!inputBox.doModal() = 弹出输入对话框\n该函数返回用户输入的值\n取消则返回null空值
+!inputBox.onInitDialog = @.onInitDialog = function(hwnd,message,wParam,lParam){\n	??.center()__/*输入框初始化完成触发该函数*/\n}
+!inputBox.center() = 居中显示
+!inputBox.info = !edit.
+!inputBox.input = !edit.
+!inputBox.text = 输入框标题
+!inputBox.setPos(.(x,y,宽,高,插入位置,参数) = 调整窗口位置或排序\n所有参数可选 
+!inputBox.getPos() = 返回相对坐标,宽,高 
+!inputBox.topmost()=窗体始终最前
+!inputBox.topmost(false)=取消窗体始终最前
+!inputBox.modifyStyle(.(remove,add) = 如果指定第三个参数，则使用此参数调用::SetWidnowPos 
+!inputBox.modifyStyleEx(.(remove,add) = 如果指定第三个参数，则使用此参数调用::SetWidnowPos  
+!inputBox.addtimer = @var tmId = ??.addtimer( \n	1000,\n	function(id){\n		/*定时回调函数*/\n	} \n)
+!inputBox.killtimer(__/*请输入ID*/) = 删除定时器
+!inputBox.settimer(__/*请输入ID*/,1000) = 重新设定定时器的延时时间
+!inet_downBox.setTimeout(.(函数名,延时,其他参数) = 延时执行函数
+?win.inputBox = !inputBox.
+end intellisense***/

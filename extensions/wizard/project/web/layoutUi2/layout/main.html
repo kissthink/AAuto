@@ -1,0 +1,46 @@
+﻿<html>
+<head>
+  <link rel="stylesheet" href="styles/common.css" />
+  <link rel="stylesheet" href="styles/titlebar.css" />
+  <link rel="stylesheet" href="styles/main.css" />
+  <link rel="stylesheet" href="styles/main.tabs.css" />
+</head> 
+<body>
+    <!-- 界面顶栏 -->
+    <div id="header"> 
+          <include src="titlebar.html" /> 
+    </div> 
+    
+    <!-- 界面中部内容栏 -->
+    <div id="container"> 
+    
+       <div class="tabs"  >
+       
+          <div class="strip" >  
+             <div panel="panel1" selected><span>选项一</span></div>
+             <div panel="panel2"><span>选项二</span></div>
+             <div panel="panel3"><span>选项三</span></div>         
+          </div>
+          
+          <div class="panel" name="panel1"> 
+              这是第一个选项页,其中name属性指定选项卡名字 <br /><br />
+              <a href="tabs://about.html" target="_blank" title="新页面">在超链接前面加上tabs://前缀就可以自动创建新选项卡并打开新页面</a>
+          </div>
+           
+          <div class="panel" name="panel2"> 
+              这是第二个选项页,其中name属性指定选项卡名字 
+              <button>按钮</button>
+          </div>
+          
+          <div class="panel" name="panel3"> 
+              这是第三个选项页,其中name属性指定选项卡名字 
+          </div> 
+           
+       </div> 
+    </div>
+    
+    <!-- 界面底栏 -->
+    <div id="footer">
+        <button id="help">HTMLayout 布局教程</button>
+    </div>
+</body>

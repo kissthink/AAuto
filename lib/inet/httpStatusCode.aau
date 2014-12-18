@@ -1,0 +1,90 @@
+//httpStatusCode HTTP状态码
+namespace inet.httpStatusCode;
+	
+..table.mixin( self, {
+	[100]="提示/客户端应继续请求";
+	[101]="提示/切换协议";
+	[200]="已成功";
+	[201]="已成功/创建资源";
+	[202]="已成功/接受请求";
+	[203]="已成功/非权威信息";
+	[204]="已成功/无内容";
+	[205]="已成功/重置内容";
+	[206]="已成功/断点续传部份内容";
+	[300]="重定向/多项选择";
+	[301]="重定向/永久移动地址";
+	[302]="重定向/已找到地址";
+	[303]="重定向/参见其他";
+	[304]="重定向/未修改使用缓存";
+	[305]="重定向/需使用代理";
+	[306]="重定向/未使用";
+	[307]="重定向/临时";
+	[400]="客户端错误/错误请求";
+	[401]="客户端错误/未授权";
+	[402]="客户端错误/需付费";
+	[403]="客户端错误/禁止访问";
+	[404]="客户端错误/未找到";
+	[405]="客户端错误/错误的指令动词";
+	[406]="客户端错误/拒绝请求";
+	[407]="客户端错误/要求代理认证";
+	[408]="客户端错误/请求超时";
+	[409]="客户端错误/冲突";
+	[410]="客户端错误/已删除";
+	[411]="客户端错误/未指定长度";
+	[412]="客户端错误/未满足前提条件";
+	[413]="客户端错误/请求实体太大";
+	[414]="客户端错误/请求地址太长";
+	[415]="客户端错误/不支持的媒体类型";
+	[416]="客户端错误/错误的字节区段";
+	[417]="客户端错误/预期结果失败";
+	[500]="服务器错误/内部错误";
+	[501]="服务器错误/未实现";
+	[502]="服务器错误/网关故障";
+	[503]="服务器错误/无效服务";
+	[504]="服务器错误/网关超时";
+	[505]="服务器错误/不支持的HTTP协议版本"
+} )
+
+/**intellisense(inet.httpStatusCode) 
+continue=@100/*inet.httpStatusCode.continue*/
+switchingProtocols=@101/*inet.httpStatusCode.switchingProtocols*/
+oK=@200/*inet.httpStatusCode.oK*/
+created=@201/*inet.httpStatusCode.created*/
+accepted=@202/*inet.httpStatusCode.accepted*/
+non=@203/*inet.httpStatusCode.non*/-AuthoritativeInformation;
+noContent=@204/*inet.httpStatusCode.noContent*/
+resetContent=@205/*inet.httpStatusCode.resetContent*/
+partialContent=@206/*inet.httpStatusCode.partialContent*/
+multipleChoices=@300/*inet.httpStatusCode.multipleChoices*/
+movedPermanently=@301/*inet.httpStatusCode.movedPermanently*/
+found=@302/*inet.httpStatusCode.found*/
+seeOther=@303/*inet.httpStatusCode.seeOther*/
+notModified=@304/*inet.httpStatusCode.notModified*/
+useProxy=@305/*inet.httpStatusCode.useProxy*/
+useProxy=@306/*inet.httpStatusCode.Unused*/ 
+temporaryRedirect=@307/*inet.httpStatusCode.temporaryRedirect*/
+badRequest=@400/*inet.httpStatusCode.badRequest*/
+unauthorized=@401/*inet.httpStatusCode.unauthorized*/
+paymentRequired=@402/*inet.httpStatusCode.paymentRequired*/
+forbidden=@403/*inet.httpStatusCode.forbidden*/
+notFound=@404/*inet.httpStatusCode.notFound*/
+methodNotAllowed=@405/*inet.httpStatusCode.methodNotAllowed*/
+notAcceptable=@406/*inet.httpStatusCode.notAcceptable*/
+proxyAuthenticationRequired=@407/*inet.httpStatusCode.proxyAuthenticationRequired*/
+requestTimeout=@408/*inet.httpStatusCode.requestTimeout*/
+conflict=@409/*inet.httpStatusCode.conflict*/
+gone=@410/*inet.httpStatusCode.gone*/
+lengthRequired=@411/*inet.httpStatusCode.lengthRequired*/
+preconditionFailed=@412/*inet.httpStatusCode.preconditionFailed*/
+requestEntityTooLarge=@413/*inet.httpStatusCode.requestEntityTooLarge*/
+request=@414/*inet.httpStatusCode.request*/-URITooLong;
+unsupportedMediaType=@415/*inet.httpStatusCode.unsupportedMediaType*/
+requestedRangeNotSatisfiable=@416/*inet.httpStatusCode.requestedRangeNotSatisfiable*/
+expectationFailed=@417/*inet.httpStatusCode.expectationFailed*/
+internalServerError=@500/*inet.httpStatusCode.internalServerError*/
+notImplemented=@501/*inet.httpStatusCode.notImplemented*/
+badGateway=@502/*inet.httpStatusCode.badGateway*/
+serviceUnavailable=@503/*inet.httpStatusCode.serviceUnavailable*/
+gatewayTimeout=@504/*inet.httpStatusCode.gatewayTimeout*/
+httpVersionNotSupported=@505/*inet.httpStatusCode.httpVersionNotSupported*/
+end intellisense**/

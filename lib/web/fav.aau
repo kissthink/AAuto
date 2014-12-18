@@ -1,0 +1,33 @@
+//fav 收藏夹函数
+
+import fsys;
+import web.parser
+import inet.http;
+import win;
+
+namespace web.fav
+ 
+::Shdocvw := ..raw.loadDll("Shdocvw.dll") 
+DoAddToFavDlg = ::Shdocvw.api("DoAddToFavDlg","int(int hwnd,string szPath,int nSizeOfPath,string szTitle,int nSizeOfTitle,pointer pidl)")
+ 
+::Ole32 := ..raw.loadDll("Ole32.dll")
+CoTaskMemFree := Ole32.api("CoTaskMemFree","void(pointer hMem)" ) 
+
+
+addDlg = function(url,title,hwnd=0){
+	hwnd = hwnd[["hwnd"]] || hwnd;
+	if(!title){
+		var str = ..inet.http().get(url); 
+	   title =  ..web.parser.getTitle( str ) ;
+	}
+	if(!hwnd)
+		hwnd = ..win.getForeground();
+		
+	var re,pid = ..fsys.SHGetSpecialFolderLocation(hwnd,0x0006 /*_CSIDL_FAVORITES*/ ) 
+	DoAddToFavDlg(hwnd,url,#url,title,#title,pid )
+	CoTaskMemFree(pid)	
+}
+
+/**intellisense(web.fav)
+addDlg(.(网址,标题,主窗体) = 弹出添加收藏对话框\n如果不指定标题则自动获取网页标题
+end intellisense**/

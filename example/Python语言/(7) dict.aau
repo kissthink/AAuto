@@ -1,0 +1,68 @@
+//7) 字典
+import console;
+console.open();
+
+import py; 
+pyCode = /***
+  
+#创建字典,与js语法一样
+dic = { 
+    "键" : "值",
+    "键2" : "值2",
+    "test" : 123
+}
+#只要是不可修改对象，都可以用来做字典的key
+#列表和字典,不可以用来做字典的key,这一点与AAuto不同,AAuto中所有对象都可以用作字典的键
+#python里字典成员的排列是无序的 - 这与AAuto是相同的
+
+#遍历字典
+for k in dic:
+    print(k )
+    print(dic[k] )
+    
+#如果你希望象aauto中那样 for k,v in dic是不行的，
+#取代的方法是调用字典的 items() 函数逐一以元组形式返回成员，如下：
+for k,v in dic.items(): #你不能象aauto中那样添加括号，例如 for( k,v in dic.items() )是错的
+	print "items",k,v
+
+#判断字典中是否存在指定的键，在aauto里要简单一些可以直接写 if( dic["键2"] ) {}
+if '键2' in dic: # 或者写 if dic.has_key('键2')
+    print "dic里存在键2"
+
+#python中删除一个字典成员用下面的语句
+del dic["test"] #不能写 dic["test"] = None, 而在AAuto里可以直接写 dic["test"] = null
+
+#注意在python中访问一个不存在的索引是会抛出异常的
+#print dic["test"]	
+
+print getattr(dic,"test","指定默认值就不会报错了")
+***/
+py.exec( pyCode ) //运行python代码
+
+//下面是类似的AAuto代码
+//=========================================================
+
+dic = { 
+    键 = "值";  //AAuto使用等号分隔键值对，而不是js,python那样用冒号分隔
+    键2 = "值2"; //AAuto始终用分号分隔成员，而不是js,python那样使用逗号
+    test = 123
+}
+ 
+//遍历字典，不需要象python那样写 dic.items()
+//aauto的语法相对简单，直白，语句通常就是你看上去的那个意思，尽可能的不言而自明。
+for(k,v in dic){
+	io.print(k,v) 
+}
+
+//检查字典是否存在指定的键，不需要象python那样写 if( "键名" in 字典对象 )
+if( dic["键2"] ) {
+	io.print("dic里存在键2")
+}
+
+dic["test"] = null
+
+//aauto中可以自由访问不存在的值,返回null不会报错
+io.print( dic["test"] ); 
+
+//aauto中你甚至可以直接访问一个不存在或任意数据类型对象的不存在的值,只要用两对方括号里面放索引就可以
+io.print( 不存在[["test"]] : "这是默认值" ); 

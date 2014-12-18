@@ -1,0 +1,45 @@
+//服务端
+import zeromq
+
+var context = zeromq.context(1)
+
+//replay模式socket与客户端的request模式配对使用
+var responder = context.zmq_socket_reply()
+
+io.open()
+if( ! responder.bind(  "tcp://*:5559") ){ 
+    io.print( zeromq.lasterr() );  
+    return;
+}
+
+while (1) {
+    request = zeromq.message();
+    
+    ..io.print("服务端已启动")
+    if( ! responder.recvMsg(request) ){
+        ..io.print( zeromq.lasterr() )
+    }
+    
+    io.print ("服务端收到消息",request.getString() );
+    request.close();
+
+    //在这里可以添加其他代码
+    sleep (1);
+    io.print("正在响应")
+
+    // 发送消息
+    reply = zeromq.message("客户端你好"); 
+    responder.sendMsg(reply)
+    reply.close();
+
+    //上面的代码也可以简化为一句,如下:
+    //responder.send("客户端你好")
+
+    io.print("响应完毕")
+}
+
+//上面的代码会一直循环不会中断, 
+//如果使用break语句中断,则执行下面的代码释放资源 
+responder.close(); 
+context.term();
+

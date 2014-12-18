@@ -1,0 +1,9 @@
+import win.ui;
+/*DSG{{*/
+var winform = ..win.form(text="AAuto Form";right=600;bottom=400;parent=...)
+winform.add()
+/*}}*/
+
+winform.show() 
+win.loopMessage();
+return winform;

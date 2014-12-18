@@ -1,0 +1,220 @@
+//util 扩展工具
+import win.reg;
+import web.form;
+import com.interface.IOleControl  
+
+namespace web.form.util;
+
+::Urlmon := ..raw.loadDll("Urlmon.dll")
+UrlMkSetSessionOption = Urlmon.api("UrlMkSetSessionOption","int(INT option, pointer buffer,INT len,pointer reserved)" )
+
+var IOleControl = ..com.interface.IOleControl 
+var exefile = ..io._exefile;
+
+ambientPropertyChange = function(wb,id){
+	var doc = wb.document;
+	var ctrl = IOleControl.Query( doc)   
+	ctrl.OnAmbientPropertyChange(id)
+	ctrl = null; 
+	collectgarbage("collect")	
+}
+
+dlCtrl = function(wb,dlctl){
+	wb.dlControl = dlctl;
+	ambientPropertyChange(wb,-5512) 
+}
+
+setUserAgent = function(wb,agent){ 
+	wb.agent = agent;
+	UrlMkSetSessionOption(agent?0x10000001:0x10000002,agent,#agent);
+	ambientPropertyChange(wb,-5513);
+}
+
+refreshOption = function(){
+	UrlMkSetSessionOption(  39/*_INTERNET_OPTION_SETTINGS_CHANGED*/, ,0 );
+	UrlMkSetSessionOption(  37/*_INTERNET_OPTION_REFRESH*/, ,0  );  
+}
+ 
+featureControl = function(name,value,ref=true){ 
+	var reg = ..win.reg("HKEY_CURRENT_USER\SOFTWARE\Microsoft\Internet Explorer\Main\FeatureControl\" + name )
+	if( reg.queryValue(exefile)==value ){ 
+		reg.close(); 
+		return;
+	}
+	reg.setDwValue( exefile,value)
+	reg.close() 
+	if(ref){
+		refreshOption() 
+	}	
+}  
+
+enableTab = function(v=1,ref){ 
+	featureControl( "FEATURE_TABBED_BROWSING",v?1:0,ref ); 
+}
+
+emulation = function(ver=7000,ref=true){ 
+	featureControl( "FEATURE_BROWSER_EMULATION",ver,ref );
+}  
+
+gpuRendering = function(gpu,ver=9000,ref=true){ 
+	featureControl( "FEATURE_BROWSER_EMULATION",ver,false )
+	featureControl( "FEATURE_GPU_RENDERING",gpu?1:0,ref );	
+}
+
+getVersion = function(){
+	var reg = ..win.reg("HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Internet Explorer",true)
+	if(reg){
+		var ver =  reg.queryValue("Version")	
+		reg.close()
+		return ver;
+	} 
+}
+
+var IWebBrowser2 = class {
+	ctor(){
+		this = ..com.interface.IUnknown(); 
+	}; 
+    pointer GetTypeInfoCount; 
+    pointer GetTypeInfo ; 
+    pointer GetIDsOfNames ; 
+    pointer invoke;
+    pointer GoBack;
+    pointer GoForward;
+    pointer GoHome;
+    pointer GoSearch;
+    pointer Navigate;
+    pointer Refresh;
+    pointer efresh2; 
+    pointer Stop;
+    pointer get_Application; 
+    pointer get_Parent;
+    pointer get_Container;
+    pointer get_Document = "int(pointer &ppDisp)" 
+}
+IWebBrowser2.IID = "{D30C1661-CDAF-11D0-8A3E-00C04FC9E26E}";
+
+//跨域支持
+import com.interface.IServiceProvider;
+var IID_IWebBrowserApp = ..win.guid.fromString("{0002DF05-0000-0000-C000-000000000046}")
+var IID_IWebBrowser2 = ..win.guid.fromString("{D30C1661-CDAF-11D0-8A3E-00C04FC9E26E}")
+ 
+var queryBrowserPtr  = function(ele){
+	if(!ele)
+		return;
+		
+	if(ele.contentWindow )
+		ele = ele.contentWindow;
+		
+    var service = ..com.interface( ele,..com.interface.IServiceProvider) 
+    var hr,objPtr = service.QueryService( 
+        IID_IWebBrowserApp
+        ,IID_IWebBrowser2
+        )
+        
+    if( hr >=0/*SUCCEEDED*/ )
+    	return objPtr;
+}
+
+queryBrowser = function(ele){
+	var objPtr  = queryBrowserPtr(ele); 
+	if( objPtr ){
+		var ret = ..com.QueryObject( objPtr )
+		..com.Release(objPtr);
+		return ret;
+	} 
+}
+
+cacheBrowserIt = { @{_weak = "kv"} }
+queryBrowserIt = function(ele){
+	var ret = cacheBrowserIt[ele];
+	if(!ret){
+		var objPtr  = queryBrowserPtr(ele);
+		if( objPtr ){
+			ret = ..com.interface( objPtr,IWebBrowser2 )
+			..com.Release(objPtr) 
+		} 
+	}
+	return ret;
+}
+ 
+var getDocumentFromBrowserIt = function(browserIt){ 
+    var hr,docPtr =  browserIt.get_Document(); 
+    if( hr >=0/*SUCCEEDED*/ ){
+    	var doc = ..com.QueryObject( docPtr ) 
+    	..com.Release(docPtr)
+    	return doc;
+    }
+}
+
+var queryDocument = function(ele){ 
+	var browserIt = queryBrowserIt(ele)  
+	if( browserIt ) { 
+		return getDocumentFromBrowserIt(browserIt);
+	}
+}  
+
+var crossMeta = { 
+	[true] = {
+		getDoc = function(frame){ 
+			if(frame===null) {  
+				if( ! owner._browserIt )
+					return owner._browser.getDocument(); 
+					
+				return getDocumentFromBrowserIt( owner._browserIt );  
+			} 
+			var ele = owner.getFrame(frame); 
+   			if(ele){
+   				return queryDocument(ele) 
+   			}
+		}	
+		getWebForm = function(frame){
+			if(frame===null)
+				return owner;
+			
+			var wnd = owner.getFrame(frame) 
+   			if(wnd){ 
+   				var wb = { }
+   				wb._form = owner[["_form"]] ? owner[["_form"]] : {hwnd = owner.hwnd}
+   				wb._form.web = wb
+   				var objPtr  = queryBrowserPtr(wnd);
+				if( objPtr ){
+					wb._browser = ..com.QueryObject( objPtr )
+					wb._browserIt = ..com.interface( objPtr,IWebBrowser2) 
+					..com.Release(objPtr);
+				}   
+   				wb@ = owner@
+   				return wb;  
+   			}
+		} 
+	};
+	[false] =  {
+		getDoc = ..web.form._metaProperty.getDoc;
+		getWebForm  = ..web.form._metaProperty.getWebForm
+	}  
+}
+crossDomain = function( cross = true ) {
+	..util.metaProperty.extend( ..web.form ,crossMeta[cross] );
+}
+
+ 
+/**intellisense(web.form.util)
+dlCtrl(wb,_DLCTL__) =  修改web窗体下载控制参数
+dlCtrl(wb) = 恢复默认设置
+dlCtrl(wb,0) = 禁止下载图片
+setUserAgent(wb) = 恢复默认useragent
+setUserAgent(wb,"AAuto Explorer") = 恢复默认useragen
+enableTab() = 启用tab选项卡支持
+emulation(7000) = 设置渲染模式,\n如果已经创建了web窗体,应重启程序才能生效.
+featureControl(.("FEATURE_BROWSER_EMULATION",7000,false) = 改变注册表设置,\n参数(注册表键名,值,是否刷新)
+gpuRendering(true) = 启用GPU硬件加速
+gpuRendering(false) = 关闭GPU硬件加速
+enableTab(false) = 禁用tab选项卡支持,\n如果已经创建了web窗体,应重启程序才能生效.
+refreshOption() = 刷新web设置
+crossDomain() = 允许所有web.form对象跨域访问框架
+crossDomain(false) = 关闭跨域功能 
+getVersion() = 返回IE版本号
+end intellisense**/
+
+/**intellisense()
+?.queryDocument = !document.
+end intellisense**/

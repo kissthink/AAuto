@@ -1,0 +1,18 @@
+import ide;
+import fsys;
+
+var publisDir = ide.getPublisDir();
+if(!#publisDir)return; 
+
+var wkePubDir =  fsys.joinpath(publisDir,"\lib\web\kit\.dll\" ); 
+if( ! io.exist(wkePubDir) ){ 
+	var libPath,libDir = io.libpath("web.kit")
+	
+	var pluginsDir = fsys.joinpath(publisDir,"\lib\web\kit\.dll\plugins" ); 
+	..fsys.createDir(pluginsDir);
+	..fsys.copy( fsys.joinpath(libDir,"\.dll\plugins\*") ,pluginsDir,0x10/*_FOF_NOCONFIRMATION*/  | 0x200/*_FOF_NOCONFIRMMKDIR*/); 
+	..fsys.copy( fsys.joinpath(libDir,"\.dll\wke.dll") ,wkePubDir,0x10/*_FOF_NOCONFIRMATION*/  | 0x200/*_FOF_NOCONFIRMMKDIR*/);
+	..fsys.copy( fsys.joinpath(libDir,"\.dll\wkex.dll") ,wkePubDir,0x10/*_FOF_NOCONFIRMATION*/  | 0x200/*_FOF_NOCONFIRMMKDIR*/);
+	
+	..fsys.createDir( fsys.joinpath(publisDir,"plugins") ); 
+}

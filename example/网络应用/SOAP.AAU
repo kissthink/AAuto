@@ -1,0 +1,18 @@
+//SOAP WebService
+io.open()
+
+//导入MSSOAP支持库
+import web.soapClient;
+
+//创建SOAP客户端
+seviceClient = web.soapClient("http://fy.webxml.com.cn/webservices/EnglishChinese.asmx") 
+ 
+//调用远程Web服务提供的函数 
+var transArray,err =  seviceClient.TranslatorString("hello")
+
+//显示返回值
+io.print( string.join( transArray,'\r\n' ) ) 
+
+//按任意键继续
+execute("pause") 
+io.close();

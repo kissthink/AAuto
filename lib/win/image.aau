@@ -1,0 +1,202 @@
+//image 图像
+import win;
+import fsys.localfile;
+namespace win.image;
+ 
+LoadCursorFromFileA =  ::User32.api("LoadCursorFromFileA","pointer(string lpFileName)")
+CreateIconFromResourceA = ::User32.api("CreateIconFromResource","pointer(pointer res,INT size,bool fIcon, INT ver)");
+
+loadIcon = function(id,hinst){  
+	if(type(id)==type.number){
+		id = topointer(id)
+	}
+	return ::LoadIcon(hinst,id); 
+}
+
+loadCursor = function(id,hinst){   
+	if(type(id)==type.number){
+		id = topointer(id)
+	}
+	return ::LoadCursor(hinst,id); 
+}
+
+loadImage = function(path,hinst){   
+	if(type(path)==type.number){
+		path = topointer(path)
+	} 
+	return ::LoadImage( hinst, path,0x0/*_IMAGE_BITMAP*/,0,0,0 ); 
+}
+
+loadIconFromFile = function( path,gc=true ){
+    var resfile = ..fsys.localfile(path)
+	assert( resfile,'错误的图标文件路径\n'+path) ;
+	
+	var hicon  = ::LoadImage( ,resfile.path(),0x1/*_IMAGE_ICON*/,0,0,0x10/*_LR_LOADFROMFILE*/ );
+	assert(hicon,"加载图标失败"+path)
+	resfile.free() //删除临时文件
+
+	if(! (gc && ret ) ) return hicon;
+	
+	return ..gcdata(  
+		_topointer = hicon;
+		_gc = function(){
+			DestroyIcon(hicon);
+		} 
+	);
+}
+
+var cacheCursorFromFile = {};
+loadCursorFromFile = function(path){
+	if( cacheCursorFromFile[path] ) return cacheCursorFromFile[path];
+	var resfile = ..fsys.localfile(path)
+	assert( resfile,'错误的图标文件路径\n'+path)  
+	
+	hcur = LoadCursorFromFileA( resfile.path() ); //不需要释放
+	if(!hcur) error("加载图标失败:"+ path,2)
+	resfile.free()//删除临时文件
+	
+	cacheCursorFromFile[path] = hcur;
+	return hcur; 
+}
+
+loadImageFromFile  = function(path,gc=true){  
+ 
+	var resfile = ..fsys.localfile(path)
+	var hBmp = ::LoadImage( , resfile.path(),0x0/*_IMAGE_BITMAP*/,0,0,0x10/*_LR_LOADFROMFILE*/ );
+	resfile.free();
+	
+	if(! (gc && ret ) ) return hBmp;	
+	return ..gcdata(  
+		_topointer = hBmp;
+		_gc = function(){
+			::DeleteObject(hBmp)
+		} 
+	);   
+}
+
+::Shell32 := ..raw.loadDll("Shell32.dll") 
+ExtractIcon = ::Shell32.api("ExtractIconA","int(pointer hInst,STRING fileName,int ind)")
+
+extractIcon = function(fileName,ind=1,gc=true){
+	var ret = ExtractIcon(_HINSTANSE,..io.localpath(fileName) or fileName,ind-1);
+	if( ind <= 0 ) return ret;
+	ret = topointer(ret);
+	if(! (gc && ret ) ) return ret;	
+	return ..gcdata(  
+		_topointer = ret;
+		_gc = function(){
+			DestroyIcon(ret)
+		} 
+	);
+}
+
+class IconHeader {
+	word idreserved; 
+	word idtype; 
+	word idcount; 
+}
+
+class IconDirEntry{
+	byte bWidth;
+	byte bHeight;
+	byte bColorCount;
+	byte bReserved;
+	word wPlanes;
+	word wBitCount;
+	int dwBytesInRes;
+	int dwImageOffset;
+}
+
+queryIconFromResource = function(iconData,fIcons,queryProc){ 
+	if( fIcons === null ) fIcons = true; 
+	if ( (#iconData <= 0x104/*_MAX_PATH*/ ) ) {
+		if( !  ..string.endWith(iconData,".ico",true) ) return null;
+		
+		iconData = ..string.load( iconData ) : iconData; 
+	} 
+	if( #iconData < 6 ) return;
+	  
+	var count = ..raw.convert( iconData, IconHeader() ).idcount; 
+	if( #iconData < 6 + count * 16 ) return;
+	
+	var entrys = {};
+	for (i = 0; count - 1) {
+		var entry = ..raw.convert( iconData, IconDirEntry(),6 + i * 16 ); 
+		..table.push( entrys,entry ); 
+	}
+	..table.sort( entrys,function(b){
+		if( owner.bWidth == b.bWidth ) return owner.wBitCount > b.wBitCount
+		return owner.bWidth < b.bWidth  ;
+	} ) 
+	
+	for (i = 1; #entrys) { 
+		var entry = entrys[i];
+		if( queryProc(count,i,entry.bWidth,entry.bHeight,entry.wBitCount,entry.bColorCount,entry.wPlanes) ){
+			return CreateIconFromResourceA(
+				..string.sub(iconData, entry.dwImageOffset + 1, entry.dwImageOffset + 1 + entry.dwBytesInRes),
+				entry.dwBytesInRes, fIcons,0x30000/*format version*/
+			),entry ;
+		}
+	}	
+}
+
+createIcon = function(iconData,fIcons,mWidth,mBpp){
+	if( mBpp === null ) mBpp = 32;
+	return queryIconFromResource(iconData,fIcons,
+		function(count,index,width,height,bpp,colorCount,planes){
+			if ( ( mWidth && width >= mWidth ) || index = count) { 
+				if( mBpp && ( bpp > mBpp )  ) return;
+				return true;
+			}
+		}
+	)	
+}
+
+setIcon = function(hwnd,path,big){
+	hwnd = hwnd[["hwnd"]] : hwnd;
+	
+	var hIcon,hPrev;
+	var ttpath = type(path);
+	if( ttpath == type.string ){ 
+		hIcon = loadIconFromFile(path,false);
+	}
+	else{
+		hIcon = topointer(path);
+	}
+	 
+	if( !big ){  
+		hPrev = ::SendMessage( hwnd,0x80/*_WM_SETICON*/, ,hIcon);
+		if( hPrev ) ::DestroyIcon( topointer(hPrev) );
+		if( big !== null  ) return;
+	}
+	hPrev = ::SendMessage( hwnd,0x80/*_WM_SETICON*/,topointer(1) ,hIcon);
+	if( hPrev ) ::DestroyIcon( topointer(hPrev) ); 
+}
+
+getIcon = function( hwnd,big){
+	return topointer( ::SendMessageInt( hwnd[["hwnd"]] : hwnd 
+		,0x80/*_WM_SETICON*/,big ? 1/*_ICON_BIG*/ : 2/*_ICON_SMALL2*/,0) );
+}
+
+
+//废弃函数仅兼容
+createIconFromResource = function(iconData,mWidth,fIcons){
+	return createIcon(iconData,fIcons,mWidth);
+} 
+self.DestroyIcon = ::DestroyIcon;
+self.DestroyCursor = ::DestroyCursor;
+
+/**intellisense(win.image)
+setIcon(.(窗口对象或句柄,图标句柄或路径,是否大图标) = 设置窗口图标,注意窗口负责释放图标句柄,\n参数@3设为true仅设置大图标,设为false仅设置小图标\n如果省略该参数l则同时设置大图标和小图标
+getIcon(.(窗口对象或句柄,是否大图标) = 获取窗口图标句柄\n返回的句柄不应被释放,共享图标返回空值
+loadIconFromFile(.(位图路径,是否自动释放) = 自文件载入图标,支持AAuto资源文件\n参数二默认为true
+loadImageFromFile(.(位图路径,是否自动释放) = 自文件载入位图,支持AAuto资源文件\n参数二默认为true
+loadCursorFromFile(.(位图路径) = 自文件载入光标,支持AAuto资源文件
+loadIcon(__/*请输入资源名*/,模块句柄) = 自图标资源载入图标,\n返回句柄无需释放
+loadImage(__/*请输入资源名*/,模块句柄) = 自位图资源载入位图,\n返回句柄无需释放
+loadCursor(__/*请输入资源名*/,模块句柄) = 自光标资源载入光标,\n返回句柄无需释放
+extractIcon(.(EXE文件路径,图标索引,是否自动释放) = 索引默认为1,如果为0,则返回图标总数,\n参数二默认为true
+queryIconFromResource(图标数据,是否图标,回调函数) = @.queryIconFromResource(__/*图标数据或路径*/,true,\n\n	function(count,index,width,height,bpp,colorCount,planes){\n		if ( width == 48 && bpp == 32 ) {  \n			return true;\n		}\n	}\n)	
+createIcon( = 在图标数据中加载指定像素的图标,失败返回空值
+createIcon(.(图标数据,是否图标,适配大小,最大位宽) = 参数@1也可以是路径,失败返回空值\n参数@2可省略,默认为true,载入光标请指定为false,\n参数@3可省略,如果不匹配则取最接近大小的图标,\n参数@4可省略，默认值为32位
+end intellisense**/

@@ -1,0 +1,26 @@
+import win.ui;
+import win.ui.menu;
+import win.guid;
+import win.clip;
+/*DSG{{*/
+var winform = ..win.form( top=-2;bottom=75;parent=...;text="GUID 生成器";left=-2;right=579 )
+winform.add( 
+btnCpy={ bottom=47;text="复制到剪贴板";left=450;top=21;z=3;right=543;cls="button" };
+btnGenerant={ bottom=47;text="生成GUID";left=353;top=21;z=2;right=446;cls="button" };
+txtGuid={ bottom=47;right=339;left=31;multiline=1;top=21;z=1;edge=1;cls="edit" }
+)
+/*}}*/
+
+winform.btnCpy.oncommand = function(id,event){
+	win.clip.write(winform.txtGuid.text)
+} 
+
+winform.btnGenerant.oncommand = function(id,event){
+	var guid = win.guid.create();
+	winform.txtGuid.text =  string.upper( tostring(guid) );
+}
+winform.btnGenerant.oncommand();
+
+winform.show(true) 
+win.loopMessage();
+return winform;

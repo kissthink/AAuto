@@ -1,0 +1,230 @@
+//appDomain 应用程序域
+namespace dotNet;
+
+class appDomain{
+
+	ctor( clr,domainName ){
+	
+		var appDomain;
+		 
+		if(!domainName) domainName = "AAuto.CLR.AppDomain";   
+		if( __appDomainCache[domainName] ) return __appDomainCache[domainName];
+		__appDomainCache[domainName] = this;
+		
+		var hr,pAppDomain = clr.corRuntimeHost.CreateDomainEx( ..string.toUnicode(domainName),clr.AppDomainSetup ); 
+
+		var wrapAssembly = function(asm,...){
+			if(!asm) return asm,...;
+			asm[["_createInstance"]] = asm.CreateInstance;
+			asm[["createInstance"]] = function(typeName,...){
+				if( type(typeName)!=type.string )error("请指定类名称,参数@2",2);
+				if(!...) return asm._createInstance(typeName);
+				var arrlist = this.createArrayList({...}); 
+				var ok,result  = call(this.utility.InvokeMember,this.utility, asm ,typeName,""
+					, 512 /*BindingFlags.CreateInstance*/
+					,arrlist,null );
+				if( !ok ) return null,result;
+				return result;
+			}
+			asm[["invokeStaticMember"]] = function(typeName,methodName,...){
+				var arrlist = this.createArrayList({...});
+				
+				var ok,result  = call(this.utility.InvokeMember,this.utility, asm ,typeName,methodName
+					,16 | 8 | 256 /*Public|Static|InvokeMethod*/
+					,arrlist,null); 
+				if( !ok ) return null,result;
+				return result;
+			} 
+			return asm,...;
+		}
+		
+		if(  (hr)>=0/*_SUCCEEDED*/ ){
+			appDomain = ..com.QueryObject( pAppDomain);
+			..com.Release(pAppDomain);
+			
+			this.loadFile  = function( rawAssembly ){    
+				if(type(rawAssembly)!=type.string )error("请指定程序集",2);
+				
+				if( #rawAssembly < 0x104/*_MAX_PATH*/ )
+					rawAssembly = ..string.load(rawAssembly) : rawAssembly; 
+				return wrapAssembly( appDomain.Load_3( rawAssembly ) );
+			}; 
+			this.load = function( assemblyName ){  
+				if(!assemblyName) error("请指定程序集名称",2);  
+				return wrapAssembly( this.utility.loadAssembly( ..io.localpath(assemblyName) : assemblyName ) ); 
+			};
+			
+			this.interop = this.loadFile($"~/lib/dotNet/.res/AAuto.InteropServices.dll" );
+			this.utility = this.interop.createInstance("AAuto.InteropServices.Utility");
+			this.mscorlib = this.load("mscorlib");
+			this.system = this.load("System");
+		}
+		else {
+			return null;
+		}
+		
+		
+		this.appDomainReal = appDomain;
+	};
+	createArrayList = function( tab ){ 
+		var list = this.mscorlib.CreateInstance("System.Collections.ArrayList"); 
+		if( tab ){
+			for(i=1;#tab;1){
+				list.Add(tab[i]); 
+			} 
+		}
+		return list;
+	}; 
+	invokeMember = function(assemblyName,typeName,methodName,invokeAttr=0,target,...){
+		var arrlist = this.createArrayList({...});
+		var ok,result  = call(this.utility.InvokeMember,this.utility, ..io.localpath(assemblyName) : assemblyName 
+				,typeName,methodName ,invokeAttr
+				,arrlist,target); 
+		if( !ok ) return null,result;
+		return result;
+	}
+	invokeStaticMember = function(assemblyName,typeName,methodName,...){ 
+		var arrlist = this.createArrayList({...}); 
+		var ok,result  = call(this.utility.InvokeMember,this.utility, ..io.localpath(assemblyName) : assemblyName 
+				,typeName,methodName ,16 | 8 | 256 /*Public|Static|InvokeMethod*/
+				,arrlist,null); 
+		if( !ok ) return null,result;
+		return result;
+	};
+	invokeCreateInstance = function(assemblyName,typeName,...){ 
+		if( !assemblyName ) error("请指定程序集,参数@1",2);
+		if( type(typeName)!=type.string )error("请指定类名称,参数@2",2);
+		
+		var arrlist = this.createArrayList({...});
+		var ok,result  = call(this.utility.InvokeMember,this.utility, ..io.localpath(assemblyName) : assemblyName 
+				,typeName,"", 512 /*BindingFlags.CreateInstance*/
+				,arrlist,null); 
+		if( !ok ) return null,result;
+		return result;
+	};
+	createInstance = function(assemblyName,typeName,...){
+		if( !assemblyName ) error("请指定程序集,参数@1",2); 
+		if(type(typeName)!=type.string )error("请指定类名称,参数@2",2);
+		if( ... !== null )  return this.invokeCreateInstance( assemblyName,typeName,... ); 
+		
+		if(type(assemblyName)!=type.string )error("请指定程序集名称,参数@1",2);
+		var handle = appDomain.CreateInstance(assemblyName,typeName);  
+		return handle.UnWrap();
+	};
+	createInstanceFrom  = function(assemblyName,typeName ){   
+		if(type(typeName)!=type.string )error("请指定类名称,参数@2",2);
+		if(type(assemblyName)!=type.string )error("请指定程序集名称,参数@1",2);
+		assemblyName = ..io.localpath(assemblyName) or assemblyName  ;  
+		
+		var handle = appDomain.CreateInstanceFrom(assemblyName,typeName);
+		return handle.UnWrap();
+	};  
+	createCompiler = function(lang,appDomain ){ 
+		
+		var providers = {
+			["C#"] = "Microsoft.CSharp.CSharpCodeProvider";
+			["VB"] = "Microsoft.VisualBasic.VBCodeProvider";
+		}
+		var providerType = providers[lang];
+		if( ! providerType ) error("请正确指定编译器语言",2)
+		
+		var compile = this.utility.CreateCompiler(providerType); 
+		if( compile ){
+			compile[["_Reference"]] = compile.Reference;
+			compile[["Reference"]] = function(path,...){
+				var ret = owner._Reference( ..io.localpath(path) : path )
+				if(!...) return ret;
+				return owner.Reference(...);
+			} 
+			compile[["_Compile"]] = compile.Compile;
+			compile[["Compile"]] = function(...){ 
+				return wrapAssembly( owner._Compile(...) );
+			} 
+			
+		}
+		return compile;
+	} 
+	unload = function(){
+		if(appDomain){
+			__appDomainCache[domainName] = null;
+			
+			var pAppDomain = ..com.GetPointer(appDomain);
+			var hr = clr.corRuntimeHost.UnloadDomain(pAppDomain)
+			..com.Release(pAppDomain)
+			
+			appDomain = null;
+			this.appDomainReal = null;
+			
+			if(  (hr)>=0/*_SUCCEEDED*/ ) return true;
+			return null,..lasterr(hr);
+		}
+	}; 
+	@_meta;
+}
+
+namespace appDomain{
+
+	__appDomainCache = {} 
+	
+	import util;
+	util.connect( ,"beforeUnload",function(){
+		for(k,appDomain in __appDomainCache){
+			appDomain.unload(); 
+		}
+	} );
+	
+}
+
+
+/**intellisense(!dotNetAppDomain)
+appDomainReal = AppDomain 托管对象
+mscorlib = mscorlib.dll程序集!dotNetCrlAssembly.
+system = Systme.dll程序集\n!dotNetCrlAssembly.
+interop = AAuto.InteropServices.dll程序集\n!dotNetCrlAssembly.
+utility = AAuto.InteropServices.Utility对象
+invokeMember(.(程序集,"类名","方法名",调用选项,目标对象,其他调用参数) = 调用类方法,参数二必须使用BindingFlags枚举数值指定调用约定\n失败返回空值,以及错误信息
+invokeStaticMember(.(程序集,"类名","方法名",其他调用参数) = 参数一可以是程序集对象,名称或路径都可以,\n调用类的静态方法，支持传入多个调用参数并返回值。	\n失败返回空值,以及错误信息		
+invokeCreateInstance(.(程序集,"类名",其他调用参数) = 参数一可以是程序集对象,名称或路径都可以,\n调用类的构造函数，支持传入多个调用参数并返回创建的对象。	\n失败返回空值,以及错误信息		
+createInstance(.("程序集名称","类名") = 创建实例对象\n可传入多个构造参数
+createInstanceFrom(.("程序集跃径","类名") = 创建实例对象
+load(.("程序集全名") = 载入程序集,\n必须使用完整限定名
+loadFile(.("程序集跃径") = 载入程序集,\n参数可以是路径,或内存资源
+load() = !dotNetCrlAssembly.
+loadFile() = !dotNetCrlAssembly.
+unload() = 卸载应用程序域
+
+createCompiler("C#") = 创建C#编译器
+createCompiler("VB") = 创建VB编译器
+createCompiler() = !dotNetCompiler.
+
+createArrayList(.(初始化数组) = 创建 System.Collections.ArrayList 对象\n可传递到C#函数中,C#中应声明为object类型,然后强制转换为ArrayList,\n使用圆括号访问数组成员,0为初始下标,\n可选参数一指定table数组用于初始化对象
+createArrayList() = !dotNetCrlArrayList.
+end intellisense**/
+
+/**intellisense(!dotNetCrlArrayList) 
+Add(.(添加对象) = 添加成员到数组中
+Clear() = 添空数组
+ToArray() = 转换并返回普通table数组,\n返回数组起始下标为1
+end intellisense**/
+
+/****intellisense(!dotNetCompiler)
+getProvider() = 编译器
+getParameters() = 编译参数
+getParameters().setOutputAssembly(.("->dll") = 指定输出文件路径,\n参数需要调用io.fullpath()转换为绝对路径,\n需要调用setGenerateInMemory(false)取消内存编译,\n调用setGenerateExecutable指定编译为DLL或者EXE
+getParameters().setGenerateExecutable(true) = 编译为EXE执行文件
+getParameters().setGenerateExecutable(false) = 编译为DLL
+getParameters().getGenerateExecutable() = 是否编译为EXE执行文件
+getParameters().getGenerateInMemory() = 是否内存编译
+getParameters().setGenerateInMemory(false) = 取消内存编译 
+getLastError()  = 获取编译错误信息
+Reference("System->dll") = 引用程序集,\n可指定任意多个参数
+Source = @.Source = /***\nusing System;\nusing System.Runtime.InteropServices;\n[assembly: IDispatchImpl(IDispatchImplType.CompatibleImpl)]\n\nnamespace CSharpLibrary  \n{\n    [IDispatchImpl(IDispatchImplType.InternalImpl)]\n    [ComVisible(true), ClassInterface(ClassInterfaceType.AutoDual)]\n    public class CSharpObject  \n    {\n        public CSharpObject()\n        {\n			__\n        } \n    }\n} \n***/
+Compile() = 编译并返回程序集\n!dotNetCrlAssembly.
+end intellisense****/
+
+/**intellisense(!dotNetCrlAssembly)
+Location = 获取完整路径
+FullName = 获取程序集的全名
+createInstance(.("类名",->->-> ) = 创建对象实例,\n可添加不定个数构造参数\n失败返回空值,以及错误信息
+invokeStaticMember(.("类名","方法名",->->-> ) = 调用类的静态方法,\n可添加不定个数调用参数\n失败返回空值,以及错误信息
+end intellisense**/

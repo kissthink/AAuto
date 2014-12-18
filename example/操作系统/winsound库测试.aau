@@ -1,0 +1,42 @@
+
+import fsys;
+import win.ui;   
+import win.mm;
+/*DSG{{*/
+var winform = win.form(parent=...; bgcolor=14215660;bottom=250;right=350;left=0;text="winsound库测试";exmode="";top=0;style=0;cls="AFORM" )
+winform.add( 
+button2={ visible=true;bgcolor=14215660;bottom=137;color=0;right=205;left=104;multiline=1;top=107;acceptfiles=1;tabstop=1;text="MessageBeep";z=1;transparent=1;cls="button" };
+button3={ visible=true;bgcolor=14215660;bottom=189;color=0;right=205;left=104;multiline=1;top=159;acceptfiles=1;tabstop=1;text="button3";z=2;transparent=1;cls="button" };
+button1={ visible=true;bgcolor=14215660;bottom=81;color=0;right=205;left=104;multiline=1;top=51;acceptfiles=1;tabstop=1;text="Beep";z=3;transparent=1;cls="button" }
+)
+/*}}*/
+ 
+winform.button3.oncommand = function(id,event){ 
+	win.mm.playSound("SystemStart",_NULL,0x10000/*_SND_ALIAS*/ | 0x1/*_SND_ASYNC*/);
+	win.mm.playSound( 
+		fsys.joinpath( fsys.getWinDir(), "\media\ringin.wav")
+		, _NULL, 0x20000/*_SND_FILENAME*/ | 0x1/*_SND_ASYNC*/ ); 
+}//endproc
+
+winform.button2.oncommand = function(id,event){ 
+	//不发声，自定义一下播放的声音。控制面板-》声音和音频设备-》声音 
+	win.mm.msgBeep(0xFFFFFFFF);
+}//endproc
+
+winform.button1.oncommand = function(id,event){  
+	var t=800;
+	win.mm.Beep(330, t);
+	win.mm.Beep(392, t);
+	win.mm.Beep(262, t*2);
+	win.mm.Beep(294, t);
+	win.mm.Beep(330, t);
+	win.mm.Beep(196, t*2);
+	win.mm.Beep(262, t);
+	win.mm.Beep(294, t);
+	win.mm.Beep(330, t);
+	win.mm.Beep(392, t);
+	win.mm.Beep(294, t*4); 
+}//endproc 
+
+winform.show(true) 
+win.loopMessage( winform );

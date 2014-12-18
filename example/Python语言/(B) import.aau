@@ -1,0 +1,65 @@
+//B) 引用模块
+import console;
+console.open();
+
+import py; 
+pyCode = /***
+
+print("""
+	python支持模块,模块名字与文件名相同,这一点与AAuto的库机制非常类似.
+	在python中名字空间由import语句创建.所以在模块文件中并不需要再定义名字空间.
+	
+	所以可以经常在python代码中看到这句代码 if __name__ == "__main__":
+	如果一个库被直接执行 __name__ 的值就是 "__main__",否则就是当前导入的模块名字或者当前类的名字，
+	
+	而在AAuto中,库文件中需要使用 namespace语句定义与文件名一致的名字空间.
+	不仅仅是在库文件中,在任何位置,AAuto都可以使用namespace语句创建或进入任何现有的名字空间。
+	
+	导入库的基本用法与AAuto一样，例如:
+	import md5
+	
+	但AAuto的import语句非常之简洁,python则支持更多复杂的导入语法，例如
+	可以用逗号分隔多个库名称，当然，复杂从来是有代价的。下面的代码导入模块中指定的函数:
+	from 模块名 import 函数名 
+	
+	下面的代码导入模块中的所有函数
+	from 模块名 import *
+	
+	#可以使用as语句给导入的对象定义别名
+	import md5 as otherName
+""")
+
+import md5;
+
+#可以导入库中的指定函数,下面是从md5库中导入new函数
+from md5 import new
+
+#为导入的函数取个别名
+from md5 import new as md5New
+
+key = md5New()
+key.update("字符串") #调用成员函数,与AAuto类似
+ 
+ret = key.hexdigest()
+print( ret ) 
+
+***/
+py.exec( pyCode ) //运行python代码
+
+ 
+//下面用 AAuto中实现类似的代码
+//==================================
+import crypt; 
+io.print( crypt.md5("字符串",true) )
+
+/*
+AAuto对模块化的支持追求的是极简洁,没有python那样变化万千的语法、复杂的配置过程。
+即使是第三方的扩展库，在AAuto中也通常直接import，下载安装都是全自动的，完全不需要配置过程。
+
+也不提倡对导入的库进行重命名（ 虽然你也可以这样做 ），
+所以一般你在代码中看到 t.push，不用担心他其实是 table.push, 
+简洁的功能与书写风格带来的也是良好的可读性。
+
+很多时候，我们需要的并不是一把能在所有平台上敲所有钉子的万能锤子，因为这样的锤子已经太多了。
+我们也需要足够小、足够简单，能在某个平台上舒舒服服敲合适钉子的锤子，这也是AAuto的追求以及与其他编程语言最大的区别。
+*/

@@ -1,0 +1,184 @@
+//tracker 输入跟踪器 
+namespace win.ui;
+
+class tracker{
+	ctor( ctrl,hoverTime=0xFFFFFFFF/*_HOVER_DEFAULT*/ ){
+		if(!ctrl[["hwnd"]]) error("参数必须是窗口对象",2);
+		this = ctrl;
+		var state = {};
+		this.state = state;
+		state.disabled = ctrl.disabled; 
+		if(! this._onStateChange ){
+			this._onStateChange = function(){
+				if(this.onStateChange) this.onStateChange();
+			}
+		}
+		this.radioClick = __radioClick__;
+		this.radioValue = __radioValue__;
+		this.wndproc = {
+			[0x200/*_WM_MOUSEMOVE*/]  = function(hwnd,message,wParam,lParam){ 
+				if(!state.hover){
+					state.hover = trackMouseEvent({
+						INT cbSize = 16;
+						INT dwFlags = 2/*_TME_LEAVE*/ | 0x1/*_TME_HOVER*/;
+						int hwndTrack = this[["hwnd"]];
+						INT dwHoverTime = hoverTime;
+					} )
+					
+					if( wParam & 0x1/*_MK_LBUTTON*/) state.active = true; 
+					if(this._onStateChange) this._onStateChange();  
+					if( this.OnMouseEnter ){ 
+						this.OnMouseEnter(wParam,lParam);
+					}
+				}
+				else{
+					if(( wParam & 0x1/*_MK_LBUTTON*/) && this.onMouseDrag) this.onMouseDrag(wParam,lParam);
+					if(this.onMouseMove) this.onMouseMove(wParam,lParam);
+				} 
+			}
+			[0x02A3/*_WM_MOUSELEAVE*/] = function(hwnd,message,wParam,lParam){ 
+				state.hover = false; 
+				state.active = false; 
+				if(this._onStateChange) this._onStateChange();  
+				if(this.onMouseLeave) this.onMouseLeave(wParam,lParam);
+			}
+			[0x2A1/*_WM_MOUSEHOVER*/] = function(hwnd,message,wParam,lParam){
+				if(this.onMouseHover) this.onMouseHover(wParam,lParam);
+			}
+			[0x201/*_WM_LBUTTONDOWN*/] = function(hwnd,message,wParam,lParam){
+				state.active = true;
+				if(this._onStateChange) this._onStateChange(); 
+				if(this.onMouseDown) this.onMouseDown(wParam,lParam);
+				if(this.onMouseDrag){ this.capture = true; }
+			}
+			[0x202/*_WM_LBUTTONUP*/] = function(hwnd,message,wParam,lParam){ 
+				this.setFocus();
+				state.active = false;
+				if( ! this.radioGroup ){ state.checked = !state.checked; }
+				else { this.radioClick(); } 
+				
+				if(this._onStateChange) this._onStateChange(); 
+				if(this.oncommand) this.oncommand(this.id,0);
+				if(this.onMouseClick) this.onMouseClick(wParam,lParam);
+				if(this.onMouseDrag){ this.capture = false; }
+			} 
+			[0x203/*_WM_LBUTTONDBLCLK*/] = function(hwnd,message,wParam,lParam){ 
+				if(this.onMouseDoubuleClick) this.onMouseDoubuleClick(wParam,lParam);
+			}
+			[0xA/*_WM_ENABLE*/] = function(hwnd,message,wParam,lParam){ 
+				state.disabled = !wParam;  
+				if(this._onStateChange) this._onStateChange(); 
+			}
+			[0x7/*_WM_SETFOCUS*/] = function(hwnd,message,wParam,lParam){ 
+				state.focus = true;
+				if(this._onStateChange) this._onStateChange();  
+				if(this.onFocusGot) this.onFocusGot(wParam,lParam); 
+			}
+			[0x8/*_WM_KILLFOCUS*/] = function(hwnd,message,wParam,lParam){  
+				state.focus = false;
+				if(this._onStateChange) this._onStateChange(); 
+				if(this.onFocusLost) this.onFocusLost(wParam,lParam);  
+			}
+			[0x100/*_WM_KEYDOWN*/] = function(hwnd,message,wParam,lParam){ 
+				var repeat =  lParam & 1<<30; 
+				if( !repeat &&  ( wParam == 0x20/*_VK_SPACE*/ || wParam == 0xD/*_VK_ENTER*/ ) ){
+					state.active = true; if(this._onStateChange) this._onStateChange(); 
+					if(this.oncommand) this.oncommand(this.id,0);
+				}
+				
+				if(this.onKeyDown) this.onKeyDown(wParam,lParam,repeat?lParam&0xFFFF);  
+			}
+			[0x101/*_WM_KEYUP*/] = function(hwnd,message,wParam,lParam){ 
+				if( !repeat &&  ( wParam == 0x20/*_VK_SPACE*/ || wParam == 0xD/*_VK_ENTER*/ ) ){
+					if( ! this.radioGroup ){ state.checked = !state.checked; }
+					else { this.radioClick(); } 
+					state.active = false; if(this._onStateChange) this._onStateChange(); 
+				} 
+				if(this.onKeyUp) this.onKeyUp(wParam,lParam);  
+			}
+		}
+	}; 
+}
+
+namespace tracker{
+	trackMouseEvent = ::User32.api("TrackMouseEvent", "bool(struct& lpEventTrack)");
+	 
+	__radioValue__ = function(){
+		var chk = owner.getForm()[["__uiTrackerRadioGroups__"]][[owner.radioGroup]];
+		if( chk ) return chk.text; 
+	};
+	__radioClick__ = function(){
+		var form = owner.getForm();
+		if(!form) return;
+		
+		var g = form.__uiTrackerRadioGroups__;
+		if( !g ) {
+			g = { @{ _weak = "v" } };
+			form.__uiTrackerRadioGroups__ = g; 
+		};
+		
+		var prev = g[owner.radioGroup];
+		owner.state.checked = true; 
+		g[owner.radioGroup] = owner; 
+		
+		if( prev ? prev != owner ) {
+			prev.state.checked = false;
+			if(prev._onStateChange) prev._onStateChange(); 
+		} 
+	}
+	
+}
+
+/**intellisense()
+win.ui.tracker = 创建鼠标跟踪器
+win.ui.tracker(.(控件对象) =  参数为控件或窗口对象
+win.ui.tracker() = !winuitracker.
+!winuitracker.radioValue() = 单选模式下选中控件的文本
+!winuitracker.radioClick() = 单选模式下选中控件
+!winuitracker.state.hover = 鼠标是否在控件上方\n悬停超过预设时间后触发onMouseHover事件
+!winuitracker.state.focus = 是否已得到焦点
+!winuitracker.state.active = 鼠标或键盘键按下状态
+!winuitracker.state.disabled = 已禁用 
+!winuitracker.state.checked = 是否选中状态
+!winuitracker.OnMouseEnter = @.OnMouseEnter = function(wParam,lParam){
+	__/*鼠标移入*/
+}
+!winuitracker.onMouseLeave = @.onMouseLeave = function(wParam,lParam){
+	__/*鼠标移出*/
+}
+!winuitracker.onMouseHover = @.onMouseHover = function(wParam,lParam){
+	__/*鼠标悬停*/
+}
+!winuitracker.onMouseMove = @.onMouseMove = function(wParam,lParam){
+	if( wParam & 0x1/*_MK_LBUTTON*/ ){
+		__/*鼠标拖动*/
+	}
+}
+!winuitracker.onMouseDrag = @.onMouseMove = function(wParam,lParam){ 
+	__/*鼠标拖动*/ 
+}
+!winuitracker.onMouseDown = @.onMouseDown = function(wParam,lParam){
+	__/*鼠标按下*/
+}
+!winuitracker.onMouseClick = @.onMouseClick = function(wParam,lParam){
+	__/*鼠标单击*/
+}
+!winuitracker.onMouseDoubuleClick = @.onMouseDoubuleClick = function(wParam,lParam){
+	__/*鼠标双击*/
+}
+!winuitracker.onKeyDown = @.onKeyDown = function(keyCode,lParam,repeat){
+	__/*按下键盘键*/
+}
+!winuitracker.onKeyUp = @.onKeyUp = function(keyCode,lParam){
+	__/*放开键盘键*/
+}
+!winuitracker.onFocusGot = @.onFocusGot = function(wParam,lParam){
+	__/*得到焦点*/
+}
+!winuitracker.onFocusLost = @.onFocusLost = function(wParam,lParam){
+	__/*失去焦点*/
+}
+!winuitracker.onStateChange = @.onStateChange = function(){
+	__/*状态已改变*/
+}
+end intellisense**/

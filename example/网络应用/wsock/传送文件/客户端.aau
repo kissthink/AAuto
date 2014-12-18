@@ -1,0 +1,18 @@
+//客户端
+io.open();//打开控制台
+
+import wsock.tcp.client;
+
+var tcp = wsock.tcp.client()
+ 
+tcp.connect("127.0.0.1",7510)
+io.print("连接端口成功，正在接收文件!")
+ 
+file = io.open("/test.rar","w+b");//注意io.open默认是文本方式写入的,b指定二进制模式
+for(str,size in tcp.eachRead() ){ 
+	file.write( str );
+} 
+file.close();
+io.print("客户端接收文件完成");
+
+tcp.close()

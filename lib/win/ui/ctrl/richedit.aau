@@ -1,0 +1,335 @@
+//richedit 富文本框
+import win.ui.ctrl.edit; 
+namespace win.ui.ctrl; 
+  
+class richedit{
+    ctor(parent,tParam){ 
+        if( tParam ){
+			if( (  _STUDIO_INVOKED != "thread" ) && ( !_dll ) ) _dll = ..raw.loadDll("RICHED20.DLL"); 
+			
+			tParam.cls = "RichEdit20A";
+			
+			if( tParam.multiline ) 
+					tParam.style |= 0x4/*_ES_MULTILINE*/  
+					
+			if( tParam.multiline ){
+				tParam.style |= 0x4/*_ES_MULTILINE*/
+				tParam.style |= 0x1000/*_ES_WANTRETURN*/;
+			}
+				
+			if( tParam.readonly )
+				tParam.style |= 0x800/*_ES_READONLY*/
+			if( tParam.password )
+				tParam.style |= 0x20/*_ES_PASSWORD*/
+			if(! tParam.hidesel )
+				tParam.style |= 0x100/*_ES_NOHIDESEL*/
+				
+			tParam.bgcolor := 16777215;
+			 
+			if( tParam.autoscroll !== null ){
+				if( tParam.autoscroll ){
+					tParam.style = tParam.style | 0x40/*_ES_AUTOVSCROLL*/  |  0x80/*_ES_AUTOHSCROLL*/;
+				}  
+			}
+			else {
+				if( tParam.autovscroll === null ||  tParam.autovscroll ) {
+					tParam.style |=   0x40/*_ES_AUTOVSCROLL*/ ;
+				}
+				if( tParam.autohscroll === null ||  tParam.autohscroll ) {
+					tParam.style |=  0x80/*_ES_AUTOHSCROLL*/ ;
+				} 
+			}
+			
+			select(tParam.align) {
+				case  "center"   
+					tParam.style |= 0x1/*_ES_CENTER*/; 
+				case "right" 
+					tParam.style |= 0x2/*_ES_RIGHT*/; 
+				else 
+					tParam.style |= 0x0/*_ES_LEFT*/;
+			}
+				
+			if(tParam.edge) tParam.exstyle |= 0x200/*_WS_EX_CLIENTEDGE*/;
+			
+			this["(text)"] = tParam.text;
+			tParam.text = "";
+	    }
+	    
+    };
+    onCreated = function(){
+    	::SendMessageInt(this.hwnd,0x478/*_EM_SETLANGOPTIONS*/,0,0);
+    	this.text = this["(text)"];
+    	this["(text)"] = null;
+    };
+	@_metaProperty;
+} 
+
+var TEXTRANGE = class {
+	struct	chrg = {
+		int cpMin;
+		int cpMax;
+	};
+	string	lpstrText;
+}
+var ENLINK_STRUCT = class {
+	struct	hdr = ::NMHDR();
+	int		msg;
+	int		wParam;
+	int		lParam;
+	struct	chrg = {
+		int cpMin;
+		int cpMax;
+	};
+} 
+
+richedit._metaProperty = editDecorateMeta ( metaProperty(
+	setsel2 = function(min=1,max=1){ 
+    	var str = owner.text;
+     	min = ..string.len(str,1,min-1);
+		max = ..string.len(str,1,max); 
+        ::SendMessageInt(owner[["hwnd"]],0xB1/*_EM_SETSEL*/,min ,max);
+    }  
+	langOptions = {
+		_get = function(){  
+			return ::SendMessage(this.hwnd,0x479/*_EM_GETLANGOPTIONS*/);
+		}
+		_set = function( v ){ 
+     		::SendMessageInt(this.hwnd,0x478/*_EM_SETLANGOPTIONS*/,0,v);
+		} 	
+	} 
+	selText = {
+		_get = function(){  
+			 var min,max = owner.getsel(); 
+			 if(max && max>min){
+ 		  		var len,str = ::SendMessageByStr(  owner[["hwnd"]],0x43E/*_EM_GETSELTEXT*/,0,(max-min)*2+1);   
+     	  		return str;
+			} 
+		}
+		_set = function( v ){ 
+     		::SendMessage(owner[["hwnd"]],0xC2/*_EM_REPLACESEL*/,,tostring(v))
+		} 	
+	} 
+    rangeText = function(min,max){
+    	var rg = TEXTRANGE();
+		rg.chrg.cpMin = min;
+		rg.chrg.cpMax = max;
+		rg.lpstrText = ..raw.malloc( (max-min)*2+1)
+		::SendMessageByStruct(owner.hwnd, 0x44B/*_EM_GETTEXTRANGE*/, 0, rg); 
+		return ..string.str(rg.lpstrText);
+    }
+	modifyEvent = function( remove=0,add=0 ){ 
+		var e = ( ::SendMessage(owner.hwnd, 0x43B/*_EM_GETEVENTMASK*/ ) & ~remove ) | add ; 
+		::SendMessageInt(owner.hwnd, 0x445/*_EM_SETEVENTMASK*/, 0, e )
+		return e;
+	}
+	limit = {  
+		_set = function( v ){ 
+     		::SendMessageInt(owner[["hwnd"]], 0x435/*_EM_EXLIMITTEXT*/, 0, v) 
+		} 	
+		_get = function(){ 
+			return ::SendMessage(owner[["hwnd"]], 0xD5/*_EM_GETLIMITTEXT*/);
+		}
+	} 
+	wrap = { 
+    	_set = function(v){
+    		m_wap = v;
+    		var hwnd = owner.hwnd;;
+    		if (v) {  
+        		var hdc = ::GetDC(hwnd); 
+        		::SendMessage(hwnd, 0x448/*_EM_SETTARGETDEVICE*/, hdc);
+        		::ReleaseDC(hwnd, hdc);
+    		}
+    		else 
+        		::SendMessageInt(hwnd, 0x448/*_EM_SETTARGETDEVICE*/, 0, 1); 
+	
+    	}
+    	
+	};
+	link =  {
+		_set = function(v){
+			owner.modifyEvent( , 0x4000000/*_ENM_LINK */ ) 
+			::SendMessageInt(owner.hwnd, 0x000045b/*EM_AUTOURLDETECT*/, v?1:0, 0);
+			owner.text = owner.text; 
+		} 
+	} 
+	bgcolor = {
+		_set = function(v){   
+			::SendMessageInt(owner.hwnd,0x443/*_EM_SETBKGNDCOLOR*/,0, v);   
+			owner[["bgcolor"]] = v;
+		}	
+	};
+	popMenu = function(menuTable){
+		var richedit = owner; 
+		var menu = ..win.ui.popmenu( richedit._parentForm )   
+		menu.addTable( {
+			{ "全选";  function(id){
+				richedit.selectAll()
+			} };
+			{ /*分隔线*/ };
+			{ "复制";  function(id){
+				richedit.copy()
+			}; !richedit.canCopy() ? 0x1/*_MF_GRAYED*/ : 0}; 
+			{ "剪切"; function(id){  
+				richedit.cut()
+			}; !richedit.canCopy() ? 0x1/*_MF_GRAYED*/ : 0 };
+			{ "粘贴"; function(id){  
+				richedit.paste()
+			}; !richedit.canPaste() ? 0x1/*_MF_GRAYED*/ : 0 };
+			{ /*分隔线*/ };
+			{ "重做"; function(id){  
+				richedit.redo()
+			}; !richedit.canRedo() ? 0x1/*_MF_GRAYED*/ : 0 };
+			{ "撤消"; function(id){  
+				richedit.undo()
+			}; !richedit.canUndo() ? 0x1/*_MF_GRAYED*/ : 0 };
+		} );
+		if(menuTable){
+			menu.addTable(menuTable);
+		}
+		menu.popup();
+		menu.close();  
+	};  
+	_prenotify = function(id,code,ptr,nmdr){
+    	if(code== 0x070B/*_EN_LINK*/ && owner.onlink ){ 
+    		var link = ..raw.convert(ptr, ENLINK_STRUCT() ); 
+			owner.onlink(link.msg,owner.rangeText( link.chrg.cpMin,link.chrg.cpMax) )
+    	} 
+    }  
+ ) )
+ 
+/***intellisense()
+win.ui.ctrl.richedit = 多功能文本框控件支持库
+win.ui.ctrl.richedit() = 多功能文本框控件\n!richedit.
+?win.ui.ctrl.richedit  =!richedit.
+!richedit.color = 获取或修改字体颜色数值
+!richedit.bgcolor= 获取或修改景颜色数值
+!richedit.cls = 设计时类名
+!richedit.className = 运行时类名
+!richedit.modifyEvent(.(移除通知,添加通知) = 启用或禁用通知消息,返回EVENTMASK值
+!richedit.lineCount = 获取行数
+!richedit.setsel(1,__) = 设置选区,参数(起始位置,结束位置)
+!richedit.setsel2(1,__) = 按字节数设置选区
+!richedit.getsel() = 获取选区起始位置,结束位置
+!richedit.selText = 获取或设置选区文本
+!richedit.modified = 文本内容是否已修改
+!richedit.getLength() = 获取文本长度
+!richedit.rangeText(.(起始位置,结束位置) = 返回指定位置文本
+!richedit.text = 编辑控件文本属性
+!richedit.log( __,'\r\n' ) = 追加字符串到文本框,可输入多个参数\n如果超出limit属性设定的字符数限制则移除头部多余的字符\n为提升性能,limit不可过大
+!richedit.hwnd = 控件句柄
+!richedit.id = 控件ID
+!richedit._parentForm = 控件所在的父窗口(指win.form对象)\n!winform.
+!richedit.getParent() = 返回父窗口\n!static.
+!richedit.setParent(__/*控件对象*/) = 改变父窗口 
+!richedit.hide = 控件是否隐藏
+!richedit.disabled = 控件时否可见
+!richedit.left = 左侧坐标
+!richedit.right = 右侧坐标
+!richedit.top = 顶部坐标
+!richedit.bottom = 底部坐标
+!richedit.width = 宽度
+!richedit.height = 高度
+!richedit.limit = 字符数限制
+!richedit.scrollCaret = 滚动到光标处
+!richedit.deselect() = 取消选定 
+!richedit.print(.(->->->) = 将多个参数转换为字符串,\n并使用制表符分隔各参数追加到文本尾部\n并追加换行
+!richedit.printf(.(->->->) = 将多个参数调用string.format格式化后追加到文本尾部\n并追加换行
+!richedit.appendText(.(追加文本) = 追加文本并移动光标到文本尾部\n支持零个、或多个文本参数\n返回文本总长度
+!richedit.lineScroll(.(滚动到指定行) = 滚动条移动到指定行\n如果不指定参数则滚动到最后一行 
+!richedit.lineToChar(__/*指定行号*/) = 获取指定行首字符偏移位置
+!richedit.lineToChar() = 获取当前选定行首字符偏移位置
+!richedit.lineFromChar(__/*指定位置*/) = 返回指定位置行数
+!richedit.lineFromChar() = 不指定参数则返回当前行
+!richedit.lineText(__/*指定行号*/) = 获取指定行文本
+!richedit.lineText() = 不指定行号参数,则获取当前行文本 
+!richedit.lineLength(__/*指定行号*/) = 返回指定行字符数
+!richedit.lineLength() = 不指定行号参数,则获取当前行字符数
+!richedit.redraw() = 刷新
+!richedit.show(true__) = 显示控件
+!richedit.getRect() = 控件区块位置(::RECT结构体)
+!richedit.getRect(true) = 控件屏幕区块位置(::RECT结构体)  
+!richedit.setRect(rc) = 设置控件区块位置(::RECT结构体)  
+!richedit.setRect(rc,true) = 设置控件屏幕区块位置(::RECT结构体)
+!richedit.getClientRect() =  控件客户区块位置(::RECT结构体)\n!rect.
+!richedit.setClientRect( = 设置控件客户区
+!richedit.setClientRect(.(RECT区块) = 参数为指定客户区的RECT结构体\n可以使用指定了left,top,right,bottom成员的普通表
+!richedit.inflateClientRect( = 增加或减小客户区
+!richedit.inflateClientRect(.(dx,dy) = 正数增大,负数缩小客户区
+!richedit.getFont() = 控件字体(::LOGFONT结构体)\n!logfont.
+!richedit.setFont(__/*指定字体*/) = 指定LOGFONT字体对象,或逻辑字体句柄 
+!richedit.setFont(混入字体属性) = @.setFont(point=10;name="宋体");
+!richedit.theme = 外观主题,例如\nwinform.button.theme = "Explorer"\nwinform.button.theme = false
+!richedit.modifyStyle(.(remove,add) = 如果指定第三个参数，则使用此参数调用::SetWidnowPos 
+!richedit.modifyStyleEx(.(remove,add) = 如果指定第三个参数，则使用此参数调用::SetWidnowPos
+!richedit.capture = 是否捕获全局鼠标消息
+!richedit.close() = 关闭控件窗
+!richedit.invalidate(__/*可选使用::RECT()对象指定客户区*/) = 使窗口绘图区无效
+!richedit.invalidate(__/*可选使用::RECT()对象指定客户区*/,0) = 使窗口绘图区无效\n不刷新背景
+!richedit.update() = 重绘invalidate函数指定的区块
+!richedit.wrap = 是否启用自动换行，仅richedit支持
+!richedit.onlink = @.onlink=function(msg,title){\n	\n}
+!richedit.setFocus() = 设置焦点 
+!richedit.setPos(.(x坐标,y坐标,宽,高,插入位置,参数) = 调整窗口位置或排序,所有参数可选\n同时指定x,y坐标则移动位置\n同时指定宽高则改变大小\n指定插入位置(句柄或_HWND前缀常量)则调整Z序
+!richedit.getPos() = 返回相对坐标,宽,高\nx,y,cx,cy=win.getPos(hwnd)
+!richedit.vScroll() = 滚动到底部
+!richedit.hScroll() = 滚动到右侧
+!richedit.vScroll(_SB__) = 滚动竖向滚动条
+!richedit.hScroll(_SB__) = 滚动横向滚动条
+!richedit.selectAll() = 全选
+!richedit.popMenu() = @import win.ui.menu\n??.wndproc = function(hwnd,message,wParam,lParam){
+    if( message == 0x204/*_WM_RBUTTONDOWN*/  ){  
+        owner.popMenu();__/*创建编辑菜单*/
+    }
+}
+!richedit.redo() = 重做
+!richedit.undo() = 撤消
+!richedit.clear() = 清除选中文本
+!richedit.copy() = 复制
+!richedit.cut() = 剪切
+!richedit.paste() = 粘贴
+!richedit.canRedo() = 能否重做
+!richedit.canUndo() = 能否撤消
+!richedit.canPaste() = 能否粘贴
+!richedit.canCopy() = 能否复制  
+!richedit.langOptions = 设置输入和远东语言选项\n选项为数值,使用_IMF_前缀常量表示
+!richedit.orphanWindow() = 使控件脱离原来的窗口,可以显示在父窗口外面，\n但仍然显示在原来的位置，继续如影随形的跟随父窗口移动或改变大小,\n控件原来的固定边距等参数仍然有效
+
+_ENM_NONE=@0x0/*_ENM_NONE*/
+_ENM_CHANGE=@0x1/*_ENM_CHANGE*/
+_ENM_UPDATE=@0x2/*_ENM_UPDATE*/
+_ENM_SCROLL=@0x4/*_ENM_SCROLL*/
+_ENM_SCROLLEVENTS=@0x8/*_ENM_SCROLLEVENTS*/
+_ENM_DRAGDROPDONE=@0x10/*_ENM_DRAGDROPDONE*/
+_ENM_PARAGRAPHEXPANDED=@0x20/*_ENM_PARAGRAPHEXPANDED*/
+_ENM_PAGECHANGE=@0x40/*_ENM_PAGECHANGE*/
+_ENM_KEYEVENTS=@0x10000/*_ENM_KEYEVENTS*/
+_ENM_MOUSEEVENTS=@0x20000/*_ENM_MOUSEEVENTS*/
+_ENM_REQUESTRESIZE=@0x40000/*_ENM_REQUESTRESIZE*/
+_ENM_SELCHANGE=@0x80000/*_ENM_SELCHANGE*/
+_ENM_DROPFILES=@0x100000/*_ENM_DROPFILES*/
+_ENM_PROTECTED=@0x200000/*_ENM_PROTECTED*/
+_ENM_CORRECTTEXT=@0x400000/*_ENM_CORRECTTEXT*/
+_ENM_IMECHANGE=@0x800000/*_ENM_IMECHANGE*/
+_ENM_LANGCHANGE=@0x1000000/*_ENM_LANGCHANGE*/
+_ENM_OBJECTPOSITIONS=@0x2000000/*_ENM_OBJECTPOSITIONS*/
+_ENM_LINK=@0x4000000/*_ENM_LINK*/
+_ENM_LOWFIRTF=@0x8000000/*_ENM_LOWFIRTF*/
+_IMF_AUTOKEYBOARD=@1/*_IMF_AUTOKEYBOARD*/
+_IMF_AUTOFONT=@2/*_IMF_AUTOFONT*/
+_IMF_IMECANCELCOMPLETE=@4/*_IMF_IMECANCELCOMPLETE*/
+_IMF_IMEALWAYSSENDNOTIFY=@8/*_IMF_IMEALWAYSSENDNOTIFY*/
+_IMF_AUTOFONTSIZEADJUST=@0x10/*_IMF_AUTOFONTSIZEADJUST*/
+_IMF_UIFONTS=@0x20/*_IMF_UIFONTS*/
+_IMF_DUALFONT=@0x80/*_IMF_DUALFONT*/
+_IMF_SMODE_PLAURALCLAUSE=@1/*_IMF_SMODE_PLAURALCLAUSE*/
+_IMF_SMODE_NONE=@2/*_IMF_SMODE_NONE*/
+_IMF_FORCENONE=@1/*_IMF_FORCENONE*/
+_IMF_FORCEENABLE=@2/*_IMF_FORCEENABLE*/
+_IMF_FORCEDISABLE=@4/*_IMF_FORCEDISABLE*/
+_IMF_CLOSESTATUSWINDOW=@8/*_IMF_CLOSESTATUSWINDOW*/
+_IMF_VERTICAL=@0x20/*_IMF_VERTICAL*/
+_IMF_FORCEACTIVE=@0x40/*_IMF_FORCEACTIVE*/
+_IMF_FORCEINACTIVE=@0x80/*_IMF_FORCEINACTIVE*/
+_IMF_FORCEREMEMBER=@0x100/*_IMF_FORCEREMEMBER*/
+_IMF_MULTIPLEEDIT=@0x400/*_IMF_MULTIPLEEDIT*/
+end intellisense***/

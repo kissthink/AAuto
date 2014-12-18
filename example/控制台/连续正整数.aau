@@ -1,0 +1,32 @@
+import console;
+console.open();
+
+var str = /*连续正整数
+一个正整数有可能可以被表示为n(n>=2)个连续正整数之和，如：
+15=1+2+3+4+5
+15=4+5+6
+15=7+8
+ 
+请编写程序，根据输入的任何一个正整数，找出符合这种要求的所有连续正整数序列
+*/ 
+console.log(str);
+  
+var n = console.getNumber( "请输入一个非零整数:" )
+
+for i=1;n/2+1;1 {
+    var k = 0;
+    var j2 =0;
+    for j = i; n/2+1; 1 { 
+        k = k + j;
+        j2 = j;
+        if( k == n ){ break };
+    }; 
+     
+    if( k == n ){
+        var out = n+' = ' + i;
+        for y=i+1;j2;1 { 
+            out = out+' + ' + y
+        };
+        console.log( out );
+    };
+}; 

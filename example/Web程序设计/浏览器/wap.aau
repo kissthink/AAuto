@@ -1,0 +1,56 @@
+//手机WAP模拟器 
+import web.form;  
+/*DSG{{*/
+var winform = ..win.form( scroll=1;right=312;bottom=549;max=false;text="WAP模拟器 - by AAuto Quicker";parent=...;cls="WAP_EXPLORER" )
+winform.add(  )
+/*}}*/
+
+//创建web窗体
+var wb = web.form( winform 
+	,//可输入_UIFLAG_ 前缀的常量自定义外观
+	,//可输入_DLCTL_ 前缀的常量以控制下载行为
+	,"Mozilla/5.0 (SymbianOS/9.2; U; Series60/3.1 NokiaN95/11.0.026; Profile MIDP-2.0 Configuration/CLDC-1.1)"
+	);
+ 
+//使系统支持手机wml的MIME
+import win.reg;
+reg = win.reg("HKEY_CURRENT_USER\SOFTWARE\Classes\MIME\Database\Content Type\text/vnd.wap.wml") 
+if( ! reg.queryValue("CLSID") ){
+	reg.setSzValue("CLSID","{25336920-03F9-11cf-8FD0-00AA00686F13}")
+	reg = win.reg("HKEY_CLASSES_ROOT\MIME\Database\Content Type\application/vnd.wap.xhtml")
+	reg.setSzValue("CLSID","{25336920-03F9-11cf-8FD0-00AA00686F13}")
+	reg = win.reg("HKEY_CLASSES_ROOT\MIME\Database\Content Type\application/vnd.wap.xhtml+xml")
+	reg.setSzValue("CLSID","{25336920-03F9-11cf-8FD0-00AA00686F13}")
+	::SendMessage(0xFFFF/*_HWND_BROADCAST*/, 0x1A/*_WM_WININICHANGE*/ )
+}
+reg.close() 
+    
+//模拟NOKIA手机的请求头    
+wb.addHeaders = /**
+User-Agent: Mozilla/5.0 (SymbianOS/9.2; U; Series60/3.1 NokiaN95/11.0.026; Profile MIDP-2.0 Configuration/CLDC-1.1)
+Accept:text/vnd.wap.wml, application/vnd.wap.xhtml+xml,application/xhtml+xml, */*
+VIA:HTTP/1.1 ZJHZ-PS-WAP2-GW213 (Nokia WAP Gateway4.0 CD3/ECD13_C/NWG4.0 CD3 ECD13_C 4.1.03)
+X_FORWARDED_FOR:10.180.150.20
+x-source-id:cmwap
+x-nokia-connection_mode:TCP
+x-up-bear-type:GPRS
+NOKIA_GATEWAY_ID:NWG/4.1/Build4.1.03
+X_WAP_PROFILE:http://nds1.nds.nokia.com/uaprof/N6670r100.xml
+X_WAP.TOD_CODED:Thu, 01 Jan 1970 00:00:00 GMT
+GPRS:861399999999,10.101.39.165,cmwap,unsecured
+X_UP_CALLING_LINE_ID:861399999999
+X_UP_SUBNO:861399999999
+NOKIA_BEARER:GPRS
+X-UP-CALLING-LINE-ID:861399999999
+**/
+
+//显示窗体
+winform.show() 
+
+//打开网站,我们看到目标网站返回的是手机客户端访问时的页面
+wb.go("http://3G.QQ.COM/") 
+wb.wait("");//等待指定网址,可以使用模式匹配语法
+ 
+//进入消息循环
+win.loopMessage();
+return winform,wb;

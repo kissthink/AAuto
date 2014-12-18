@@ -1,0 +1,263 @@
+//dlMgr 下载更新文件
+import thread.command;
+namespace fsys.update;
+
+class dlMgr{
+
+	ctor(updateUrl,saveDir,appVersion,appDir){
+		this = ..thread.command();
+		
+		this[["create"]] = function(){ 
+			if( this.onDownloadRecive ) this.onDownloadReceive = this.onDownloadRecive;
+			
+			..thread.invoke(  function(hCmd,getUpdateFiles,...){
+				var ok,err,filename = getUpdateFiles(hCmd,...);
+				if( !ok ) ..thread.command.send(hCmd,"onError",err,filename);
+			} ,this._form.hwnd,getUpdateFiles, updateUrl,saveDir,appVersion,appDir );
+		}; 
+	}  
+}
+
+namespace dlMgr{
+	
+	getUpdateFiles = function(hCmd,updateUrl,saveDir,appVersion,appDir ){
+	
+		import inet.whttp;
+		import inet.httpFile;
+		import fsys.version;
+		import thread.command;
+		import sevenZip.lzma;
+		import web.json;
+		
+		var send = ..thread.command.send;
+		var sendIdle = ..thread.command.sendIdle;
+
+		if( ! ..inet.url.is(updateUrl,0x0/*_URLIS_URL*/) ){
+			return null,"更新URL格式错误",updateUrl;
+		}
+			
+		if( appVersion ){
+			appVersion = ..fsys.version(appVersion)
+		}
+		if( ! ( appVersion ? appVersion.valid() ) ){
+			appVersion = ..fsys.version.getInfo(..io._exepath )[["productVersion"]]
+		}
+		if( ! ( appVersion ? appVersion.valid() ) ) return null,"未指定本地应用程序版本号";
+		if( !appDir ) appDir = ..io._exedir; 
+		
+		saveDir = saveDir ? ..fsys.createDir(saveDir);
+		if( !saveDir ) return null,"创建升级文件下载目录失败";
+		
+		var saveFilesDir = ..fsys.joinpath(saveDir,"files");
+		..fsys.createDir(saveFilesDir);
+		
+		var http = ..inet.whttp();
+		var json = http.get( updateUrl );
+		http.close();
+		
+		if( !json ) return null,"网络连接失败",updateUrl; 
+		if( json ) updateInfo = ..web.json.parse(json);
+		if( !updateInfo  ) return null,"网络连接失败",updateUrl; 
+		
+		if( !(updateInfo.version && updateInfo.url && updateInfo.format)  ) return null,"服务器返回数据格式错误",updateUrl;	
+		
+		latestVersion = ..fsys.version(updateInfo.version);
+		if( ! ( latestVersion ? latestVersion.valid() ) ) return null,"服务器返回错误的版本号",updateUrl;
+		
+	 
+		if( ! send(hCmd,"onConfirmDownload",appVersion < latestVersion,tostring(appVersion),tostring(latestVersion),updateInfo.description) ){
+			return true;
+		}
+
+		var http = ..inet.whttp();
+		var checksumLzmaPath =  ..fsys.joinpath(saveDir,"checksum.lzma") ; 
+		var file = ..io.open( checksumLzmaPath,"w+b" )
+		http.onReceive = function(str,size,contentLength){
+			file.write(str);
+		}
+		
+		var chksumUrl = ..inet.url.append( updateInfo.url ,"checksum.lzma" );	
+		if( ! http.get( chksumUrl ) ){ 
+			http.close();
+			return null,"下载校验文件失败",chksumUrl;
+		}
+		http.close();
+		file.close();
+		
+		var checksumPath =  ..fsys.joinpath(saveDir,"checksum") ; 
+		if( ! ..sevenZip.lzma.decodeFile(checksumLzmaPath,checksumPath) ){ 
+			return null,"解压校验文件失败",checksumLzmaPath;
+		}
+		..fsys.delete(checksumLzmaPath);
+		
+		//校验并获取待更新文件列表
+		var totalFiles = 0;
+		for line in ..io.lines(checksumPath) { 
+			totalFiles++;
+		}
+		 
+		send(hCmd,"onChecksumBegin",totalFiles)
+		var totalSize,totalUncompressedSize = 0,0;
+		var updateFiles = {};
+		var file,localPath,crc32,uncompressedSize,size,path; 
+		var count = 0; 
+		
+		var fileFolder = ..io.open(..fsys.joinpath(saveDir,"folders"),"w+b");
+		for line in ..io.lines(checksumPath) { 
+			crc32,uncompressedSize,size,path = ..string.match(line,"(.+?)\|(.+?)\|(.+?)\|(.+)"); 
+			crc32 = tonumber(crc32)
+			size = tonumber(size)
+			localPath = ..fsys.joinpath(appDir,path);
+			
+			count++;
+			if( sendIdle(1000,hCmd,"onChecksum",count,totalFiles) === false ) { fileFolder.close(); return true; };
+			if( !(crc32 || size ) ){ 
+				fileFolder.write(path,'\r\n') 
+				continue;
+			}
+				
+			file = ..io.open(localPath,"rbS")
+			if( file ){
+				uncompressedSize = tonumber(uncompressedSize)
+				if( file.size(1) == uncompressedSize ){ 
+					if(  ( ..string.crc32( file.read(-1) ) == tonumber(crc32) ) || !uncompressedSize ){
+						file.close(); 
+						..fsys.delete(  ..fsys.joinpath(saveFilesDir,path) );
+						continue
+					} 
+				}
+				file.close();
+			} 
+			
+			totalSize = totalSize + size;
+			totalUncompressedSize = totalUncompressedSize + uncompressedSize;
+			
+			..table.push(updateFiles,path);
+		} 
+		
+		fileFolder.close();
+		if( send(hCmd,"onChecksum",totalFiles,totalFiles)=== false ) return true;
+		 
+		var downloadSize = 0;
+		send(hCmd,"onDownloadBegin",totalSize,#updateFiles)
+		
+		var time_tick = time.tick;
+		
+		for(i=1;#updateFiles;1){
+			var path = updateFiles[i];
+			var localPath = ..fsys.joinpath(saveFilesDir,path ++ updateInfo.format );
+			var downloadUrl = ..inet.url.append(updateInfo.url,"files",path ++ updateInfo.format )
+			var remoteFile = ..inet.httpFile(downloadUrl , localPath ) 
+			
+			remoteFile.onReceiveBegin = function(statusCode,contentLength,fileSize){
+				if( statusCode == 206/*断点续传*/ ){
+					downloadSize = downloadSize + fileSize;
+				}
+				send(hCmd,"onDownloadFile",path,contentLength,downloadSize) 
+			}
+			
+			var tickIdle = 0;
+			var sizePs = 0;
+			remoteFile.onReceive = function(str,size,contentLength){
+				downloadSize = downloadSize + size;
+				sizePs = sizePs + size; 
+				var tick = time_tick();
+				if( tick - tickIdle > 1000 ){
+					if( send(hCmd,"onDownloadReceive",sizePs,downloadSize,i) === false ) return true; 
+					sizePs = 0;
+					tickIdle = tick;
+				}
+			}
+				
+			var ok,err  = remoteFile.download()
+			if( !ok ){ 
+				return null,"下载更新文件遇到错误", path;
+			} 
+			else { 
+				if(!downloadSize) downloadSize = remoteFile.contentLength; 
+				send(hCmd,"onDownloadReceive",0,downloadSize,i)
+			}
+			remoteFile.close(); 
+			
+		} 
+		
+		//解压所有待更新文件 
+		if(!#updateFiles){
+			send( hCmd,"onEnd",updater,saveDir,appDir,mainPath,#updateFiles );
+			return true;
+		};
+		
+		send(hCmd,"onUnCompressBegin",#updateFiles)
+		for(i=1;#updateFiles;1){
+			var path = updateFiles[i];
+			var localPath = ..fsys.joinpath(saveDir,"files",path);
+			var ok,err =  ..sevenZip.lzma.decodeFile( localPath ++ updateInfo.format ,localPath );
+			if( !ok ){ 
+				return null,..string.concat( "解压错更新文件遇到错误 ",err), path;
+			}
+			if( send(hCmd,"onUnCompress",i,path) === false ) return true;
+		}
+
+		var file = ..io.open(..fsys.joinpath(saveDir,"update-files"),"w+b");
+		for(i=1;#updateFiles;1){
+			file.write(updateFiles[i],'\r\n')
+		}
+		file.close();
+		 
+		if( !updateInfo.updater ){
+			updateInfo.updater = ..io._exefile;
+		}
+		
+		var updater = ..fsys.joinpath(saveDir,"files",updateInfo.updater);
+		if( !..io.exist(updater) ){ 
+			..fsys.copy( ..fsys.joinpath(appDir,updateInfo.updater) ,updater);
+			
+			if( !..io.exist(updater) ){
+				return null,"未找到更新程序",updateInfo.updater;
+			}
+		}
+		
+		var mainPath = ..fsys.joinpath(appDir,updateInfo.main); 
+		send( hCmd,"onEnd",updater,saveDir,appDir,mainPath,#updateFiles );
+		return true;
+	}
+	
+}
+	
+/**intellisense()
+fsys.update.dlMgr = 更新/修复应用程序文件下载管理器
+fsys.update.dlMgr(.(updateUrl,saveDir,appVersion,appDir) = updateUrl:版本文件version.txt的网址\n更新文件存储目录\nappVersion:应用程序版本号,不指定自动获取EXE产品版本\nappDir:应用程序目录,不指定则为当前EXE目录
+fsys.update.dlMgr() = !fsys_update_dlmgr.
+!fsys_update_dlmgr.create() = 启动更新线程
+!fsys_update_dlmgr.onError = @.onError = function(err,filename){
+	io.print("更新遇到错误:",err,filename__/*导致错误的文件路径或URL\n该值可能为空*/ )
+} 
+!fsys_update_dlmgr.onConfirmDownload = @.onConfirmDownload = function(isUpdated,appVersion,latestVersion,description){
+	io.print("版本已更新,返回值确定是否下载")
+	return true; __/*返回真继续下载更新文件*/
+}
+!fsys_update_dlmgr.onChecksumBegin = @.onChecksumBegin = function(total){
+	io.print("开始检验，文件总数：", total)__
+}
+!fsys_update_dlmgr.onChecksum = @.onChecksum = function(count,total){
+	io.stdout.write("已校检文件", count,'\r')__
+}
+!fsys_update_dlmgr.onDownloadBegin = @.onDownloadBegin = function(totalSize,fileTotal){
+	io.print("开始下载更新文件", ..fsys.formatSize(totalSize),fileTotal)__
+}
+!fsys_update_dlmgr.onDownloadFile = @.onDownloadFile = function(path,contentLength,downSize){
+	io.print("正在下文件", path)__	
+}
+!fsys_update_dlmgr.onDownloadReceive = @.onDownloadReceive = function(sizePs,downSize,fileCount){
+	io.print("已下载文件数:" + fileCount, ..fsys.formatSize(downSize) )
+}
+!fsys_update_dlmgr.onUnCompressBegin  = @.onUnCompressBegin = function(fileTotal){
+	io.print("开始解压,文件总数：", fileTotal)__
+}
+!fsys_update_dlmgr.onUnCompress = @.onUnCompress = function(fileCount,path){
+	io.print("已解压", fileCount, path)
+} 
+!fsys_update_dlmgr.onEnd = @.onEnd = function(updater,saveDir,appDir,mainPath,updateFilesCount){
+	io.print("更新文件已准备就绪")
+}
+end intellisense**/

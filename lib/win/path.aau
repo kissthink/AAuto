@@ -1,0 +1,24 @@
+//path 路径环境变量
+import win;
+import fsys;
+
+namespace win.path;
+	
+search = function(filename){
+	path_env = ..win.getenv("path") 
+	path_env = ..string.split(path_env,";");
+	var path = ..fsys.searchFile(filename);
+	if(path)return path;
+	
+	for(k,v in path_env){
+		path = ..fsys.joinpath(v,filename) 
+		if( ..io.exist(path) ) 
+			return path
+	} 
+	return 
+}
+
+/**intellisense(win.path)
+search("__") = 根据环境变量查找文件
+end intellisense**/
+

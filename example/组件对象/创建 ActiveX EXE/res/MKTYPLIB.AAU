@@ -1,0 +1,4 @@
+import vc6; 
+vc6("/").exec(
+	'MKTYPLIB.EXE res/AAutoCOM.odl' //生成 res/AAutoCOM.tlb类型库
+)

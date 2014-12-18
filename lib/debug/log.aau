@@ -1,0 +1,139 @@
+//log 调试日志
+import fsys; 
+import debug;
+import crypt.bin;
+import console;
+namespace debug.log
+ 
+var defaultPathKey = "ED3D6BB8-2353-4784-B8B9-FFCC6D8B8050.debug.log.defaultPath";
+var logPath,lockName;
+getPath = function(){
+	return logPath or ..thread.get(defaultPathKey) or "/config/log.txt";
+}
+
+setPath = function( path ){
+	var defaultPath = ..thread.get(defaultPathKey);
+	if( !path ){ 
+		logPath = defaultPath or "/config/log.txt";
+		..fsys.createParentDir(logPath);
+		return;
+	}  
+	elseif( logPath == path ) {
+		return;
+	}
+	
+	logPath = path; 
+	..fsys.createParentDir(logPath);
+	if(!defaultPath ){
+		..thread.set( defaultPathKey,logPath );
+	}
+}
+
+var pre_code_file;
+var pre_func_name
+var pre_code_src;
+var code_file;
+var func_name
+var code_src;
+var push = ..table.push;
+
+var LOCKNAME = "{903EEA9E-4366-4769-ADFB-5E208C8C7E17}"; 
+print = function( ... ){  
+
+	if( !logPath ) setPath();
+	 
+	var tLog = {};
+	
+	var createTime = ..time.now();
+	createTime.format="%Y-%m-%d %H:%M:%S";
+	push(tLog, "Time: ",tostring(createTime),'\n');
+	push(tLog, "Thread ID: ",..thread.getId(),'\n');
+	
+	var info = ..debug.queryinfo(2,"select source,name,currentline") 
+	var arg = {...}
+	
+	code_file = info.source.file 
+	if( code_file && code_file!=pre_code_file ){
+		push(tLog, "file:",code_file,'\n'); 
+		pre_code_file = code_file;
+	}
+	
+	code_src = info.source.src 
+	if( code_src!= pre_code_src ){
+		push(tLog, "File: ",code_src,'\n'); 
+		pre_code_src = code_src;
+	}
+	
+	pre_func_name = info.name 
+	if( func_name && code_file!=pre_func_name ){
+		push(tLog, "Call: ",func_name,'(...)\n'); 
+		pre_func_name = func_name;
+	}  
+	
+	push(tLog,  ..string.format('Line: #%03d \n',info.currentline ) );     
+	for(i=1;#arg ){
+		push(tLog, tostring(arg[i]):""," ") 
+	}  
+	
+	..thread.lock( LOCKNAME ) {
+	
+		var file,err = ..io.open(logPath,"a+t");
+		if( !file ) {
+			if( _STUDIO_INVOKED ){
+				..console.log( "创建日志文件失败" + err );
+				..console.log( ..table.unpack(tLog) );
+			} 
+		}
+		else{
+			if( _STUDIO_INVOKED ){
+				file.write( ..table.unpack(tLog) );
+				..console.log( ..table.unpack(tLog) );
+			}
+			else {
+				file.write( ..crypt.bin.encodeBase64(..string.join(tLog) ) );
+			}
+			file.write('\n\n')
+			
+			file.close();  
+		}
+	
+	} ..thread.unlock(LOCKNAME);
+}
+
+checkSize = function( maxSize ){
+	..thread.lock( LOCKNAME ) {
+		if( !logPath ) setPath();
+		
+		var file,err = ..io.open(logPath,"r");
+		if( file ) {
+			var size = file.size(1);
+			file.close();
+			
+			if( size > maxSize ){
+				..fsys.delete(logPath)
+			} 
+		}
+	} ..thread.unlock(LOCKNAME);
+}
+
+dump = function(path,step=5){
+	if(!..io.exist(path) ) error("请在参数中指定有效的日志文件路径",2);
+	var bin = ..string.load(path);
+	for s in ..string.gmatch( bin,"[\p\w\r\n]+?\r\n\r\n") { 
+		..console.log( ..crypt.bin.decodeBase64(s) )
+		..console.more( step )
+	} 
+}
+
+write = print;
+flush = function(){ };
+close = flush;
+
+/**intellisense(debug)
+log = 调试日志支持库 
+log.setPath("/config/log->txt") = 设志日志文件路径,\n如果不指定路径,默认设置为 /config/log.txt
+log.checkSize(0x20000) = 检测日志文件是否超过128KB,\n超过参数指定的大小则清空日志文件
+log.print("__") = 写入调试日志不定个数参数,\n并写入当前时间、文件名、行号、线程ID等\n在开发环境调试时会同时输出到控制台窗口,\n发布后程序自动进行BASE64加密写入日志文件
+log.dump( = 解码并在控制台输出日志文件内容
+log.dump(.(日志路径,每次显示日志数);
+end intellisense**/

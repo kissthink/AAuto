@@ -1,0 +1,87 @@
+//accelerator 加速键
+namespace win.ui;
+
+accelerator = class {
+	ctor (tab,winform) {
+		if( winform && winform._acceleratorTable ){
+			error("窗体不能多次绑定加速键表",2);
+		}
+		 
+		var t = {};
+		
+		for (i = 1; #tab) {
+			var acc = ACCEL();
+			if (tab[i].ctrl) acc.fVirt |= 0x8/*_FCONTROL*/;
+			if (tab[i].alt) acc.fVirt |= 0x10/*_FALT*/;
+			if (tab[i].shift) acc.fVirt |= 0x4/*_FSHIFT*/; 
+			if(tab[i].vkey){
+				acc.key = tab[i].vkey;
+				acc.fVirt |= 0x1/*_FVIRTKEY*/;
+			} 
+			if( winform[["hwnd"]] && (type(tab[i].oncommand) == "function") ){
+				acc.cmd  = winform.registCommand(tab[i].oncommand ) 
+			}
+			else{
+				acc.cmd = tab[i].cmd;
+			}
+			
+			..table.push(t, acc);
+		}
+		
+		var arr = ..raw.toarray(t);
+		this.handle = CreateAcceleratorTable(arr, #t);
+		
+		if( winform){
+			var hwnd = winform[["hwnd"]] : winform;
+			this.hookMessage = function(msg){
+				if( TranslateAccelerator(hwnd, this.handle, msg) ){
+					return true;
+				}
+			}   
+			..win.hookMessage( this.hookMessage )
+			winform._acceleratorTable = this;
+		}
+	}
+	
+	destroy = function () {
+		if(this.handle){
+			DestroyAcceleratorTable(this.handle);
+			if( this.hookMessage ){
+				..win.hookMessage(this.hookMessage,false)
+				this.hookMessage = null;
+			}
+			this.handle = null;
+			this.create = null;
+		}
+	};
+	 
+	translate = function (winform, msg) {
+		return TranslateAccelerator(winform[["hwnd"]] : winform, this.handle, msg);
+	}; 
+	
+	@ {
+		_topointer = function () {
+			return owner[["handle"]];
+		}
+	}
+}
+
+namespace accelerator {
+	ACCEL = class {
+		BYTE fVirt = 0;
+		WORD key;
+		WORD cmd;
+	}
+	
+	var u = ::User32; 
+	CreateAcceleratorTable = u.api("CreateAcceleratorTableA", "pointer(struct[] lpaccl, int cEntries)");
+	DestroyAcceleratorTable = u.api("DestroyAcceleratorTable", "int(pointer hAccel)");
+	TranslateAccelerator = u.api("TranslateAcceleratorA", "int(int hWnd, pointer hAccTable, struct& lpMsg)");
+}
+
+/**intellisense()
+win.ui.accelerator = 加速键
+win.ui.accelerator( ) = @win.ui.accelerator({\n	{ ctrl = true; vkey = 'N'#; oncommand = function(id,event){ } } \n	{ ctrl = true; vkey = 'O'#; cmd = __/*id*/ } \n},winform);
+win.ui.accelerator() = !win_ui_accelerator.
+!win_ui_accelerator.destroy() = 删除此快捷键对象
+end intellisense**/

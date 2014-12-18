@@ -1,0 +1,63 @@
+//H) 读写文件
+import console;
+console.open();
+ 
+import py; 
+pyCode = /***
+ 
+data = '''\
+python与aauto读写文件的方法基本是一样的，
+读写模式参数也完全一样，仅函数名小有区别。
+'''
+
+#aauto里路径第一个字符是斜杠表示应用程序目录(应用程序目录是稳定不可变更的程序启动目录),
+#python里没有这个概念，直接写相对路径表示当前目录,因为当前目录是可变更的,AAuto程序很少去使用这种方式指定路径
+
+f = file('.test.txt', 'w+b') #写模式打开文件
+f.write(data) #写入数据
+f.close() #关闭文件
+
+f = file('.test.txt',"r") #读模式打开文件
+
+while True:
+    line = f.readline()
+    if len(line) == 0: #长度为0表示读完了
+        break
+    print line, #逗号避免自动添加换行
+    
+f.close() #关闭文件 
+***/ 
+
+py.exec( pyCode ) //运行python代码
+
+//下面是类似的AAuto代码
+//=========================================================
+
+var data = /***
+python与aauto读写文件的方法基本是一样的，
+读写模式参数也完全一样，仅函数名小有区别。
+***/
+
+//路径第一个字符是斜杠表示应用程序目录(应用程序目录是稳定不可变更的程序启动目录)
+var f = io.open("/.test.txt","w+b") //写模式打开文件
+f.write(data) //写入数据
+f.close() //关闭文件
+
+f = io.open('/.test.txt',"r") //读模式打开文件
+
+while( 
+    var line;
+    line = f.read(); //读取一行,AAuto的read函数默认读取一行，根据参数可以读取数值、指定长度、结构体等等 
+    line //为null表示读完了，因为在AAuto里null也可以取长度并且返回0,所以这里也可以写  #line 
+) {
+	io.print( line ); //读的时候已经自动移除了换行，所以这里加换行没关系
+}
+f.close()
+
+//上面的代码可以简化为下面的写法
+for line in io.lines('/.test.txt') { 
+	io.print("使用io.lines迭代器:",line)
+} 
+
+//移除测试文件
+io.remove("/.test.txt")

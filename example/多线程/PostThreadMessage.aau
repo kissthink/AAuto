@@ -1,0 +1,35 @@
+//线程消息
+import win;
+
+io.open();  
+
+func_t = function(arg){
+	//线程函数内部要添加自已的import语句
+    import win; 
+    
+    //在子线程启动消息循环
+    win.loopMessage(
+    	//注册一个消息钩子函数
+    	function(msg){
+    		io.print( "收到消息",msg.message )
+    	} 
+    ) 
+
+}
+ 
+//创建线程
+hander,id_t = thread.create( func_t  ) 
+sleep(1000)
+
+//给线程发送消息
+::PostThreadMessage(id_t,123,0,0)
+::PostThreadMessage(id_t,456,0,0)
+
+//给线程发送退出消息
+::PostThreadMessage(id_t,0x12/*_WM_QUIT*/,0,0)
+ 
+thread.waitAll(hander); 
+io.print("线程已退出")
+
+execute("pause") //按任意键继续
+io.close();//关闭控制台

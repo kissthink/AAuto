@@ -1,0 +1,106 @@
+﻿.tabs 
+{                           
+  font:system;
+  behavior:tabs; /*指定这是一个选项卡控件*/
+  flow: horizontal; /*修改默认的垂直布局为横向布局,这样strip就跑左侧去了*/
+  height:100%%;
+  width:100%%;
+  overflow:hidden;
+}
+
+.tabs > .strip /* 选项卡容器 */
+{
+  flow: vertical; /*选项卡按钮改成垂直布局*/
+  margin-bottom:-1px;
+  padding: 4px 0 2px 2px;
+  width:120px;  
+  height:100%;
+  background:rgb(110,179,210);
+}
+
+.tabs > .strip > [panel] /* 选项卡按钮默认样式 */
+{
+  padding:3px 4px;
+  margin-bottom:1px;
+  height:20px; 
+  line-height:20px; 
+  background:rgb(110,179,210);
+  font-size:12px;
+  text-align:right;
+  position: relative;
+}
+.tabs > .strip > [panel] span{
+    margin-right:15px;  
+}
+.tabs > .strip > [panel]:hover /* 鼠标悬停选项卡样式*/
+{
+  background-color:rgb(110,179,210) rgb(236,240,241) rgb(236,240,241) rgb(110,179,210);
+  transition:blend;
+}
+.tabs > .strip > [panel]:current  /*当前选项卡样式*/
+{
+  background-color:#FFF;  
+  position:relative;
+}
+.tabs > .strip > [panel]:current:hover /*点击当前选项卡的样式*/
+{ 
+  transition:none;
+}
+
+.tabs > .strip > [panel]:current:first-child,
+.tabs > .strip > [panel]:current:hover:first-child
+{
+ 
+} 
+
+.tabs:focus .strip [panel]:current 
+{
+ 
+} 
+
+//下面指定内容页样式
+.tabs > .panel[name] { display:none; }
+
+//框架页正在打开
+.tabs > iframe.panel[name]:busy { 
+  foreground-image:url(images/loading.png);
+  foreground-repeat: no-repeat;
+  foreground-position: 2px 2px;
+}
+
+.tabs > .panel[name]:expanded 
+{ 
+  background:#FFF;
+  padding:10px;
+  margin:0;
+  display:block; 
+  height:100%%;
+  width:100%%;//框架必须指定宽度
+} 
+
+//下面指定关闭按钮的样式
+.tabs > .strip > [panel] .close-panel{
+  display:none;
+}
+.tabs > .strip > [panel]:current .close-panel{ 
+  display:block;  
+  position: absolute;
+  top:7px;
+  right:3px;
+  width:12px;
+  height:12px;
+  line-height: 12px;
+  border-radius:12px;
+  font-size: 12px; 
+  font-family:"Marlett"; 
+  color: #7e8c8d; 
+  content:"r";
+}
+.tabs > .strip > [panel]:current .close-panel:hover{ 
+  background:#999;
+  color: #FFF;
+}
+.tabs > .strip > [panel]:current .close-panel:active{ 
+   background:red;
+   color: #FFF;
+}

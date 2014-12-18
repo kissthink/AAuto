@@ -1,0 +1,12 @@
+//observer 命令响应
+import thread.command;
+namespace observer;
+ 
+with ..thread.command.instance() {
+
+	自定义线程命令 = function(参数){
+		..mainWb.write( 参数 )
+	} 	
+}
+
+

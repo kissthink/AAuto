@@ -1,0 +1,61 @@
+//info 系统信息
+namespace sys;
+
+class info{
+	ctor(){
+		this = GetSystemInfo( SYSTEM_INFO() );
+	}
+	isX64  = function(){
+		return this.wProcessorArchitecture == 9/*_PROCESSOR_ARCHITECTURE_AMD64*/ 
+			|| this.wProcessorArchitecture == 6/*_PROCESSOR_ARCHITECTURE_IA64*/
+	}
+}
+
+namespace info{
+	class SYSTEM_INFO {
+ 		WORD wProcessorArchitecture;
+ 		INT dwPageSize;
+ 		ADDR lpMinimumApplicationAddress;
+ 		ADDR lpMaximumApplicationAddress;
+ 		ADDR dwActiveProcessorMask;
+ 		INT dwNumberOfProcessors;
+ 		INT dwProcessorType;
+ 		INT dwAllocationGranularity;
+ 		WORD wProcessorLevel;
+ 		WORD wProcessorRevision;
+	}
+	
+	GetSystemInfo = ::Kernel32.api("GetNativeSystemInfo","void(struct &lpSystemInfo)");  
+}
+
+/**intellisense()
+sys.info = 获取 SYSTEM_INFO
+sys.info() = 调用 GetSystemInfo() 获取 SYSTEM_INFO结构体 \n!sys_info.
+!sys_info.wProcessorArchitecture = CPU体系结构
+!sys_info.dwPageSize = 被 VirtualAlloc 函数使用的页大小。
+!sys_info.lpMinimumApplicationAddress = 程序可以访问的最低内存地址
+!sys_info.lpMaximumApplicationAddress = 程序可以访问的最高内存地址
+!sys_info.dwActiveProcessorMask = CPU掩码
+!sys_info.dwNumberOfProcessors = CPU数目
+!sys_info.dwProcessorType = CPU类型
+!sys_info.dwAllocationGranularity = 已被分配的虚拟内存空间粒度
+!sys_info.wProcessorLevel = 处理器级别
+!sys_info.wProcessorRevision = 修订版本号
+!sys_info.isX64() = 是否64位处理器
+
+_PROCESSOR_ALPHA_21064=@0x5248/*_PROCESSOR_ALPHA_21064*/
+_PROCESSOR_ARCHITECTURE_ALPHA=@0x2/*_PROCESSOR_ARCHITECTURE_ALPHA*/
+_PROCESSOR_ARCHITECTURE_INTEL=@0x0/*_PROCESSOR_ARCHITECTURE_INTEL*/
+_PROCESSOR_ARCHITECTURE_MIPS=@0x1/*_PROCESSOR_ARCHITECTURE_MIPS*/
+_PROCESSOR_ARCHITECTURE_PPC=@0x3/*_PROCESSOR_ARCHITECTURE_PPC*/
+_PROCESSOR_ARCHITECTURE_UNKNOWN=@0xFFFF/*_PROCESSOR_ARCHITECTURE_UNKNOWN*/
+_PROCESSOR_INTEL_386=@0x182/*_PROCESSOR_INTEL_386*/
+_PROCESSOR_INTEL_486=@0x1E6/*_PROCESSOR_INTEL_486*/
+_PROCESSOR_INTEL_PENTIUM=@0x24A/*_PROCESSOR_INTEL_PENTIUM*/
+_PROCESSOR_MIPS_R4000=@0xFA0/*_PROCESSOR_MIPS_R4000*/
+_PROCESSOR_ARCHITECTURE_IA64=@6/*_PROCESSOR_ARCHITECTURE_IA64*/
+_PROCESSOR_ARCHITECTURE_ALPHA64=@7/*_PROCESSOR_ARCHITECTURE_ALPHA64*/
+_PROCESSOR_ARCHITECTURE_AMD64=@9/*_PROCESSOR_ARCHITECTURE_AMD64*/
+_PROCESSOR_ARCHITECTURE_IA32_ON_WIN64=@0xA/*_PROCESSOR_ARCHITECTURE_IA32_ON_WIN64*/
+end intellisense**/
+

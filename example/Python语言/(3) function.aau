@@ -1,0 +1,87 @@
+//3) 定义函数、语句块
+
+/*
+python定义函数与aauto定义函数一些相同的地方
+1、不需要分开函数声明与实现，直接定义函数就可以
+2、不论有返回值、无返回值的都是函数（不象VB无返回值的是方法，有返回值的是函数），
+无返回值的自动返回空值（ python中空值为None，aauto中空值为 null )
+3、函数参数不需要指明类型。
+*/
+
+import console;
+console.open()
+
+import py;
+pyCode = /***
+
+def func(x,y,*t):
+	print("python用相同的缩进区别不同的语句块");
+	print("不能在本行前再来一个缩进建立新的语句块,而在AAuto中你可以随时自由建立新的独立的语句块。");
+	print "参数名前加一个*号表示不定个数匿名参数(实际上是一个tuple元组):",t
+	return x + y; 
+	
+print( func(1,2,7,8,9) );
+
+#参数名前加两个星号表示以dict类型传递任意个有名字的参数
+def func2( **args ):
+   print args
+
+func2( a=1,b=123 )
+***/
+py.exec( pyCode ) //运行python代码
+ 
+ 
+//下面是类似的AAuto代码
+//=========================================================
+
+function func(x,y,...){
+	io.print("AAuto用配对的大括号区别不同的语句块");
+	io.print("...表示不定个数匿名参数",...)
+	return x + y;
+}
+io.print( func(1,2,7,8,9) );
+
+//AAuto是不支持具名参数的，但是可以用表参数来模拟,例如:
+function func2(args){
+	console.dump( args ); //注意AAuto中io.print是不能输出数组的,需要用 console.dump()
+}
+
+//有趣的是,如果参数是一个关联表,那么可以省略外部的花括号,这样就可以写成类似python的具名参数的形式了,
+//要注意分隔具名参数应当用分号而不是逗号(因为他实际上是一个关联数组),AAuto对分隔符的要求非常严格，这里不允许用逗号替代
+func2( a=1; b=123 ); //实现原理虽然有区别,用起来还是一样的舒服的。
+
+//python里的装饰函数
+//=========================================================
+
+pyCode = /***
+def decorator( func ):
+    print "创建了", func  
+    return func 
+ 
+@decorator
+def go():
+     print 'b'  
+     
+***/
+py.exec( pyCode ) //运行python代码
+
+//AAuto里的装饰函数
+//=========================================================
+
+/*
+所谓装饰函数 - 其实说通俗一些就是用一个函数返回另一个函数。
+用AAuto来写装饰函数更直白容易理解一些：
+*/
+var decorator = function( func ){
+	io.print("创建了", func)
+	return func;
+}
+var go = decorator( 
+	function(){
+		io.print("b")
+	} 
+)  
+
+/*
+另外需要注意一下，@在AAuto里不能用于函数定义，而是用于指定元方法定义（类似python专用类方法）
+*/

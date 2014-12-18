@@ -1,0 +1,50 @@
+* {font:12px/1.3 Tahoma, Geneva,sans-serif;outline:none;overflow:hidden;}
+html,body{margin:0;padding:0;width:100%;height:100%;}
+#form_frame,#form_frame tr,#form_frame td {margin:0;padding:0;border:none;}
+
+#caption {height:27px;background:url(caption.gif) 0 -27px repeat-x;}
+#caption_frame {height:27px;background:url(caption.gif) 0 0 no-repeat;}
+#caption_bar {padding:0 48px 0 8px;height:27px;line-height:27px;color:#464b4f;background:url(caption.gif) 100% -54px no-repeat;overflow:hidden;}
+#caption_bar span {float:left;height:27px;line-height:27px;font-weight:bold;color: #FFFFFF;}
+#caption_button {margin:0px;float:right;list-style:none;position:relative;left:48px;}
+
+#caption_button li {float:left;display:block;}
+#caption_button li a {float:left;display:block;height:20px;text-indent:-9999px;}
+#caption_title{float:left;width:200px;background:url(sysmenu.png) no-repeat 0px 4px;}
+#caption_title a{width:20px;height:20px;float:left;display:block;}
+
+#caption_sysmenu {width:27px;background:url(menu.png) no-repeat;}
+#caption_sysmenu:hover {background-position:-27px 0;}
+#caption_sysmenu:active {background-position:-54px 0;}
+
+#caption_button_website {width:27px;background:url(website.png) no-repeat;}
+#caption_button_website:hover {background-position:-27px 0;}
+#caption_button_website:active {background-position:-54px 0;}
+
+#caption_button_min {width:27px;background:url(min.png) no-repeat;}
+#caption_button_min:hover {background-position:-27px 0;}
+#caption_button_min:active {background-position:-54px 0;}
+
+#caption_button_max {background-position:0px 0;width:27px;background:url(max.png) no-repeat;}
+#caption_button_max:hover {background-position:-27px 0;width:27px;}
+#caption_button_max:active {background-position:-54px 0;width:27px;}
+
+#caption_button_max.restore {background:url(restore.png) no-repeat;}
+#caption_button_max.restore:hover {background-position:-27px 0;width:27px;}
+#caption_button_max.restore:active {background-position:-54px 0;width:27px;}
+
+#caption_button_max.max {background:url(max.png) no-repeat;}
+#caption_button_max.max:hover {background-position:-27px 0;width:27px;}
+#caption_button_max.max:active {background-position:-54px 0;width:27px;}
+
+#caption_button_close {width:39px;background:url(close.png) no-repeat;}
+#caption_button_close:hover {background-position:-39px 0;}
+#caption_button_close:active {background-position:-78px 0;}
+
+#form_main {padding:0px;height:100%;border-style:none solid;border-color:#1960A5;border-width:1px;background-color:#1DB2F0;}
+#form_main_content{ margin:1px; height:100%;background-color:#FFFFFF;border: 0px solid #1A7AAC;}
+
+#form_bottom {position:absolute;left:0;bottom:0;width:100%;height:2px;background:#1DB2F0;}
+#form_bottom_rc1,#form_bottom_rc2 {border-style:none solid;border-color:#1960A5;border-width:1px;height:1px;}
+#form_bottom_rc1 {margin:0 1px;}
+#form_bottom_rc2 {margin:0 2px;border-style:solid;}

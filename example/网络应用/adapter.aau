@@ -1,0 +1,11 @@
+//获取网卡列表
+
+io.open();//打开控制台
+
+import inet.adapter
+
+for adptInfo in inet.adapter.each() { 
+	io.print(adptInfo.mac)
+	io.print(adptInfo.adapterName);
+	io.print(adptInfo.ipAddressList.ipAddress )
+}

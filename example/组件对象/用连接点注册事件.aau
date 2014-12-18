@@ -1,0 +1,55 @@
+//用连接点注册事件 
+
+import com
+
+var calendar;
+try{ calendar = com.CreateObject("MSCAL.Calendar") }
+error("您的系统未安装MSCAL.Calendar组件",2)
+
+calendar_events = {}
+calendar_events.AfterUpdate = function() begin
+	io.print("Calendar updated!")
+end
+
+io.print(calendar,calendar_events) 
+res, cookie = com.Connect(calendar, calendar_events)
+
+calendar.NextMonth()
+  
+io.open()
+
+// Instances the COM object
+calendar = com.CreateObject("MSCAL.Calendar")
+if( !calendar ){
+	io.print("Error instantiating calendar")
+	return;
+}
+
+// Creates implementation table
+calendar_events = {}
+function calendar_events.AfterUpdate() begin
+	io.print("Calendar updated!")
+end
+
+// Creates COM object implemented by calendar_events
+event_handler = com.ImplInterface(calendar_events, "MSCAL.Calendar", "DCalendarEvents")
+if( ! event_handler ) {
+	io.print("Error implementing DCalendarEvents")
+	return;
+}
+
+// Connects both objects
+cookie = com.AddConnection(calendar, event_handler)
+// This should trigger the AfterUpdate event
+io.print(cookie )
+
+calendar.NextMonth()
+
+// This disconnects the connection point established 
+com.ReleaseConnection(calendar, event_handler, cookie)
+
+// This should NOT trigger the AfterUpdate event
+calendar.NextMonth()
+calendar.NextMonth()
+calendar.NextMonth()
+

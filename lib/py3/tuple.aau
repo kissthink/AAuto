@@ -1,0 +1,81 @@
+//tuple 元组
+import util.metaProperty;
+namespace py3;
+	
+class tuple {
+
+	ctor( object ){ 
+	
+		var tt = type(object) 
+		select(tt) {
+			case type.table{ 
+				var len = #object;
+				this.pyTuple = pyTuple_New(len); 
+				
+				for(i=1;len;1){
+					pyTuple_SetItem(this.pyTuple,i-1,..py3.object(object[i]).steal() );  
+				};
+			}
+			case type.pointer{ 
+				this.pyTuple = object;
+			}
+			case type.number{ 
+				this.pyTuple = pyTuple_New(object);
+			} 
+			else {
+				if(object[["pyTuple"]] )
+					return object;
+				elseif(object[["pyObject"]] )
+					this.pyTuple = object[["pyObject"]]; 
+				else{	
+					error("pyObject构造参数不支持此数据类型:" + tt ,2)
+				}
+				..py3.IncRef( this.pyTuple );
+			} 
+		}
+	}
+	@_metaProperty
+}
+
+namespace tuple {
+
+	_metaProperty = ..util.metaProperty(   
+	
+		_topointer = function(){
+			return owner.pyTuple;
+		}   
+		get = function(k){ 
+			var item = pyTuple_GetItem(owner.pyTuple,k);
+			if(item){
+				//特例 borrow reference
+				..py3.IncRef(item);
+				return ..py3.object(  item ) ;
+			} 
+		} 
+		set = function(k,v){
+			if(v!==null) {
+			 	pyTuple_SetItem(owner.pyTuple,k,..py3.object(v).steal() ); 
+			} 
+		}
+		_len = function(){
+			return pyTuple_Size(owner._pyObject);
+		} 
+		_type = "py3.tuple";
+	) 
+	
+	var dll = assert( ..py3._dll,"请先导入py支持库" );
+	pyTuple_New = dll.api("PyTuple_New","pyObject(INT len)","cdecl")  
+	pyTuple_GetItem = dll.api("PyTuple_GetItem","pyObject(PyObject dp,INT key)","cdecl")  
+	pyTuple_SetItem = dll.api("PyTuple_SetItem","pyObject(PyObject dp,INT key,pyObject item)","cdecl") 
+	pyTuple_Size = dll.api("PyTuple_Size","INT(PyObject dp)","cdecl") 
+	
+	buildValueByNumber =  ..py3._buildValueByNumber;
+	buildValueByString =  ..py3._buildValueByString;
+}
+
+
+/**intellisense()
+py3.tuple(.(长度) = 创建新的元数组\n元数组是只读的序列数组,数组元素不可变更\n!pyList. 
+!pyTuple.get(0) = 返回成员\n注意python索引自0开始
+!pyTuple.get() = !pyObject. 
+end intellisense**/

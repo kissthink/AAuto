@@ -1,0 +1,27 @@
+//E) lambda表达式 
+
+import console;
+console.open()
+
+import py;
+pyCode = /***
+ 
+print( ( lambda x: x * 2 )( 3 ) );
+
+***/
+py.exec( pyCode ) //运行python代码
+ 
+ 
+/*
+lambda 其实就是一个匿名函数,这东西出现在C++里是很有意义，
+但是在动态语言里就是一个无聊的缩写语法糖了。
+*/
+
+//如果你一定要在AAuto里来个lambda，那么可以给function改个名字 
+def lambda = function;
+  
+//注意：匿名函数外面的一对圆括号是必须的，这样他才算一个合法的表达式
+console.log( 
+	(   lambda(x) return x * 2  )( 3 )  
+) 
+ 

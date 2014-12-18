@@ -1,0 +1,382 @@
+//网络聊天室客户端
+/************************************
+Author                : dasan
+Time                  : 7,28, 2010
+Version               : V 1.0
+Description           : 网络聊天室客户端
+QQ                    : 195304939
+************************************/
+
+import win;
+import win.ui;
+import win.ui.menu;
+import com.picture;
+import wsock;
+import wsock.err;
+/*DSG{{*/
+var winform = win.form(parent=...; text="网络聊天室客户端";right=650;bottom=574 )
+winform.add( 
+groupbox1={ bottom=80;color=0;text="用户设置";left=9;top=8;z=1;right=639;edge=1;cls="groupbox" };
+edit5={ vscroll=1;bottom=403;color=0;right=640;left=162;multiline=1;top=103;text="";z=10;readonly=1;hscroll=1;edge=1;cls="edit" };
+static6={ bottom=432;color=0;text="";border=1;top=409;z=14;right=407;left=257;transparent=1;cls="static" };
+button3={ bottom=63;color=0;text="注册";left=566;top=30;z=9;right=629;cls="button" };
+static4={ bottom=74;color=0;right=79;left=15;top=55;transparent=1;text="用户名：";z=6;cls="static" };
+static3={ bottom=40;color=0;right=332;left=280;top=23;transparent=1;text="端口：";z=5;cls="static" };
+edit3={ bottom=74;color=0;right=211;left=74;top=52;z=7;text="test123";edge=1;cls="edit" };
+edit6={ bottom=501;color=0;right=640;left=162;multiline=1;top=438;vscroll=1;z=12;text="";hscroll=1;edge=1;cls="edit" };
+button4={ bottom=537;color=0;text="发 送";left=555;top=510;z=15;right=635;cls="button" };
+edit4={ bottom=73;color=0;text="";left=265;password=1;z=19;right=402;top=51;edge=1;cls="edit" };
+button1={ bottom=63;color=0;text="连接服务器";left=405;top=30;z=20;right=491;cls="button" };
+static8={ bottom=573;color=0;right=632;left=19;top=551;transparent=1;text="制作人：dasan  QQ:195304839  制作软件：AAuto Quicker 0.5.3.8 版(快手)制作。";z=22;cls="static" };
+checkbox1={ bottom=428;color=0;text="悄悄话 >";left=171;top=411;z=13;right=254;cls="checkbox" };
+static2={ bottom=44;color=0;right=111;left=15;top=28;transparent=1;text="服务器地址：";z=2;cls="static" };
+tab1={ bottom=494;color=0;right=158;left=7;top=84;z=21;text="tab1";edge=1;cls="tab" };
+checkbox2={ bottom=515;color=0;text="屏蔽公聊";left=12;top=498;z=17;right=105;cls="checkbox" };
+static7={ bottom=72;color=0;right=271;left=223;top=54;transparent=1;text="密码：";z=18;cls="static" };
+edit1={ bottom=47;color=0;text="127.0.0.1";left=108;top=24;z=3;right=261;border=1;edge=1;cls="edit" };
+button2={ bottom=63;color=0;text="登陆";left=497;top=30;z=8;right=560;cls="button" };
+checkbox3={ bottom=540;color=0;text="屏蔽私聊";left=12;top=520;z=16;right=105;cls="checkbox" };
+static5={ bottom=101;color=0;right=272;left=194;top=84;transparent=1;text="聊天内容";z=11;cls="static" };
+edit2={ bottom=44;color=0;right=384;left=334;top=21;z=4;text="5188";edge=1;cls="edit" }
+)
+/*}}*/
+
+page1 = winform.tab1.loadcode($"\客户端tab用户列表.aau");
+page2 = winform.tab1.loadcode($"\客户端tab黑名单.aau");
+
+var nametab = {};    //在线用户名列表
+var nametabhmd = {}; //用户黑名单
+var hSocket ;
+
+dsstrend = '\r\n[[@end*&]]' ; //字符串结束标记
+UM_SOCK = 0x400/*_WM_USER*/ + 1971;
+
+//设置wock事件消息监听函数
+async_select = function (nSocket,hwnd, lEvent) {
+	if (wsock.WSAAsyncSelect(nSocket, hwnd, UM_SOCK, lEvent) == -1/*_SOCKET_ERROR*/) {
+		win.msgbox(  "WSAAsyncSelect Failure.");
+		return false;
+	}
+	return true;
+}
+
+//注册热键 Ctrl+Enter ＝ 按下发送按钮
+hkid = winform.reghotkey(function(id,mod,vk){
+	winform.button4.oncommand();
+}
+,0x2/*_MOD_CONTROL*/,0x0D/*VK_RETURN*/);
+
+page1.listbox.oncommand = function(id,event){
+	winform.static6.text = page1.listbox.text ; 
+}//endproc
+
+page1.button1.oncommand = function(id,event){ //当前用户移入黑名单
+	str2 = page1.listbox.text ;
+	if(str2 == "" ){return false; };
+	for(k,v in nametab){
+		if(v == str2){
+			table.remove(nametab,k);
+			return true; 
+		}
+	}
+	::SendMessage(page1.listbox.hwnd , 0x182/*_LB_DELETESTRING*/, topointer( page1.listbox.findEx(str2) ),null);
+	if(winform.static6.text == str2){ winform.static6.text = "" ; } ;
+	table.insert(nametabhmd,str2);
+	page2.listbox.add(str2);
+}
+
+page2.button1.oncommand = function(id,event){ //当前用户移入在线列表
+	str2 = page2.listbox.text ;
+	if(str2 == "" ){return false; };
+	for(k,v in nametabhmd){
+		if(v == str2){ nametabhmd[k] = null; };
+	}
+	::SendMessage(page2.listbox.hwnd , 0x182/*_LB_DELETESTRING*/, topointer( page2.listbox.findEx(str2) ),null);
+	table.insert(nametab,str2);
+	page1.listbox.add(str2);
+}
+
+//发送按钮事件函数
+winform.button4.oncommand = function(id,event){
+	if(winform.button1.text = "连接服务器"){ return false; };
+	if(winform.edit6.text == "" ){ return false; } ;
+	if (winform.checkbox1.checked ) {
+		//私聊
+		if(winform.static6.text == ""){ return false; } ;
+		netsendcommand(7);
+		str123 = "你对" + winform.static6.text + "说: " + winform.edit6.text + '\r\n' ;
+	}else {
+		//公聊
+		netsendcommand(6);
+		str123 = winform.edit3.text + ': ' + winform.edit6.text + '\r\n' ;
+	}
+	winform.edit5.text = winform.edit5.text + str123 ;
+	winform.edit6.text = "" ; 
+	::SendMessageInt(winform.edit5.hwnd, 0x115/*_WM_VSCROLL*/,  0x7/*_SB_BOTTOM*/,0 );
+}//endproc
+
+//连接服务器按钮事件函数
+winform.button1.oncommand = function(id,event){
+	winform.edit5.text = "" ;
+	if(winform.button1.text == "连接服务器") {
+		winform.edit1.disabled = 1 ;
+		winform.edit2.disabled = 1 ;
+		netlianjie();
+		winform.button1.text = "断开服务器" ;		
+	}else{
+		winform.edit1.disabled = 0 ;
+		winform.edit2.disabled = 0 ;
+		//netlianjie();断开
+		if(winform.button2.text == "注销"){ winform.button2.oncommand() ; }
+		wsock.closesocket(hSocket);
+		wsock.close();
+		winform.button1.text = "连接服务器" ;
+	}
+	nametab = {};
+	page1.listbox.clear();
+	nametabhmd = {};
+	page2.listbox.clear();
+}//endproc
+
+//登陆按钮事件函数
+winform.button2.oncommand = function(id,event){
+	if(winform.button1.text = "连接服务器"){
+		win.msgbox("请先连接服务器后在登陆","AAuto") ;
+		return false; 
+	}
+	if(winform.button2.text == "登陆") {
+		var k111 = #winform.edit3.text ;
+		var k222 = #winform.edit4.text ;
+		if ((k111< 4 ) or (k111 > 20 ) or (k222< 4 ) or (k222 > 20 )) {
+			win.msgbox( "请正确填写用户名和密码（字符长度要求在4～20之间，一个汉字算2个字符）" ) ;
+			return false; 
+		};
+		winform.edit3.disabled = 1 ;
+		winform.edit4.disabled = 1 ;
+		netsendcommand(1);
+		winform.button2.text = "注销" ;
+	}else{
+		netsendcommand(2);
+		winform.button2.text = "登陆" ;
+		winform.edit3.disabled = 0 ;
+		winform.edit4.disabled = 0 ;
+	}
+	nametab = {};
+	page1.listbox.clear();
+	nametabhmd = {};
+	page2.listbox.clear();
+	winform.edit4.text = "" ;
+}//endproc
+
+winform.button3.oncommand = function(id,event){
+	//win.msgbox("注册按钮处理函数" );
+	if(winform.button1.text = "连接服务器"){
+		win.msgbox("请先连接服务器后在登陆","AAuto") ;
+		return false; 
+	}
+	var k111 = #winform.edit3.text ;
+	var k222 = #winform.edit4.text ;
+	if ((k111< 3 ) or (k111 >20 ) or (k222< 3 ) or (k222 >20 )) {
+		win.msgbox( "请正确填写用户名和密码（字符长度要求在4～20之间，一个汉字算2个字符）" ) ;
+		return false; 
+	};
+	netsendcommand(3);
+}//endproc
+
+netlianjie = function(){
+	// 初始化 Winsock.	
+	if(! wsock.open() ){
+		//io.print("打开wsock错误", wsock.err.lasterr() );
+		return false ;
+	}
+ 	
+	//建立 socket 
+	hSocket= wsock.socket(0x2/*_AF_INET*/,0x1/*_SOCK_STREAM 建立流式套接口*/,0x6/*_IPPROTO_TCP*/ )
+	if( hSocket= _INVALID_SOCKET ){
+		//io.print("客户端创建套接字错误");
+		wsock.close() //关闭wsock
+		return false ;
+	}
+	
+	if (!async_select(hSocket, winform.hwnd, 0x10/*_FD_CONNECT*/ )) { return false; } ;
+ 	
+	var service = wsock.sockaddr_in();
+	service.sin_family = 0x2/*_AF_INET*/
+	service.sin_addr.S_un.S_addr = wsock.inet_addr( winform.edit1.text );
+	service.sin_port = wsock.htons(tonumber(winform.edit2.text));
+	
+	//之后服务端就调用accept( )来接收连接.客户端在建立套接口后就可调用connect()和服务器建立连接
+	wsock.connect( hSocket,service,raw.sizeof(service))  //因为是异步套接字，这里不需要检查返回值
+	return true; 
+}
+
+winform.wndproc = function(hwnd,message,wParam,lParam){
+	select(message) {//判断消息类型
+		case UM_SOCK  {
+			//io.print("客户端收到 UM_SOCK 消息",lParam ) ; 
+			select(lParam) {
+				case 0x10/*_FD_CONNECT*/ begin 
+					//连接成功,设置下一步消息类型
+					if (!async_select(hSocket, winform.hwnd, 0x1/*_FD_READ*/ | 0x20/*_FD_CLOSE*/)) { wsock.closesocket(hSocket); };
+					//io.print("客户端收到FD-CONNECT成功消息" ) ;
+				end 	
+				case 0x1/*_FD_READ*/ {
+					//io.print("客户端连接FD-READ消息" ) ;
+					if (! netrecvcommand(topointer(wParam))) {
+						win.msgbox(  "Receive Packet Failed.n");
+						wsock.closesocket(topointer(wParam)); 
+						}
+				}
+				case 0x2/*_FD_WRITE*/ {
+					//在这里写数据
+				}
+				case 0x20/*_FD_CLOSE*/ {
+					//io.print("客户端连接FD-CLOSE消息" ) ;
+					winform.edit1.disabled = 0 ;
+					winform.edit2.disabled = 0 ;
+					winform.button1.text = "连接服务器"
+					if (wsock.WSAAsyncSelect(topointer(wParam), hwnd, 0, 0) == SOCKET_ERROR)
+						win.msgbox( "WSAAsyncSelect Failed.n");
+				}
+				else{
+					lParam = ::HIWORD/*WSAGETSELECTERROR*/(lParam);
+					if (lParam != 0) {
+						//win.msgbox("Socket Report Failure.");
+						win.msgbox(wsock.err.message[lParam]);
+						if(lParam == 10061){ winform.button1.oncommand() } ;//如果服务器连接失败，则重置按钮1允许重新连接
+						wsock.closesocket(topointer(wParam)); 
+					}
+				}
+			}    
+		}
+	}
+}
+
+//wsock读取处理函数
+netrecvcommand = function(nSocket) begin
+	var reads,recvbuf = wsock.recv(	nSocket,2048,2048,0);
+	if ( reads=-1 ){
+		 //io.print( "客户端接收错误");
+		 //io.print( wsock.err.lasterr() );
+		 return false; 
+	}
+	kkk = string.split(recvbuf,'<[[@end*&]]>') ;
+	for(k,v in kkk){
+		strculi(v);
+	}
+	return true; 
+end;
+
+//网络读取数据处理
+strculi = function(str) begin
+	str1 = string.left(str,14);
+	str = string.right(str,#str-14);
+	select(str1) {
+		case "[[@公聊信息$]]" {
+			if(winform.checkbox2.checked == 1){ return true; };
+			str3 = string.left(str,string.indexAny(str,':')-1);
+			for(k,v in nametabhmd){
+				if(v ==str3){return true; };
+			}
+			winform.edit5.text = winform.edit5.text + str ;			
+		}
+		case "[[@私聊信息$]]" {
+			if(winform.checkbox3.checked == 1){ return true; };//是否禁止接收私聊信息
+			str = string.right(str,#str - string.indexAny(str,' '));
+			str2 = string.left(str,string.indexAny(str,' ') - 1); //取对方用户名，看是否在黑名单
+			for(k,v in nametabhmd){
+				if(v ==str2){return true; };
+			}
+			winform.edit5.text = winform.edit5.text + str ;
+		}
+		case "[[@系统信息$]]" {
+			str1 = string.left(str,1);
+			str = string.right(str,#str - 1);
+			select(str1) {
+				case "1" ,"2" { //登陆或注册成功
+					winform.edit3.disabled = 1 ;
+					winform.edit4.disabled = 1 ;
+					winform.button2.text = "注销" ;
+				}
+				case "3" ,"4" , "5" , "6" , '7'
+				{	//3用户名和密码错误。
+					//4用户在新的地方登陆
+					//5服务器已关闭新用户注册功能
+					//6用户名已经被注册。
+					//非注册用户试图登陆
+					winform.button2.text = "登陆" ;
+					winform.edit3.disabled = 0 ;
+					winform.edit4.disabled = 0 ;
+					winform.edit4.text = "" ;
+				}
+				else
+				{
+				}
+			}
+			winform.edit5.text = winform.edit5.text + str ;
+		}
+		case "[[@用户列表$]]" {
+			nametab = string.split(str,' ');
+			for(k,v in nametab){
+					page1.listbox.add(v);
+			}
+		}
+		case "[[@登陆信息$]]" { //有其它用户登陆聊天室
+			winform.edit5.text = winform.edit5.text + str ;
+			str2 = string.left(str,string.indexAny(str,' ')-1);
+			table.insert(nametab,str2);
+			page1.listbox.add(str2);
+			//::SendMessage(page1.listbox.hwnd  , 0x181/*_LB_INSERTSTRING*/,topointer( 1 ),str2);
+		}
+		case "[[@退出信息$]]" { //有其它用户退出聊天室
+			winform.edit5.text = winform.edit5.text + str ;
+			str2 = string.left(str,string.indexAny(str,' ') - 1 );
+			nametab[str2] = null ;
+			::SendMessage(page1.listbox.hwnd , 0x182/*_LB_DELETESTRING*/, topointer( page1.listbox.findEx(str2) ),null);
+			if(winform.static6.text == str2){ winform.static6.text = "" ; } ;
+		}
+		case "[[@注册信息$]]" {
+			return false; 
+		}
+		else {
+			return false; 
+		}
+	
+	}
+end; 
+
+//wsock发送处理函数
+netsendcommand = function(sendtype,sendstring) begin
+	select(sendtype) {
+		case 1 /*[[@登陆信息$]]*/ {
+			sendstring = "[[@登陆信息$]]" + winform.edit3.text + ' ' + winform.edit4.text + '[[@end*&]]' ;
+			}
+		case 2 /*[[@退出信息$]]*/ {
+			sendstring = "[[@退出信息$]]" + winform.edit3.text + ' 退出聊天室。' + dsstrend ;
+			}
+		case 3 /*[[@注册信息$]]“用户名”“密码”*/ {
+			sendstring = "[[@注册信息$]]" + winform.edit3.text + ' ' + winform.edit4.text + '[[@end*&]]' ;
+			}
+		case 4 /*[[@用户列表$]]用户1，用户2，用户3，用户4*/ {
+			return false;
+			}
+		case 5 /*[[@系统信息$]]用户名 登陆 退出*/ {
+			return false;
+			}
+		case 6 /*[[@公聊信息$]]用户名：*/ {
+			sendstring = "[[@公聊信息$]]" + winform.edit3.text + ":"  + winform.edit6.text  + dsstrend ;
+			}
+		case 7 /*[[@私聊信息$]]用户名？ 用户名对你说：*/ {
+			sendstring = "[[@私聊信息$]]" + winform.static6.text + ' ' + winform.edit3.text + " 对你说:" + winform.edit6.text  + dsstrend ;
+			}
+		else  {
+			return false; 
+			}
+	}
+	wsock.send(hSocket ,sendstring ,#sendstring ,0 );
+	return true; 
+end;
+
+winform.show(true) 
+win.loopMessage();
+return winform;

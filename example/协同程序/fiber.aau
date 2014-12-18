@@ -1,0 +1,20 @@
+//纤程简单示例
+io.open()
+
+func = function(n){
+	for(i=1;n;1){ 
+		io.print("我正在循环",i)
+		fiber.yield (123) //休眼,并将控制权与参数返回给调用者
+	} 	
+}
+
+var task = fiber.create(func)
+
+//运行纤程
+var ret = fiber.resume (task,12)
+ret = fiber.resume (task,12)
+ret = fiber.resume (task,12)
+io.print( fiber.status(task) == fiber.status.suspended )
+
+execute("pause") //按任意键继续
+io.close();//关闭控制台

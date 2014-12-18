@@ -1,0 +1,28 @@
+//签名验证算法演示
+
+import console;
+import crypt;
+
+// 签名
+var csp = crypt()
+if( ! csp.genKey(2/*_AT_SIGNATURE*/) ){
+	console.log("创建密钥对失败",..lasterr())
+} 
+var publicKey = csp.exportPublicKey();//导出公钥到字符串
+var privateKey = csp.exportPrivateKey(); //导出私钥到字符串
+
+var hash = csp.createHashByMd5()
+hash.hashData("www.aau.cn")
+var sign =  hash.sign(); //获取签名
+
+
+// 验证签名
+var csp = crypt()
+csp.importKey(publicKey) //导入公钥
+csp.createHashByMd5().hashData("www.aau.cn")
+if( csp.verifySignature(sign) ){
+	console.log("签名是正确的,数据未被篡改")
+}
+else {
+	console.log("签名是错误的,数据已被篡改")
+}

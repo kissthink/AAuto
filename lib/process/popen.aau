@@ -1,0 +1,270 @@
+//popen 进程管道
+import process;
+namespace process
+
+class popen{
+	ctor( exefile,parameters="", startInfo,... ){ 
+		if( type(startInfo) == type.string ){
+   			parameters = {parameters;startInfo;...};
+   			startInfo = null;
+   		}
+   			
+		var sa = ..table.mixin(..process.STARTUPINFO(),startInfo);
+		sa.flags = (sa.flags:0) | 0x100/*_STARTF_USESTDHANDLES*/ | 0x1/*_STARTF_USESHOWWINDOW*/ 
+		//sa.showWindow = 0x0/*_SW_HIDE*/  
+		
+		saPipe = SECURITY_ATTRIBUTES();
+		saPipe.bInheritHandle = true; 
+		var ok,outPipeRead,outPipeWrite = CreatePipe(,,saPipe,0)
+		var ok,errPipeRead,errPipeWrite = CreatePipe(,,saPipe,0)
+		var ok,inPipeRead,inPipeWrite = CreatePipe(,,saPipe,0)
+		
+		if ( ! SetHandleInformation(outPipeRead, 0x00000001/*_HANDLE_FLAG_INHERIT*/, 0) )
+  			error( "Stdout SetHandleInformation",2); 
+		
+		if ( ! SetHandleInformation(inPipeWrite, 0x00000001/*_HANDLE_FLAG_INHERIT*/, 0) )
+  			error( "Stdin SetHandleInformation",2); 
+   
+		//注意要在 sa.flags 中指定 _STARTF_USESTDHANDLES 下面的参数才起作用
+		sa.stdInput = ..process.dup( inPipeRead )
+		sa.stdOutput =  ..process.dup( outPipeWrite )
+		sa.stdError =  ..process.dup( errPipeWrite )
+		sa.creationFlag = (sa.creationFlag:0) | 0x8/*_DETACHED_PROCESS*/  //禁止子进程附加到当前进程的控制台
+		sa.inheritHandles = true; //允许子进程继承句柄
+	
+		var prcs = ..process( exefile,parameters, sa);
+		if(!prcs) return null,..lasterr();
+		this.process = prcs;
+	
+		//子继承已经继承了此句柄,我们可以关掉了
+		//这样子进程一结束,获取子进程输入就会失败停止,不然他就卡在那里一直读,因为当前进程的管道没关闭
+		..raw.closehandle(sa.stdInput)
+		..raw.closehandle(sa.stdOutput)
+		..raw.closehandle(sa.stdError)
+	
+		this.stdIn = ..io.open(inPipeWrite,"w+");
+		this.stdOut = ..io.open(outPipeRead,"r");
+		this.stdErr = ..io.open(errPipeRead,"r");
+		
+		..table.gc(this,"close");
+	};
+	write = function(...){ 
+		if( this.stdIn ){
+			this.stdIn.write(...)
+			this.stdIn.flush() 
+		}
+	};
+	print = function(...){
+		if( this.stdIn ){
+			var args = {...}
+			for(k,v in args){
+				args[k] = tostring(v);
+			}
+			
+			this.peek(0);
+			this.stdIn.write(..string.join(args,' '),'\n');
+			this.stdIn.flush(); 
+		}
+	};
+	printf = function(s,...){
+		if( this.stdIn ){
+			if(...) s = ..string.format(s,...);
+			
+			this.peek(0);
+			this.stdIn.write(s,'\n');
+			this.stdIn.flush();
+		}
+	};
+	read = function(...){
+		return this.stdOut.read(...);
+	};
+	readErr = function(...){
+		return this.stdErr.read(...);
+	};
+	peek = function(delay){  
+		if( delay === null ) delay = 1000;
+		if( delay ? prcs.waitOne( delay) ){
+			return this.stdOut.read(-1),this.stdErr.read(-1); 
+		}
+		
+		var out,err;
+		var ret,read,total,leftmsg = PeekNamedPipe(outPipeRead, ,0,0,0,0) 
+		if(ret && total)
+			out = this.stdOut.read(total) 
+	
+		ret,read,total,leftmsg = PeekNamedPipe(errPipeRead, ,0,0,0,0)
+		if(ret && total)
+			err = this.stdErr.read(total);
+			
+		return out,err;
+	};
+	peekTo = function(tag,proc,timeout){ 
+		var str,err = "","";
+		var s,e; 
+		var time = 0;
+		var endWith = ..string.endWith;
+		var closed;
+		if(!tag) tag = ">";
+		
+		do{ 
+			closed = prcs.waitOne(1000);
+			s,e = this.peek(0);
+			
+			if( s || e ){
+				if(s){
+					str = ..string.concat(str,s ) 
+				}
+				if(e){
+					err = ..string.concat(err,e ) 
+				}
+				
+				if( proc) {
+					proc(s,e);
+				}
+			}
+			elseif(timeout ? timeout > 0 ) {
+				time = time + 1000;
+				if( time > timeout ){ 
+					return str,err;
+				}
+			}
+		}while(  !( closed || ..win[["closed"]]  || endWith(str,tag) || endWith(err,tag) ) ) 
+		 
+		return str,err;
+	}; 
+	each = function(interval,timeout){
+		if( interval === null ) interval=1;
+		var tick = 0;
+		return function(){ 
+			var a,o,e;
+			do{
+				o,e = this.peek(0);
+				if( o || e ) return ..string.concat(o,e):"",o,e;
+				if(timeout){
+					tick = tick + interval; 
+					if( tick > timeout ) return;
+				}
+			}while(!this.waitOne(interval));
+			
+			if( this.stdOut && this.stdErr ){
+				o,e = this.stdOut.read(-1),this.stdErr.read(-1);
+				a = ..string.concat(o,e);
+				if(#s) return a,o,e; 
+			}
+		} 
+	};
+	logResponse = function(echo){
+		if(!echo){ 
+			if( this.logger ){ 
+				if( this.logger.log) echo = function(all){ this.logger.log(all) };
+				elseif( this.logger.write )  echo = function(all){ this.logger.write(all) };   
+			}
+			else {
+				if( ..console ) ..console.open();
+				echo = function(all,out,err){
+					if(out) ..io.stdout.write( out );
+					if(out) ..io.stderr.write( err );
+				} 	
+			}
+			
+		}
+		for( all,out,err in this.each() ){
+    		echo( all,out,err );//回显
+		}
+	};
+	expect = function(p,timeout,max){
+		var s = "";  
+		var match = ..string.match;
+		if( max === null ) max = 1024;
+		if(!p) error("请指定参数@2",2);
+		
+		var tick = ..time.tick();
+		for( all,out,err in this.each(,timeout) ){
+	    	if( out ){
+	    		s = s ++ out; 
+	    		if( match( s,p ) ) return match( s,p );
+	    		if( #s > max ) s = ..string.right(s,max/2,true);
+	    	}
+	    	elseif(err){
+	    		return null,err;
+	    	}
+		}
+	};
+	wait = function(timeout){
+		if(! ( prcs ? prcs.handle ) ) return true;
+		var ret = ..thread.wait(prcs.handle,timeout)  
+		sleep(10);
+		 
+		if( ret ){
+			return true,this.read(-1),this.readErr(-1);
+		} 
+	};
+	waitOne = function(timeout){
+		if(! ( prcs ? prcs.handle ) ) return true;
+		var ret = ..thread.waitOne(prcs.handle,timeout)  
+		sleep(10);
+		
+		if( ret ){
+			return true,this.read(-1),this.readErr(-1);
+		} 
+	};
+	close = function(){
+		if( this.stdIn ){
+			this.stdIn.close();
+			this.stdOut.close();
+			this.stdErr.close();
+			this.stdIn = null;  
+			this.stdOut = null; 
+			this.stdErr = null; 
+			prcs.free();
+			prcs = null;
+			this.process = null;
+		}
+	}  
+}
+
+namespace popen{
+	CreatePipe = ::Kernel32.api( "CreatePipe", "bool(pointer& hRead,pointer& hWrite,struct attributes,INT size)");
+	SetHandleInformation = ::Kernel32.api( "SetHandleInformation", "bool(pointer object,INT mask,INT flags)");
+	PeekNamedPipe = ::Kernel32.api( "PeekNamedPipe", "bool(pointer pipe,pointer buf,INT size,INT &read,INT & total,INT & leftMsg)");
+
+	class SECURITY_ATTRIBUTES{ 
+    	INT nLength;
+    	pointer lpSecurityDescriptor;
+    	bool bInheritHandle;
+	}
+}
+ 
+/**intellisense()
+process.popen = 创建子进程,并支持管道读写
+process.popen(.(执行文件,命令行参数,STARTUPINFO) = 创建子进程,并支持管道读写\n参数与process()的参数用法一致
+process.popen() = !process_popen.
+!process_popen.read() = 从当前位置，向后读取下一行
+!process_popen.read("%s") = 从当前位置，向后读取下一行\n支持多参数
+!process_popen.read("%d") = 从当前位置，向后读取下一个数值\n支持多参数
+!process_popen.read(-1) = 向后读取到文件尾部\n负数表示从文件尾部倒计数位置\n支持多参数
+!process_popen.readErr(-1) = 读取所有错误输出
+!process_popen.each( 间隔时间,超时时间 ) = @for( all,out,err in ??.each() ){
+    io.stdout.write( out,err );__/*读取进程输出直到进程关闭*/
+}
+!process_popen.logger = 指定logResponse的默认回显对象\n该对象必须有log或write成员函数用于输出回显
+!process_popen.logResponse( = 回显进程的标准输出以及错误输出\n该函数会自动同动获取进程输出,并直到进程结束
+!process_popen.logResponse(.(回显函数) = 回显函数可省略,\n如果不指定参数则尝试调用logger输出进程回显\n如果未指定logger对象则默认回显到控制台
+!process_popen.peek(__) = 检测标准输出管道中可读取的数据长度\n有数据则读取数据,无数据则返回空值\n如果stdErr中有错误信息,则第二个返回值为错误信息\n此函数不会因为等待输入而阻塞\n参数可指定等待目标进程执行的延时时间
+!process_popen.peekTo(.(">",回显函数,超时) = 读取数据,直到数据以参数一指定的字符串结束\n返回标准输出,第二个返回值为错误信息\n可选使用参数@2指定回显函数,回显函数有两个参数,分别为标准输出,错误信息\n可选用参数@3指定无输出时的超时限制\n该函数在进程退出后也会返回
+!process_popen.read(0) = 检测是否读取到文件尾
+!process_popen.read(__) = 正数参数表示从当前位置向后读取n个字节\n支持多参数
+!process_popen.expect(  = 等待直到模式匹配标准输出成功,返回匹配结果,\n如果遇到错误输出返回null以及错误信息
+!process_popen.expect(.("模式表达式",超时,文本最大长度) = 超时参数是以毫秒为单位的估算值,可省略\n参数@3可省略，默认为1024
+!process_popen.print(__) = 清空标准输出然后写数据\n多个参数中间添加空格,尾部添加换行
+!process_popen.printf(__) = 清空标准输出然后写数据\n调用string.format函数格式化全部参数,尾部添加换行
+!process_popen.write(__) = 写数据，支持一个或多个参数
+!process_popen.write(__, ) = 写数据，支持一个或多个参数
+!process_popen.waitOne() = 等待进程关闭,不阻塞UI消息循环,可选使用一个毫秒值参数设定超时\n超时或失败返回 null,进程已退出则返回值1为true,返回值2为标准输出,返回值3为错误输出
+!process_popen.wait() = 等待进程关闭,可选使用一个毫秒值参数设定超时\n超时或失败返回 null,进程已退出则返回值1为true,返回值2为标准输出,返回值3为错误输出
+!process_popen.close() = 释放对象
+!process_popen.process = !process.
+!process_popen.stdErr = !file.
+!process_popen.stdOut = !file.
+!process_popen.stdIn = !file.
+end intellisense**/

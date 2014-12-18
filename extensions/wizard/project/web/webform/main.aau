@@ -1,0 +1,23 @@
+import win.ui;
+/*DSG{{*/
+mainForm = ..win.form(text="${PRJECTNAME}";right=700;bottom=483;border="none";mode="popup";title=false)
+mainForm.add()
+/*}}*/
+
+import config; 
+import observer;
+import web.form;
+mainWb = web.form( mainForm 
+	,0x4/*_UIFLAG_NO3DBORDER*/ | 0x1/*_UIFLAG_DIALOG*/ ,,,true/*securityTrusted*/ ); 
+
+//µ¼Èë¿ØÖÆÆ÷
+import controller; 
+controller.bind( mainWb );
+
+mainWb.go("/view/main.html");
+
+import web.ui;
+web.ui( mainWb );
+
+mainForm.show() 
+return win.loopMessage(); 

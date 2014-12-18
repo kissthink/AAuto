@@ -1,0 +1,26 @@
+import console;
+import crypt.rsa;
+
+//创建密钥对
+var rsa = crypt.rsa()
+if( ! rsa.genKey() ){
+	console.log("创建密钥对失败",..lasterr())
+} 
+var publicKey = rsa.exportPublicKey();//导出公钥到字符串
+var privateKey = rsa.exportPrivateKey(); //导出私钥到字符串
+rsa.release();
+
+// RSA加密
+var rsa = crypt.rsa()
+rsa.importKey(publicKey) //导入公钥
+var bin = rsa.encrypt("测试数据abcefg123456");
+rsa.release();
+
+// RSA解密
+var rsa = crypt.rsa()
+rsa.importKey(privateKey)
+var str = rsa.decrypt(bin);
+rsa.release();
+
+console.log("RSA解密结果",str);
+ 

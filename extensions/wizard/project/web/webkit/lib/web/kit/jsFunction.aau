@@ -1,0 +1,23 @@
+import web.kit;
+namespace web.kit.jsFunction{};
+
+//Ô¤¶¨ÒåJSº¯Êý
+..web.kit.jsBindFunction("windowCommand",1,function(cmd){
+    var wkeWebView = owner;
+    var winform = wkeWebView.getForm();
+
+    select(cmd) {
+    	case "min" {
+    		winform.hitmin();
+    	}
+    	case "max" {
+    		return winform.hitmax();
+    	}
+    	case "close" {
+    		return winform.close();
+    	}
+    	case "drag" {
+    		return winform.hitCaption()
+    	} 
+    }
+})

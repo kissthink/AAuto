@@ -1,0 +1,19 @@
+
+import gdip.core;
+import gdip.image;
+import gdip.bitmap;
+import gdip.family;
+import gdip.font;
+import gdip.stringformat;
+import gdip.path;
+import gdip.solidBrush;
+import gdip.lineBrush;
+import gdip.pen;
+import gdip.graphics; 
+
+import gdip.api;
+
+namespace gdip{
+	
+}
+

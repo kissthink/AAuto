@@ -1,0 +1,58 @@
+io.open();//打开控制台
+
+
+/*
+ *-------------------------------------------------------
+ * 插入排序 
+ **------------------------------------------------------
+ */
+
+//插入排序算法
+insert_sort = function( array ){
+
+	for( right=2;#array ) {
+		var top = array[right];
+		
+		//Insert array[right] into the sorted seqquence array[1....right-1]
+		var left = right -1;
+		while( left and array[left]>top){
+			array[left+1] = array[left];
+			left--;
+		}
+		array[left+1] = top;
+		 
+	}
+	return array;  
+}
+
+//插入排序算法 - 倒序
+insert_sort_desc = function( array ){
+
+	for( right=2;#array ) {
+		var top = array[right];
+		
+		//Insert array[right] into the sorted seqquence array[1....right-1]
+		var left = right -1;
+		while( left and array[left]<top){
+			array[left+1] = array[left];
+			left--;
+		}
+		array[left+1] = top;
+		 
+	}
+	return array;  
+}
+
+io.print("----------------")
+io.print("插入排序( 原地排序 )")
+io.print("----------------")
+
+array ={12;3;556;7;17788;23};
+insert_sort_desc(array)
+
+//输出结果
+for(i=1;#array;1){
+	io.print( array[i] )
+}
+
+ 

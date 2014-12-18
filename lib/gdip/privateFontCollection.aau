@@ -1,0 +1,88 @@
+//privateFontCollection 自定义字体集合
+import gdip.core;
+import gdip.family;
+namespace gdip
+
+class privateFontCollection {
+	ctor(){
+		var err;
+		err,this.pFontCollection = gdip.NewPrivateFontCollection(hdc);
+		if( err ) return null,gdip.errMsg[err]; 
+		if(!this.pFontCollection) error("创建字体参数错误",2) ; 
+		..table.gc(this,"delete");
+	}
+
+	@_metaProperty
+}
+
+
+namespace privateFontCollection {
+
+ 	gdip = ..gdip; 
+	_metaProperty = ..util.metaProperty( 
+		
+		add = function(f){
+			var data = f;
+			if( #f <= 0x104/*_MAX_PATH*/ ){
+				var path = ..io.exist(f)
+				if( path ){
+					return 0 == gdip.PrivateAddFontFile( owner[["pFontCollection"]],..string.toUnicode(path) ) 
+				} 
+				data = ..string.load(f) : f; 
+			}
+	 		
+			if( data ){
+				return 0 == gdip.PrivateAddMemoryFont( owner[["pFontCollection"]],data,#data);  
+			}
+		}
+		 
+		delete = function(){
+			if( owner[["pFontCollection"]]  ){
+				gdip.DeletePrivateFontCollection(owner[["pFontCollection"]])
+				owner[["pFontCollection"]] = null;
+			}
+		}
+		
+		createFamily = function(name){
+			return gdip.family(name,owner[["pFontCollection"]]);
+		}
+		
+		_topointer = function(){
+			return owner[["pFontCollection"]];
+		}
+	)  
+	
+	createFont = function(path,name,emSize,style,unit){
+		if(!(path && name)  ) error("参数错误",2);
+		var p = gdip.privateFontCollection();
+		if( p.add(path) ){
+			var f = p.createFamily(name);
+			if(f){
+				p.delete();
+				return f.createFont(emSize,style,unit);
+			} 
+		}
+		p.delete();
+	}
+	 
+}
+
+var $ = _dll; 
+/*intellisense(gdip)*/  
+NewPrivateFontCollection = $.api("GdipNewPrivateFontCollection","int(ptr& fontColl)")
+DeletePrivateFontCollection = $.api("GdipDeletePrivateFontCollection","int(ptr& fontColl)")
+PrivateAddFontFile = $.api("GdipPrivateAddFontFile","int(PTR fontColl,string FileName)")
+PrivateAddMemoryFont = $.api("GdipPrivateAddMemoryFont","int(PTR fontColl,pointer memory,int Length)")
+/*end intellisense*/
+ 
+/**intellisense()
+gdip.privateFontCollection = 自定义字体集合
+gdip.privateFontCollection.createFont(.(字体路径,字体名,大小,样式,单位) = 创建字体\n参数@1可以是路径或资源文件、内存数据\n单位默认为像素
+gdip.privateFontCollection()  = 自定义字体集合\n!gdipprvfontcoll.
+!gdipprvfontcoll.add( = 添加自字义字体
+!gdipprvfontcoll.add(.(字体) = 参数可以是字体文件,资源文件\n或字体文件加载到内存的数据
+!gdipprvfontcoll.createFamily( = 创建字体家族对象
+!gdipprvfontcoll.createFamily(.("字体名") = 参数为字体名
+!gdipprvfontcoll.createFamily() = !gdipfamily.
+!gdipprvfontcoll.delete() = 删除字体
+end intellisense**/

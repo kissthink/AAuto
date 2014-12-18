@@ -1,0 +1,42 @@
+//WMI监视进程
+//使用WMI监视进程打开关闭事件
+import win;
+import com
+
+strComputer = "."
+
+objWMIService = com.GetObject("winmgmts:{impersonationLevel=Impersonate}!\\" + strComputer + "\root\cimv2")
+
+cSink = com.CreateObject( "WbemScripting.SWbemSink")
+dSink = com.CreateObject( "WbemScripting.SWbemSink")
+
+io.open()
+
+cSinkh = {}
+function cSinkh.OnObjectReady(objObject, objAsyncContext) begin
+	io.print ("Process Create Detected. ",objObject.TargetInstance ().Name())
+end
+function cSinkh.OnCompleted(objObject, objAsyncContext) begin
+	io.print ("Completed")
+end
+
+dSinkh = {}
+function dSinkh.OnObjectReady(objObject, objAsyncContext) begin
+	io.print ("Process Delete Detected. ",objObject.TargetInstance ().Name())
+	io.print("监视线程已退出") 
+	win.quitMessage()
+end
+function dSinkh.OnCompleted(objObject, objAsyncContext) begin
+	io.print ("Completed") 
+end
+
+
+objWMIService.ExecNotificationQueryAsync( dSink, "SELECT * FROM __InstanceDeletionEvent WITHIN 1 WHERE TargetInstance ISA 'Win32_Process'")
+objWMIService.ExecNotificationQueryAsync (cSink, "SELECT * FROM __InstanceCreationEvent WITHIN 1 WHERE TargetInstance ISA 'Win32_Process'")
+
+com.Connect (cSink,cSinkh)
+com.Connect (dSink,dSinkh)
+
+io.print("使用WMI监视进程打开关闭事件,请打开关闭其他程序测试：")
+win.loopMessage()
+

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="gb2312"?>
+<project ver="5" name="webkit示例" libEmbed="true" icon="..." ui="win" output="webkit.exe" CompanyName="aau.cn" FileDescription="webkit示例" LegalCopyright="aau.cn" ProductName="webkit示例" InternalName="webkit示例" FileVersion="0.0.0.149" ProductVersion="0.0.0.149" publishDir="/Publish/">
+	<file name="main.aau" path="default.main.aau" comment="default.main.aau"/>
+	<folder name="资源文件" path="res" embed="true"/>
+</project>

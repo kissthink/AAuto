@@ -1,0 +1,236 @@
+//url 网址分析
+namespace inet.url;
+ 
+::Shlwapi := ..raw.loadDll("Shlwapi.dll");
+is  = Shlwapi.api("UrlIsA", "bool(str url,int urlis)" ) 
+
+UrlCombine = Shlwapi.api("UrlCombineA", "int(str base,str relative,str& combined,INT& size, INT flags)" )
+UrlCanonicalize = Shlwapi.api("UrlCanonicalizeA","int(str url,str& out,INT& size, INT flags)" )
+joinpath = function(base,relative,flag=0){ 
+	var hr,url = UrlCombine(base,relative,0x800,0x800,flag)
+	if( !hr) return url;
+}
+
+append = function(base,relative,...){ 
+	if( base[#base] != '/'#  ) base = base + "/"
+	var url = joinpath( base,..string.trimleft(relative,"/\") );
+	if(!...) return url;
+	return append(url,...);
+}
+
+appendExtraInfo = function(url,param){
+	var turl = split(url);
+	if( #turl.extraInfo ) turl.extraInfo = turl.extraInfo + "&" + param;
+	else turl.extraInfo = "?" + param;
+	return tostring(turl);	
+}
+
+canonicalize = function(url,flag=0){
+	var hr,url = UrlCanonicalize(url,0x800,0x800,flag)
+	if( !hr ) return url;
+}
+
+HashData  = Shlwapi.api("HashData", "int(str data,INT cbData,string &hash,INT cbHash)" )
+HashDataNum  = Shlwapi.api("HashData", "int(str data,INT cbData,INT& out,INT cbHash)" )
+hash = function(url,size=4){
+	var hr,hash = HashData(url,#url,size,size);
+	if(!hr) return hash;
+}
+hashNum = function(url,size=4){
+	var hr,hash = HashDataNum(url,#url,0,size%8);
+	if(!hr) return hash;
+} 
+
+UrlUnescape  = Shlwapi.api("UrlUnescapeA", "int(str url,str &unescaped,INT& size,INT flags)" )
+UrlEscape = Shlwapi.api("UrlEscapeA", "int(str url,str &escaped,INT& size,INT flags)" )
+escape = function(url,flag=0x2000000/*_URL_BROWSER_MODE*/){
+	var hr,str = UrlEscape(url,0x800,0x800,flag)
+	if(!hr)return str;
+}
+unEscape = function(url,flag=0x2000000/*_URL_BROWSER_MODE*/){
+	var hr,str = UrlUnescape(url,0x800,0x800,flag)
+	if(!hr)return str;
+}
+ 
+var replace = ..string.replace
+var format = ..string.format
+encode = function(s,utf8){
+	s = replace(s,"@@%", "%25");
+	s = encodeMbcs(s,utf8);
+	
+	return replace(s,"[^%0-9a-zA-Z\.\-\_\~]",
+		function(c){  
+				return format("%%%02X", c[1] )
+		}
+	)  
+}
+
+encodeMbcs = function(s,utf8){
+	return replace(s,"<:+>",
+		function(c){  
+			if(utf8) c = ..string.fromto(c,0,65001);
+			return replace(c,".",
+				function(c){  
+						return format("%%%02X", c[1] )
+				}
+			) 
+		}
+	)  
+}
+
+var urlDecode = function(c){ return eval("'" + ( replace( c,"\%","\\x") ) + "'" ) };
+decode = function(s,utf8){   
+	s =  replace(s,"\+"," ");
+	s = ( replace(s,"<\%\x\x>+",urlDecode ) ) 
+	if(utf8) s= ..string.fromto(s,65001,0);
+	return s;
+}
+
+stringifyParameters = function(param,utf8,cmp){ 
+	var lst = {};
+	for(k,v in ..table.eachName(param,cmp) ){
+		..table.push( lst,encode(k,utf8),"=",( encode(tostring(v),utf8) ),"&" )
+	}
+	if( lst[#lst] == '&' ) ..table.pop(lst)
+	return ..string.join(lst ); 
+} 
+
+::Wininet := ..raw.loadDll("Wininet.dll")
+InternetCrackUrl = Wininet.api("InternetCrackUrl","bool(str url,INT len,INT flags,struct &components)")
+InternetCreateUrl = Wininet.api("InternetCreateUrl","bool(struct components,INT flags,str& url,INT& len)")
+
+var URL_COMPONENTS = class  {
+ 	INT size = 60;
+ 	string scheme  ;
+ 	INT schemeLen = 1;
+ 	INT schemeNum;
+ 	string host;
+ 	INT hostLen = 1;
+ 	WORD port;
+ 	string user;
+ 	INT userLen = 1;
+ 	string password;
+ 	INT passwordLen = 1;
+ 	string path;
+ 	INT pathLen = 1;
+ 	string extraInfo ;
+ 	INT extraInfoLen = 1;
+	join = _meta._tostring;
+ 	tostring = _meta._tostring;
+ 	@_meta
+};
+URL_COMPONENTS._meta = { 
+	_tostring = function(){
+		for k,v in ..table.eachName(owner){
+			if( type(v) == "string" )
+				owner[k+"Len"] = #v;
+		} 
+		var ok,url = InternetCreateUrl(owner,0,0x800,0x800);
+		return ok?url:""
+	}
+}
+
+split = function(url){
+	var urlComponents = URL_COMPONENTS();
+	var ok = InternetCrackUrl(url,#url,0,urlComponents);
+	if(ok){
+		var len;
+		for(k,v in urlComponents){
+			len = urlComponents[k+"Len"]; 
+			if(len) urlComponents[k] = ..string.left(v,len);  
+		}  
+		return urlComponents;
+	}
+}
+
+getFileName = function(url,d = "index.html"){
+	var turl = split(url)
+	var tpath = ..io.splitpath(turl.path) //拆分路径
+	return #tpath.file ? tpath.file : "index.html";
+}
+
+/**intellisense(inet.url)
+is(url,_URLIS__) = 检测URL 
+joinpath( = 当对于当前URL的相对路径转换为完整URL\n注意该函数忽略文件名,简单拼接请使用append函数替代
+joinpath(.("当前URL",相对路径,_URL__) = 当对于当前URL的相对路径转换为完整URL\n可选使用参数三指定转换选项
+appendExtraInfo(.(url,附加参数) = 在URL后追加参数\n参数首字符不能是问号
+append( = 拼接URL
+append(.(url目录,url子路径,->->->) = 支持不定个数参数\n第一个参数无论是否以"/"字符结束都认为是一个目录
+canonicalize(__/*URL*/) = URL规范化转换\n扩展和适当置换路径中包含的所有..和.
+canonicalize("当前URL",_URL__) = URL规范化转换\n参数三指定转换选项
+hashNum(__/*url*/) = 返回哈希数值(4字节32位)
+hashNum(__/*url*/,1) = 返回哈希数值(1字节8位)\n第二参数指定长度,最大8字节
+hash(url,__/*长度*/) = 获取URL哈希串,可指定小于256位的哈希长度
+split(__/*输入URL*/) = 拆分URL返回协议、路径、端口、参数等\n修改成员后再次调用join方法生成完整url
+split() = !inet_urlcrack. 
+getFileName(.(网址,默认文件名) = 获取URL中的文件名\n参数2可选,默认为"index.html"
+escape(__/*URL*/) = 转换URL中的不安全字符,例如:\n^&`{}|[]"<>\\n不转换附加参数,即?号或#号后面的部份
+escape(url,0) = 转换URL中的不安全字符\n参数二指定转换选项
+unEscape(__/*URL*/) = URL解码\n不转换附加参数,即?号或#号后面的部份
+unEscape(url,0) = URL解码
+stringifyParameters(.(参数表,是否进行UTF8编码,排序函数) = 将URL参数表转换为字符串,\n使用'='分隔键值对,使用'&'分隔不同参数,\n对所有参数值使用UrlEncode编码,参数二指定编码前是否转换为UTF8内码\n省略排序函数则使用默认字典序排序
+encode(.(字符串,使用UTF8编码) = 完全URL编码,\n参数二指定是否转换为UTF8编码,\n与escape不同,此函数将所有非字母非数字字符进行URL编码
+decode(.(字符串,使用UTF8编码) = URL解码,\n参数二指定是否转换为UTF8编码
+encodeMbcs(.(字符串,使用UTF8编码) = URL编码所有宽字符 - 即中文字,\n参数二指定是否转换为UTF8编码
+end intellisense**/
+
+/*intellisense(!inet_urlcrack)
+scheme = 协议
+schemeNum = 协议(数值)
+host = 域名
+user = 用户名
+password = 密码
+path = 文件路径;
+extraInfo = 附加参数;
+port = 端口
+join() = 拼接各部份并返回完整URL字符串
+end intellisense*/
+                                    
+/**intellisense()
+_URLIS_URL=@0x0/*_URLIS_URL*/
+_URLIS_OPAQUE=@//是否Opaque URL,如邮件地址,Javascript脚本\n0x1/*_URLIS_OPAQUE*/
+_URLIS_NOHISTORY=@//URL是否未曾访问过\n0x2/*_URLIS_NOHISTORY*/
+_URLIS_FILEURL=@//是否指向本机文件\n0x3/*_URLIS_FILEURL*/
+_URLIS_APPLIABLE=@//检测URL指定的协议是否可用\n0x4/*_URLIS_APPLIABLE*/ 
+_URLIS_DIRECTORY=@//检测URL是否指向目录\n0x5/*_URLIS_DIRECTORY*/ 
+_URLIS_HASQUERY=@//检测URL是否有参数(Query String)\n0x6/*_URLIS_HASQUERY*/ 
+_URL_UNESCAPE=@0x10000000/*_URL_UNESCAPE*/
+_URL_ESCAPE_UNSAFE=@0x20000000/*_URL_ESCAPE_UNSAFE*/
+_URL_PLUGGABLE_PROTOCOL=@0x40000000/*_URL_PLUGGABLE_PROTOCOL*/
+_URL_WININET_COMPATIBILITY=@0x80000000/*_URL_WININET_COMPATIBILITY*/
+_URL_DONT_ESCAPE_EXTRA_INFO=@0x2000000/*_URL_DONT_ESCAPE_EXTRA_INFO*/
+_URL_DONT_UNESCAPE_EXTRA_INFO=@0x2000000/*_URL_DONT_UNESCAPE_EXTRA_INFO*/
+_URL_BROWSER_MODE=@0x2000000/*_URL_BROWSER_MODE*/
+_URL_ESCAPE_SPACES_ONLY=@0x4000000/*_URL_ESCAPE_SPACES_ONLY*/
+_URL_DONT_SIMPLIFY=@0x8000000/*_URL_DONT_SIMPLIFY*/
+_URL_NO_META=@0x8000000/*_URL_NO_META*/ 
+_URL_CONVERT_IF_DOSPATH=@0x200000/*_URL_CONVERT_IF_DOSPATH*/
+_URL_UNESCAPE_HIGH_ANSI_ONLY=@0x400000/*_URL_UNESCAPE_HIGH_ANSI_ONLY*/
+_URL_INTERNAL_PATH=@0x800000/*_URL_INTERNAL_PATH*/
+_URL_FILE_USE_PATHURL=@0x10000/*_URL_FILE_USE_PATHURL*/
+_URL_DONT_UNESCAPE=@0x20000/*_URL_DONT_UNESCAPE*/
+_URL_ESCAPE_AS_UTF8=@0x40000/*_URL_ESCAPE_AS_UTF8*/
+_URL_ESCAPE_PERCENT=@0x1000/*_URL_ESCAPE_PERCENT*/
+_URL_ESCAPE_SEGMENT_ONLY=@0x2000/*_URL_ESCAPE_SEGMENT_ONLY*/
+_URL_PARTFLAG_KEEPSCHEME=@0x1/*_URL_PARTFLAG_KEEPSCHEME*/
+_URL_APPLY_DEFAULT=@0x1/*_URL_APPLY_DEFAULT*/
+_URL_APPLY_GUESSSCHEME=@0x2/*_URL_APPLY_GUESSSCHEME*/
+_URL_APPLY_GUESSFILE=@0x4/*_URL_APPLY_GUESSFILE*/
+_URL_APPLY_FORCEAPPLY=@0x8/*_URL_APPLY_FORCEAPPLY*/ 
+_INTERNET_SCHEME_PARTIAL=@0xFFFFFFFE/*_INTERNET_SCHEME_PARTIAL*/
+_INTERNET_SCHEME_UNKNOWN=@0xFFFFFFFF/*_INTERNET_SCHEME_UNKNOWN*/
+_INTERNET_SCHEME_DEFAULT=@0x0/*_INTERNET_SCHEME_DEFAULT*/
+_INTERNET_SCHEME_FTP=@0x1/*_INTERNET_SCHEME_FTP*/
+_INTERNET_SCHEME_GOPHER=@0x2/*_INTERNET_SCHEME_GOPHER*/
+_INTERNET_SCHEME_HTTP=@0x3/*_INTERNET_SCHEME_HTTP*/
+_INTERNET_SCHEME_HTTPS=@0x4/*_INTERNET_SCHEME_HTTPS*/
+_INTERNET_SCHEME_FILE=@0x5/*_INTERNET_SCHEME_FILE*/
+_INTERNET_SCHEME_NEWS=@0x6/*_INTERNET_SCHEME_NEWS*/
+_INTERNET_SCHEME_MAILTO=@0x7/*_INTERNET_SCHEME_MAILTO*/
+_INTERNET_SCHEME_SOCKS=@0x8/*_INTERNET_SCHEME_SOCKS*/
+_INTERNET_SCHEME_JAVASCRIPT=@0x9/*_INTERNET_SCHEME_JAVASCRIPT*/
+_INTERNET_SCHEME_VBSCRIPT=@0xA/*_INTERNET_SCHEME_VBSCRIPT*/
+_INTERNET_SCHEME_RES=@0xB/*_INTERNET_SCHEME_RES*/
+_INTERNET_SCHEME_FIRST=@0x1/*_INTERNET_SCHEME_FIRST*/
+_INTERNET_SCHEME_LAST=@0xB/*_INTERNET_SCHEME_LAST*/
+end intellisense**/

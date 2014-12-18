@@ -1,0 +1,36 @@
+//newLisp 语言 
+ 
+namespace newLisp;
+
+var dll = ..raw.loadDll( $"~/lib/newLisp/.res/newlisp.dll","newlisp-new.dll")
+__newlispEvalStr = dll.api("newlispEvalStr","string(string)");
+__newlispCallback = dll.api("newlispCallback","int(string funcName,POINTER funcAddr,string callType)"); 
+__setCurrentDirectory = ::Kernel32.api( "SetCurrentDirectory", "int(string path )"); 
+
+__callback = {};
+callback = function(name,func,proto){
+	if( type(name)!=type.string ) error("参数@1必须指定函数名",2);
+	if( type(func)!=type.function ) error("参数@2必须指定函数对象",2);
+	if( type(proto)!=type.string ) error("参数@3必须指定函数原型",2);
+	
+	__callback[name] = ..raw.tostdcall( func,proto );
+	return __newlispCallback(name,__callback[name],"stdcall");
+} 
+
+self.eval = function(code){
+	__setCurrentDirectory( ..io.fullpath("/") );
+	return __newlispEvalStr(code);
+}
+
+/***intellisense(newLisp)
+eval(代码) = @var code = /**\n	__\n**/\nvar ret = ??.eval(code)
+callback = @.callback( "__/*回调函数名*/",\n	function(){\n		return "";\n	},"string()"\n)	
+end intellisense***/
+
+/*
+http://www.newlisp.org/
+http://www.newlisp.org/CodePatterns-cn.html
+*/
+
+
+

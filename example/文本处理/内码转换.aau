@@ -1,0 +1,11 @@
+//内码转换
+//将big5繁体编码转换为gb2312编码
+
+
+io.open();
+
+str = "翠籓 羉砰"
+str = string.toUnicode(str,950);
+str = string.fromUnicode(str,936);
+io.print("ANSI",str);
+ 

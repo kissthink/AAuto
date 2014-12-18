@@ -1,0 +1,53 @@
+//subclass 子类化
+/************************************
+Author		: crane & lujjjh
+Date		: 2010.9
+************************************/
+
+namespace win;
+ 
+var wndpro_c = {}
+class subclass {
+
+	ctor( hwnd, newProc ){
+		var m_wndproc_c;
+		var m_prevWndproc;
+		
+		//支持win.form 对象
+		if( type(hwnd)==type.table && hwnd.hwnd)
+			hwnd = hwnd.hwnd;
+		
+		var wndproc = function(...){
+			var ret = newProc(...);
+			
+			//无论返回false,还是true,有返回值则直接返回
+			if( ret!==null)
+				return ret;
+				
+			return ::CallWindowProc(m_prevWndproc, ...);
+		}
+		
+		assert( tonumber(hwnd) ,"窗口句柄必须是一个数值")
+		assert( type(newProc) == type.function ,"回调函数必须是函数" )
+		
+		m_wndproc_c = ..raw.tostdcall(wndproc, "int(int hwnd, int msg, int wParam, int lParam)");
+		m_prevWndproc= ::SetWindowPointer(hwnd, 0xFFFFFFFC/*_GWL_WNDPROC*/, m_wndproc_c) ; 
+		
+		wndpro_c[m_prevWndproc] = m_wndproc_c;//放在闭包里,防止被垃圾回收
+	} 
+	free = function(){ 
+		assert(m_prevWndproc && m_wndproc_c,"已取消子类化!")
+		::SetWindowPointer(hwnd, 0xFFFFFFFC/*_GWL_WNDPROC*/, m_prevWndproc );
+		wndpro_c[m_prevWndproc] = null;
+		m_prevWndproc = null;
+		m_wndproc_c=null;
+	}
+}
+ 
+ 
+/**intellisense()
+win.subclass(窗口句柄, 处理函数) = @.subclass(\n	hwnd__/*窗口句柄*/, \n	function (hwnd,message,wParam,lParam) { \n	}\n)
+!subclass.free() = 取消子类化.
+?win.subclass = !subclass.
+})
+end intellisense**/

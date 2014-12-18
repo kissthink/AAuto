@@ -1,0 +1,29 @@
+import protobuf.type.int
+
+namespace protobuf.type;
+ 
+class bool{ 
+
+	ctor(...) {
+		this = ..protobuf.type.int(...)
+		this.wired_type = ..protobuf.message.WIRED_VARINT;
+	}
+	 
+	deSerialize = function () {
+		this.value = this.reader.next();
+	}
+ 
+	serialize = function ( rec = -1 ) {
+	 
+		var str = '';
+
+		if ( rec > -1) {
+			str ++= this._codecBase128.set_value( rec << 3 | this.wired_type );
+		}
+
+		var value = this._codecBase128.set_value( this.value );
+		str ++= value;
+
+		return  str;
+	}
+}

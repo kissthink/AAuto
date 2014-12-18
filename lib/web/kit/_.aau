@@ -1,0 +1,296 @@
+if( _STUDIO_INVOKED && _STUDIO_INVOKED != "process" ){
+	if( _AAUTO_VERSION < 6 ) error("快手开发环境版本太旧，请先更新!",2)
+	error("web.kit不能在IDE嵌入线程模式下启动!",2)
+}
+namespace web.kit {
+
+	begin
+		import win.reg;
+		var reg  = win.reg("HKCU\Software\MozillaPlugins\aauWkeFlashPlugins")
+		reg.setSzValue("path",..io.fullpath("~\lib\web\kit\.dll\plugins\NPSWF32.dll"))
+		reg.close();
+	end;
+	
+	_dll = ..raw.loadDll("~\lib\web\kit\.dll\wke.dll","webkit.wke.dll","cdecl")
+	_dll.wkeInit()
+	
+	..table.gc(self,function(){
+		_dll.wkeShutdown();
+	} );
+}
+import web.kit.view;	
+
+namespace web.kit {	
+	var wke = _dll; 
+	var __view__ = view;
+	
+	jsInt = wke.api("jsInt","LONG(int)" );
+	jsFloat = wke.api("jsFloat","LONG(float)" );
+	jsDouble = wke.api("jsDouble","LONG(double)" );
+	jsToDouble = wke.api("jsToDouble","double(POINTER jsExecState,LONG value)" );
+	jsBoolean = wke.api("jsBoolean","LONG(bool)" );
+	jsUndefined = wke.api("jsUndefined","LONG()" );
+	jsNull = wke.api("jsNull","LONG()" );
+	jsTrue = wke.api("jsTrue","LONG()" );
+	jsFalse = wke.api("jsFalse","LONG()" );
+	jsStringW = wke.api("jsStringW","LONG(POINTER jsExecState,string s)" );
+	jsString = function(jsExecState,s){
+		return jsStringW(jsExecState,..string.toUnicode(s));
+	}
+	jsEvalW = wke.api("jsEvalW","LONG(POINTER jsExecState,string s)" );
+	jsEval = function(jsExecState,s){
+		var v = jsEvalW(jsExecState,..string.toUnicode(s));  
+		return v;
+	}
+	
+	jsCall = wke.api("jsCall","LONG(POINTER jsExecState,LONG func,LONG thisObject,struct args,int argCount)" )
+	jsCallGlobal = wke.api("jsCallGlobal","LONG(POINTER jsExecState,LONG func,struct args,int argCount)" )
+	
+	jsBuildValue = function(jsExecState,v){
+		if(v===null){
+			return jsNull();
+		}
+		
+		var t,mt = type(v);
+		if( t == type.number ){
+			return jsDouble(v);
+		}
+		elseif( t == type.string ){
+			return jsString(jsExecState,v );
+		}
+		elseif( t == type.boolean ){
+			return jsBoolean(v);
+		}
+		elseif( t == type.table ){
+			if( v.jsValue ) return v.jsValue;
+			if( #v ){
+				return jsArray(jsExecState,,v).jsValue;
+			}
+			return jsObject(jsExecState,,v).jsValue;
+		}
+		elseif( t == type.cdata && mt == "math.size64" ){
+			return v;
+		}
+		return jsNull(); 
+	}
+	var jsBuildValue = jsBuildValue;
+	
+	var __ind__ = 0/0;
+	var __parse__ = {
+		[0/*JSTYPE_NUMBER*/] = function(jsExecState,v){
+			return jsToDouble(jsExecState,v);
+		};
+		[1/*JSTYPE_STRING*/]= function(jsExecState,v){
+			var s = wke.jsToStringW(jsExecState,v); 
+			if( s ) return ..string.fromUnicode(topointer(s),0,true);
+		}
+		[2/*JSTYPE_BOOLEAN*/] = function(jsExecState,v){
+			return !!wke.jsToBoolean(jsExecState,v)
+		};
+		[3/*JSTYPE_OBJECT*/] = function(jsExecState,v){
+			if( wke.jsIsNull(v) ){
+				return null;
+			}
+			elseif( wke.jsIsArray(v) ){
+				return jsArray(jsExecState,v);
+			}
+			else {
+				return jsObject(jsExecState,v);
+			}
+		};
+		[4/*JSTYPE_FUNCTION*/] = function(jsExecState,func,thisObject){
+			if( thisObject ){
+				return function(...){
+					var args = {...};
+					var _,len = ..table.range(args);
+					var jsargs;
+					if(len){
+						jsargs = { LONG args[] = {} };
+						for(i=1;len;1){
+						 	..table.push(jsargs.args,jsBuildValue(jsExecState,args[i]));
+						} 
+					}
+					else {
+						jsargs = {};
+					}
+					
+					return jsParseValue( jsExecState,jsCall(jsExecState,func,thisObject.jsValue,jsargs,len) );
+				} 
+			}
+			else {
+				return function(...){
+					var args = {...};
+					var _,len = ..table.range(args);
+					var jsargs;
+					if(len){
+						jsargs = { LONG args[] = {} };
+						for(i=1;len;1){
+						 	..table.push(jsargs.args,jsBuildValue(jsExecState,args[i]));
+						} 
+					}
+					else {
+						jsargs = {};
+					}
+					
+					return jsParseValue( jsExecState,jsCallGlobal(jsExecState,func,jsargs,len) );
+				} 	
+			}
+		};
+		[5/*JSTYPE_UNDEFINED*/] = function(jsExecState,v){
+			return;
+		};
+	} 
+	jsTypeOf = wke.jsTypeOf;
+	jsParseValue = function(jsExecState,v,thisObject){
+		var t = wke.jsTypeOf(v); 
+		var f = __parse__[t];
+		if(f) return f(jsExecState,v,thisObject);
+	}
+	var jsParseValue = jsParseValue;
+	
+	 
+/*jsObject{{*/
+	class jsObject{
+		ctor( jsExecState,jsObject,tab ){
+			this.jsValue = jsObject ? jsObject : jsCreateObject( jsExecState );
+			this.jsExecState = jsExecState;
+			this@ = _meta;
+			for(k,v in tab){
+				this[k] = v;
+			} 
+		}; 
+	}
+	namespace jsObject{
+		jsCreateObject = wke.api("jsObject","LONG(POINTER jsExecState)" );
+		jsGet = wke.api("jsGet","LONG(POINTER jsExecState,LONG object,string prop)" );
+		jsSet = wke.api("jsSet","LONG(POINTER jsExecState,LONG object,string prop,LONG v)" ); 
+		
+		_meta = {
+			_get = function(k){ 
+				var v = jsGet( owner.jsExecState,owner.jsValue,tostring(k)/*js里数值key实际上也是字符串*/);
+				return jsParseValue(owner.jsExecState,v,owner);
+			} 
+			_set = function(k,v){
+				var v = jsBuildValue(owner.jsExecState,v);
+				jsSet( owner.jsExecState,owner.jsValue,tostring(k),v); 
+			}
+		} 
+	}
+/*}}*/
+	
+/*jsArray{{*/
+	class jsArray{
+		ctor( jsExecState,jsArray,tab ){
+			this.jsValue = jsArray ? jsArray : jsCreateArray( jsExecState );
+			this.jsExecState = jsExecState;
+			this@ = _meta;
+			for(i=1;#tab;1){
+				this[ i - 1 ] = tab[i]; 
+			}  
+		}; 
+	}
+	namespace jsArray{
+		jsCreateArray = wke.api("jsArray","LONG(POINTER jsExecState)" );
+		jsGet = wke.api("jsGetAt","LONG(POINTER jsExecState,LONG object,int prop)" );
+		jsSet = wke.api("jsSetAt","LONG(POINTER jsExecState,LONG object,int idx,LONG v)" ); 
+		
+		_meta = {
+			_get = function(k){
+				if( type(k) == "number"){
+					var v = jsGet( owner.jsExecState,owner.jsValue,k);
+					return jsParseValue(owner.jsExecState,v);
+				}
+				elseif(k=="length"){
+					return wke.jsGetLength( owner.jsExecState,owner.jsValue);
+				}
+				
+			} 
+			_set = function(k,v){
+				if( type(k) == "number"){
+					var v = jsBuildValue(owner.jsExecState,v);
+					var v = jsSet( owner.jsExecState,owner.jsValue,k,v); 
+				}
+				elseif(k=="length"){
+					if( type(v) != "number" ) error("length必须是数值",2);
+					wke.jsSetLength( owner.jsExecState,owner.jsValue);
+				}
+			}
+			_len = function(){
+				return wke.jsGetLength( owner.jsExecState,owner.jsValue);
+			}
+		} 
+	}
+/*}}*/ 
+
+	__function__ = {};
+	__getter__ = {};
+	__setter__ = {};
+	
+	jsArg = wke.api("jsArg","LONG(pointer jsExecState,int idx)") 
+	jsParseArg = function(jsExecState){
+		var args = {}; 
+		var count = wke.jsArgCount(jsExecState);
+		for(i=1;count;1){
+			var jsv = jsArg(jsExecState,i-1);
+			..table.push(args,jsParseValue(jsExecState,jsv));
+		} 
+		return ..table.unpack(args,1,count);
+	}
+	
+	jsBindFunction = function(name,argCount,func){
+		if(argCount===null)argCount=0;
+		if( type(func) != type.function ) error("参数@3必须是函数对象",2);
+		if( type(argCount) != type.number ) error("参数@2必须指定函数参数个数",2);
+ 		if( type(name) != type.string ) error("参数@1必须指定函数名",2);
+ 		
+ 		var fc = ..raw.tofastcall( function(jsExecState){
+				var ok,ret = call(func,__view__.fromJsExecState(jsExecState) ,jsParseArg(jsExecState));
+				if( ok )return jsBuildValue( jsExecState,ret );
+			},"void(pointer jsExecState)");
+		__function__[name] = fc;
+		wke.jsBindFunction(name,fc,argCount);
+	}
+	jsBindGetter = function(name,func){
+		if( type(func) != type.function ) error("参数@2必须是函数对象",2);
+ 		if( type(name) != type.string ) error("参数@1必须指定函数名",2);
+ 		
+		var fc = ..raw.tofastcall( function(jsExecState){
+			var ok,ret = call(func,__view__.fromJsExecState(jsExecState) ,jsParseArg(jsExecState));
+			if( ok )return jsBuildValue( jsExecState,ret );
+		},"void(pointer jsExecState)");
+		
+		__getter__[name] = fc;
+		wke.jsBindGetter(name,fc,argCount);
+	}
+	jsBindSetter = function(name,func){
+		if( type(func) != type.function ) error("参数@2必须是函数对象",2);
+ 		if( type(name) != type.string ) error("参数@1必须指定函数名",2);
+ 		
+		var fc = ..raw.tofastcall( function(jsExecState){
+			var ok,ret = call(func,__view__.fromJsExecState(jsExecState) ,jsParseArg(jsExecState));
+		},"void(pointer jsExecState)");
+		
+		__setter__[name] = fc;
+		wke.jsBindSetter(name,fc,argCount);
+	}
+	
+	//预定义JS函数
+	jsBindFunction("alert",1,function(str){ 
+		var wkeWebView = owner;
+		var winform = wkeWebView.getForm();
+		if( winform ) winform.msgbox(str);
+	})
+	
+	jsBindGetter("external",function(){
+		return owner.external;//忽略成员函数
+	} )
+} 
+
+/**intellisense(web.kit)
+jsBindFunction("函数名",参数个数,函数对象) = @.jsBindFunction("JS函数名",__/*参数个数*/,function(){\n    var wkeWebView = owner;\n    var winform = wkeWebView.getForm();\n    winform.close();\n})
+jsBindGetter(.("函数名",函数对象) = 定义JS属性读取器
+jsBindSetter(.("函数名",函数对象) = 定义JS属性设置器
+jsParseValue（.(jsExecState,js值句柄) = 解析JS值对象
+jsUndefined() = JS未定义变量
+jsTypeOf(.(js值句柄) = 返回变量类型
+end intellisense**/

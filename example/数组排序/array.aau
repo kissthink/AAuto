@@ -1,0 +1,16 @@
+//快速创建多维数组
+
+import console;
+
+//可以用不定个数长度参数创建多维数组，最后一个参数指定默认值
+var tab = table.array( 5/*行*/,5/*列*/,7 )
+console.varDump(tab)
+
+//如果默认值是table对象，自动复制创建新值
+var tab = table.array( 5,5,{} )
+console.log( tab[1][1] != tab[2][2] )
+ 
+//默认值还可以是一个用来创建默认值的函数，并且可以在函数后面指定参数，
+var tab = table.array( 5, table.array,5,{} )
+console.log( tab[1][1] != tab[2][2] )
+ 

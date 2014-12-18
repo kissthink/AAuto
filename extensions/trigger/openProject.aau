@@ -1,0 +1,27 @@
+import fsys;
+import ide; 
+
+var projPath = ide.getProjectPath();
+if(!#projPath) return;
+
+var recentList = {};
+var cfgRecentProject = ..string.load("~/config/RECENT.PROJECT.TABLE");
+if( cfgRecentProject ){
+	try{
+		recentList = eval(cfgRecentProject)
+	} 
+	if(!recentList) return;
+}
+
+for(i=#recentList;1;-1){ 
+	if( fsys.path.cmp(recentList[i],projPath) === 0 ){
+		table.remove(recentList,i);
+		break;
+	}
+} 
+ 
+if( #recentList > 20 ){
+	recentList =  ..table.slice( recentList,1,20);
+}
+..table.unshift( recentList,ide.getProjectPath() )
+string.save("~/config/RECENT.PROJECT.TABLE",..table.tostring(recentList) )

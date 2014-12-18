@@ -1,0 +1,17 @@
+//导入枚举常量定义
+//自动导入枚举常量定义
+
+import com
+
+conn = com.CreateObject("ADODB.Connection") 
+var typeinfo = com.GetTypeInfo(conn)
+var typelib = typeinfo.GetTypeLib()
+var enums = typelib.ExportEnumerations()
+ 
+ado = table.mix({},enums.DataTypeEnum)
+
+//测试一下
+io.open();
+io.print( ado.adChar );
+io.print( conn.adChar ); //直接通过com对象也可以访问枚举常量( 不需要导入 ）
+ 

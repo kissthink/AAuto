@@ -1,0 +1,132 @@
+//apiHook 函数钩子 
+import process;
+
+namespace process {
+	
+	class apiHook  {
+		ctor ( ... ) { 
+			var prcsHook = ..process(...)
+			this.process = prcsHook;
+			this.loadLibrary = prcsHook.remoteApi("addr(str libName)","kernel32.dll","LoadLibraryA","stdcall")
+			this.freeLibrary = prcsHook.remoteApi("bool(addr hModule)","kernel32.dll","FreeLibrary","stdcall") 
+			this.getProcAddress = prcsHook.remoteApi("addr(addr hModule,string lpProcName)","kernel32.dll","GetProcAddress","stdcall") 
+			this._hookfunc = {};
+			..table.gc(this,"unInstallAll")
+		};
+		install = function( dllName, apiName, jmpDllName, jmpApiName  ) { 
+			var hookInfo = {};
+			var addrTargetFunction = dllName
+			if( type(dllName) == type.string ){
+				dllName = ..io.localpath(dllName) : dllName;
+				
+				var hModule = this.loadLibrary(dllName);
+				if(!hModule)
+					return null,"LoadLibrary('" + dllName + "') faild!";
+					
+				addrTargetFunction = this.getProcAddress(hModule,apiName);
+				if(!addrTargetFunction)
+					return null,"GetProcAddress('" + apiName + "') faild!";
+					
+				hookInfo.hModule = hModule;
+			}
+			else {
+				jmpDllName = apiName;
+				jmpApiName = jmpDllName;
+			}
+			
+			var addrHookFunction = jmpDllName;
+			if( type(jmpDllName) == type.string ){
+				jmpDllName = ..io.localpath(jmpDllName) : jmpDllName;
+				var hModule = this.loadLibrary(jmpDllName);
+				if(!hModule)
+					return null,"LoadLibrary('" + jmpDllName + "') faild!";
+					
+				addrHookFunction = this.getProcAddress(hModule,jmpApiName);
+				if(!addrHookFunction)
+					return null,"GetProcAddress('" + jmpApiName + "') faild!";
+					
+				hookInfo.hHookModule = hModule;
+			}
+			
+			var jmpOpCodeLen = 5; 
+			var addrProtect = prcsHook.protect(addrTargetFunction,0x40/*_PAGE_EXECUTE_READWRITE*/,jmpOpCodeLen * 2)
+			if (!addrProtect) { 
+				error("修改内存属性失败!", 2);
+			}   
+			
+			var restoreOpCode = prcsHook.readString(addrTargetFunction,jmpOpCodeLen * 2 );
+			hookInfo.restoreOpCodeSize,restoreOpCode = getHookSize(  restoreOpCode,jmpOpCodeLen ); 
+			 
+			var addrTrampoline  = prcsHook.malloc( hookInfo.restoreOpCodeSize + jmpOpCodeLen,0x40/*_PAGE_EXECUTE_READWRITE*/)  
+			prcsHook.write( addrTrampoline,restoreOpCode, '\xE9'/*JMP*/, {
+					int jmpAddr = addrTargetFunction + hookInfo.restoreOpCodeSize - (addrTrampoline + hookInfo.restoreOpCodeSize + jmpOpCodeLen );
+			} )
+			 
+			prcsHook.write( addrTargetFunction, '\xE9'/*JMP*/, {
+					int jmpAddr = addrHookFunction - (addrTargetFunction + jmpOpCodeLen);
+			} )
+			
+			..table.mixin( hookInfo, {
+				addrProtect = addrProtect;
+				addrTrampoline = addrTrampoline; 
+				addrHookFunction = addrHookFunction; 
+				addrTargetFunction =addrTargetFunction;
+			} )
+			
+			this._hookfunc[addrTargetFunction] = hookInfo;
+			return hookInfo;
+		} 
+		unInstall = function ( hookInfo ) {  
+			if (!hookInfo.addrTargetFunction) {
+				return;
+			} 
+			
+			var restoreCode = prcsHook.readString(hookInfo.addrTrampoline ,hookInfo.restoreOpCodeSize)
+			prcsHook.writeString(hookInfo.addrTargetFunction,restoreCode);
+			
+			prcsHook.protect( hookInfo.addrTargetFunction, hookInfo.addrProtect, hookInfo.restoreOpCodeSize );
+			prcsHook.mfree(hookInfo.addrTrampoline);
+			
+			if(hookInfo.hModule)this.freeLibrary(hookInfo.hModule);
+			if(hookInfo.hHookModule)this.freeLibrary(hookInfo.hHookModule);
+			
+			this._hookfunc[hookInfo.addrTargetFunction]  = null;
+		}
+		unInstallAll = function(){
+			for(k,hookInfo in this._hookfunc){ 
+				this.unInstall(hookInfo);
+			}
+			
+		}
+	}	
+	
+	namespace  apiHook { 
+		import ..raw.asm.opCode;
+		getHookSize = ..raw.asm.opCode.getHookSize; 
+	}
+}
+
+
+
+/**intellisense()
+process.apiHook = 远程 API HOOK支持库,
+process.apiHook(.(进程ID) = 使用进程ID打开进程HOOK对象。\n失败则返回 null,以及错误信息.
+process.apiHook(.(执行文件, 命令行参数,启动参数) = 运行执行文件或关联文档,打开进程HOOK对象\n也可以仅指定第二个参数运行纯命令行\n启动参数为process.STARTUPINFO()结构体,可选,\n可以使用普通table对象替代启动参数.将自动转换为STARTUPINFO结构体
+process.apiHook() = !process_apihook. 
+!process_apihook.install(.("拦截DLL模块名","拦截API函数名","钩子模块名","钩子API函数名") = 安装钩子,返回HookInfo对象\n也可以直接写拦截函数地址或钩子函数地址,\n但函数地址必须是目标进程内的函数地址,不可使用AAuto函数,\n需要使用AAuto请使用raw.apiHook替代
+!process_apihook.process = 进程对象,\n!process.
+!process_apihook.loadLibrary(.("DLL模块名") = 在目标进程中加载DLL，返回数值类型句柄
+!process_apihook.freeLibrary(.(模块地址) = 卸载DLL
+!process_apihook.getProcAddres(.(模块地址,"API函数名") = 查找外部进程API函数,返回函数地址
+!process_apihook.unInstall(.(HookInfo) = 卸载钩子,\n传入参数必须是 install函数的返回值
+!process_apihook.install() = !procss_hookInfo.
+!process_apihook.unInstallAll() = 释放所有钩子,\n该函数会在对象回收时自动调用
+!procss_hookInfo.addrProtect = 函数内存保护属性
+!procss_hookInfo.addrTrampoline = 用于调用原函数的跳板地址 
+!procss_hookInfo.addrHookFunction = 钩子函数地址
+!procss_hookInfo.addrTargetFunction = 被拦截函数地址
+!procss_hookInfo.hModule = 被拦截模块地址
+!procss_hookInfo.hHookModule = 钩子模块地址
+!procss_hookInfo.restoreOpCodeSize = 安装钩子覆盖指令长度
+!procss_hookInfo.
+end intellisense**/

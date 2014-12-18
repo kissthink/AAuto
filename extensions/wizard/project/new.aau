@@ -1,0 +1,155 @@
+import ide;
+import fsys;
+import web.msxml;
+import win.ui;
+/*DSG{{*/
+mainForm = ..win.form(text="快手工程向导 - 创建应用程序";right=597;bottom=291;max=false;parent=...)
+mainForm.add(
+btnCreateProject={cls="button";text="创建工程(Enter)";left=355;top=227;right=529;bottom=261;tabstop=1;z=14};
+btnDlgDir={cls="button";text="浏览...";left=479;top=52;right=542;bottom=82;tabstop=1;z=6};
+btnEsc={cls="button";text="取消(Esc)";left=227;top=227;right=349;bottom=261;tabstop=1;z=13};
+chkSaveToDefaultDir={cls="checkbox";text="设置父目录为创建工程的默认目录";left=115;top=90;right=326;bottom=111;tabstop=1;z=7};
+editProjectDir={cls="edit";left=115;top=53;right=479;bottom=81;edge=1;tabstop=1;z=5};
+editProjectFile={cls="edit";left=115;top=116;right=274;bottom=144;edge=1;tabstop=1;z=8};
+editProjectName={cls="edit";left=347;top=116;right=543;bottom=144;edge=1;tabstop=1;z=9};
+groupbox={cls="groupbox";text="工程配置 ";left=21;top=25;right=577;bottom=213;edge=1;tabstop=1;z=1};
+labProjeFile={cls="static";text="工程文件:";left=35;top=122;right=100;bottom=139;align="right";tabstop=1;transparent=1;z=3};
+lbProjectDir={cls="static";text="工程目录:";left=35;top=60;right=100;bottom=77;align="right";tabstop=1;transparent=1;z=2};
+lbProjectName={cls="static";text="工程名称:";left=274;top=122;right=339;bottom=139;align="right";tabstop=1;transparent=1;z=4};
+radioConsole={cls="radiobutton";text="控制台程序";left=47;top=171;right=132;bottom=194;tabstop=1;z=16};
+radioHTML5={cls="radiobutton";text="WebKit界面(HTML5)";left=430;top=171;right=568;bottom=194;tabstop=1;z=10};
+radioHTMLayoutUi={cls="radiobutton";text="HTMlayout界面";left=239;top=171;right=338;bottom=194;tabstop=1;z=12};
+radioWebUi={cls="radiobutton";text="Web界面";left=349;top=171;right=419;bottom=194;tabstop=1;z=11};
+radioWinUi={cls="radiobutton";text="对话框程序";left=143;top=171;right=228;bottom=194;checked=1;tabstop=1;z=15}
+)
+/*}}*/
+
+//避免窗口跑到IDE后面
+win.setOwner(mainForm.hwnd,ide.getMainHwnd());
+
+var srcTemplate = io.fullpath("/web/") 
+
+import fsys.dlg;
+mainForm.btnDlgDir.oncommand = function(id,event){
+	var dir = fsys.dlg.opendir( fsys.getParentDir( mainForm.editProjectDir.text ),mainForm.hwnd );
+	if( dir ){
+		mainForm.editProjectDir.text = fsys.joinpath(dir,mainForm.editProjectName.text)
+	} 
+}
+
+mainForm.btnEsc.oncommand = function(id,event){
+	mainForm.close()
+}
+
+mainForm.btnCreateProject.oncommand = function(id,event){
+	var dstDir = mainForm.editProjectDir.text;
+	dstDir = fsys.createDir(dstDir);
+	if( ! dstDir ){
+		mainForm.msgboxErr("请设定正确的工程目录路径!","快手工程向导")
+		return;
+	}
+	
+	if( mainForm.radioWinUi.checked ){
+		srcTemplate = io.fullpath("/win/") 
+	} 
+	elseif( mainForm.radioWebUi.checked ){
+		srcTemplate = io.fullpath("/web/webform/") 
+	}
+	elseif( mainForm.radioHTML5.checked ){
+		srcTemplate = io.fullpath("/web/webkit/") 
+	}
+	elseif( mainForm.radioHTMLayoutUi.checked ){
+		srcTemplate = io.fullpath("/web/layoutUi2/") 
+	} 
+	elseif( mainForm.radioConsole.checked ){
+		srcTemplate = io.fullpath("/console/") 
+	} 
+	 
+	fsys.enum(  srcTemplate, 
+				"*.*", 
+				function(dir,file,fullpath,findData){   
+					fsys.copy(fullpath,dstDir )
+				},
+				false 
+	);
+	 
+	
+	var projectFileTemplate = fsys.joinpath(dstDir,"default.aproj");
+	if(!io.exist( projectFileTemplate ) ){
+		mainForm.msgboxErr("复制工程文件到目标目录失败!","快手工程向导")
+	}
+	
+	var projectFile = fsys.joinpath(dstDir,mainForm.editProjectFile.text)
+	if( ! string.endWith(projectFile,".aproj",true) ){
+		projectFile = projectFile + ".aproj";
+	}
+	if( ! io.rename(projectFileTemplate,projectFile) ){
+		mainForm.msgboxErr("请设定正确的工程文件名!","快手工程向导")
+		return;
+	};
+	
+	var projectName = string.trim( mainForm.editProjectName.text );
+	if(!#projectName){
+		mainForm.msgboxErr("请设定正确的工程名称!","快手工程向导")
+		mainForm.editProjectName.setFocus(0,-1);
+		return;
+	}
+	
+	/*-------------------------------
+	 * 修改自定义工程属性开始
+	 *-------------------------------*/
+	try{
+		var xmlDoc = web.msxml();
+		xmlDoc.load(projectFile); 
+		xmlDoc.documentElement.setAttribute("name",mainForm.editProjectName.text ) ;
+		xmlDoc.documentElement.setAttribute("ProductName",mainForm.editProjectName.text ) ;
+		xmlDoc.documentElement.setAttribute("InternalName",mainForm.editProjectName.text ) ;
+		xmlDoc.documentElement.setAttribute("FileDescription",mainForm.editProjectName.text ) ;
+		xmlDoc.documentElement.setAttribute("FileVersion","0.0.0.1" ) ;
+		xmlDoc.documentElement.setAttribute("ProductVersion","0.0.0.1" );
+		
+ 		var companyName = ide.getConfig("project_CompanyName");
+ 		if(#companyName){
+ 			xmlDoc.documentElement.setAttribute("CompanyName",companyName ) ;
+ 		}
+ 		
+ 		var legalCopyright = ide.getConfig("project_LegalCopyright");
+ 		if(!#legalCopyright){
+ 			legalCopyright = "Copyright (C) 作者 " ++ time().year;
+ 		}
+ 		xmlDoc.documentElement.setAttribute("LegalCopyright",legalCopyright ) ;	 
+ 		
+		xmlDoc.documentElement.setAttribute("ver", tostring( _AAUTO_VERSION ) ) ; 
+		xmlDoc.save( projectFile  ); 
+	} 
+	import string.template;
+	var pathMain = fsys.joinpath(dstDir,"main.aau");
+	var strMain = string.load( pathMain );
+	if(strMain){
+		var template = string.template(strMain);
+		strMain = template.format(
+			PRJECTNAME = mainForm.editProjectName.text;
+		)
+		string.save(pathMain,strMain)
+	}
+	/*-------------------------------
+	 * 修改自定义工程属性结束
+	 *-------------------------------*/
+	
+	ide.openDocument(projectFile); 
+	
+	if( mainForm.chkSaveToDefaultDir.checked ){
+		var dir = fsys.getParentDir(dstDir);
+		ide.setConfig("project_default_dir",dir)
+	}
+	mainForm.close();
+}
+mainForm.editProjectDir.text = ide.getProjectDir();
+var tpath = io.splitpath( ide.getProjectPath() );
+mainForm.editProjectFile.text = tpath.file;
+mainForm.editProjectName.text = string.match(ide.getProjectDir(),"\\([^\\]+?)\\$");
+ 
+mainForm.editProjectName.setFocus(0,-1);
+mainForm.show();
+win.loopMessage();
+ 

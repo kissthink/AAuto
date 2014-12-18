@@ -1,0 +1,31 @@
+//common 通用控件
+namespace win.ui.ctrl.common;
+//初始化windows通用控件库支持 
+
+var ctrl =  { 
+	INT dwSize = 8;
+	INT dwICC;
+}
+
+::Comctl32 := ..raw.loadDll("Comctl32.dll");
+/*intellisense(win.ui.ctrl.common)*/
+
+InitCommonControls = Comctl32.api("InitCommonControls","void()","cdcel");
+InitCommonControlsEx = Comctl32.api("InitCommonControlsEx", "INT(struct lpInitCtrls)");
+initEx = function(icc){
+	ctrl.dwICC = icc;
+	InitCommonControlsEx( ctrl ) 
+}
+/*end intellisense*/
+ 
+
+if( _STUDIO_INVOKED == "thread"  )
+    return;
+    
+InitCommonControls();
+
+/**intellisense()
+_CCM_FIRST=@0x2000/*_CCM_FIRST*/
+_CCM_LAST=@0x2200/*_CCM_LAST*/
+_CCM_SETBKCOLOR=@0x2001/*_CCM_SETBKCOLOR*/
+end intellisense**/

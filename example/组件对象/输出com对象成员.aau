@@ -1,0 +1,10 @@
+//获取com对象成员列表 
+
+import com;
+import console;
+
+console.open();
+conn = com.CreateObject("ADODB.Connection"); 
+
+com.DumpTypeInfo(conn) //输出所有成员
+ 

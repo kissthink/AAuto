@@ -1,0 +1,78 @@
+//嵌入FLASH控件
+import win.ui;
+/*DSG{{*/
+var winform = ..win.form(text="嵌入FLASH控件";right=511;bottom=352;parent=...)
+winform.add(
+btn_xcall={cls="button";text="调用Flash函数";left=119;top=313;right=296;bottom=340;db=1;dr=1;z=4};
+btnDump={cls="button";text="显示成员";left=307;top=313;right=395;bottom=340;db=1;dr=1;z=2};
+btnScreen={cls="button";text="全屏";left=403;top=314;right=491;bottom=341;db=1;dr=1;z=3};
+flashBox={cls="custom";left=19;top=16;right=488;bottom=303;db=1;dl=1;dr=1;dt=1;edge=1;z=1}
+)
+/*}}*/
+
+//创建控件
+import com.flash; //换成 win.flashBox 可在桌面上透明显示flash,其他接口用法兼容com.flash
+var flash = com.flash( winform.flashBox ); 
+
+//响应命令 
+flash.command = {
+	msgbox = function( args ){
+		winform.flashBox.fullscreen(false);
+		winform.flashBox.msgbox(args)
+	} 
+	fullscreen = function( args ){
+		..io.print("args",args)
+		winform.flashBox.fullscreen( string.cmp(args,"true") == 0 ); 
+	} 
+}
+
+//导出接口函数 
+flash.external = {
+	addNumbers = function(a,b){
+		winform.flashBox.msgbox("addNumbers被调用,参数:" + a + " " + b) 
+		return a + b;
+	}	
+}
+ 
+//打开swf文件
+flash.movie = "\testCall.swf" 
+flash.play()
+
+winform.btn_xcall.oncommand = function(id,event){ 
+	var str = flash.xcall("callMe",1,2);
+	winform.flashBox.msgbox("FLASH函数返回值:" + str  );
+
+}
+
+winform.btnDump.oncommand = function(id,event){
+	io.open()
+	com.DumpTypeInfo(flash._object)   
+	io.print("按 CTRL+C 关闭此窗口")
+} 
+
+winform.btnScreen.oncommand = function(id,event){
+	winform.flashBox.fullscreen(true);
+	
+}
+
+winform.show(true) 
+win.loopMessage();
+return winform;
+
+/***
+
+//testCall.swf 脚本( AS3.0 )
+
+btnCallAAuto.addEventListener(MouseEvent.CLICK, fl_ClickCallAAuto);
+function fl_ClickCallAAuto(event:MouseEvent):void {
+	fscommand("msgbox", "这是flash调用AAuto的响应");
+}
+ 
+import flash.external.*;
+function callMe(a:uint,b:uint):uint {
+	var result:uint = ExternalInterface.call("addNumbers",a,b);
+	return result;
+}
+ExternalInterface.addCallback("callMe", callMe); 
+
+***/

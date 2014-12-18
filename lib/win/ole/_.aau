@@ -1,0 +1,18 @@
+namespace win.ole;  
+
+ /*intellisense(::)*/
+::Ole32 := ..raw.loadDll("Ole32.dll")
+::Oleaut32  := ..raw.loadDll("Oleaut32.dll")
+/*end intellisense*/
+
+ /*intellisense(::)*/
+::CreateStreamOnHGlobal = Ole32.api("CreateStreamOnHGlobal","int(pointer hGlobal,bool deleteOnRelease,pointer &ppstm)")
+::GetHGlobalFromStream = Ole32.api("GetHGlobalFromStream","int(pointer ppstm,pointer &hGlobal)")
+::SysAllocString = Oleaut32.api("SysAllocString","pointer( string psz)") 
+::SysFreeString = Oleaut32.api("SysFreeString","pointer(pointer bstr)")  
+::CoTaskMemFree := Ole32.api("CoTaskMemFree","void(POINTER hMem)" ) 
+/*end intellisense*/
+
+/**intellisense()
+win.ole = Ole32.dll,Oleaut32.dll½Ó¿Úº¯Êý
+end intellisense**/

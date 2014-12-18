@@ -1,0 +1,47 @@
+
+import inet.url;
+import inet.urlpart
+
+
+var str  ="
+需要传递特殊字符的场合，我们只要先将欲传递的内容先以UrlEncode 加以编码，
+就可以保证所传递过去的值可以顺利被读到，而UrlDecode 方法则是将编码过的内容译码...
+"
+
+io.open()
+
+str  = inet.url.encode(str);
+io.print("Url Encode 编码" )
+io.print( str );
+
+str  = inet.url.unEscape(str)
+io.print("Url Encode 解码" )
+io.print( str );
+ 
+url = "http://www.ecranesoft.com/bbs/showtopic-7374.aspx#name?username=用户名"
+
+turl = inet.url.split(url ); 
+io.print("inet.url.split()函数 拆分URL" )
+io.print( "协议",turl.scheme )
+io.print( "主机",turl.host )
+io.print( "路径",turl.path )
+io.print( "参数",turl.extraInfo ) 
+io.print( "完整URL",turl.tostring() ) 
+
+io.print() 
+io.print( "url参数(不带问号)",inet.urlpart.getQuery(url) )
+
+io.print() 
+io.print("计算哈希值",inet.url.hashNum(url))
+
+io.print() 
+io.print("转换URL相对路径",inet.url.joinpath(url,"../test.aspx"))
+
+io.print() 
+io.print( "mailto:web@ecranesoft.com是OPAQUE URL吗"
+	,inet.url.is("mailto:web@ecranesoft.com"
+		,0x1/*_URLIS_OPAQUE*/)
+	)
+	
+execute("pause") //按任意键继续
+io.close();//关闭控制台

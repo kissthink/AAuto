@@ -1,0 +1,33 @@
+//lite 自带控件
+import com.lite;
+import com.flash; 
+
+namespace com.flash {
+	class lite {
+		ctor( winform,clsid = "{D27CDB6E-AE6D-11CF-96B8-444553540000}" ){ 
+			if( ocxLite ){
+				ocxLite.createEmbed(winform,clsid,,this) 
+			}
+			else{
+				winform.createEmbed(clsid,this);
+			} 	
+		};
+		@_metaProperty;
+	}
+	
+	namespace lite {
+	
+		initialize = function( ocxFile ){ 
+			ocxLite = ..com.lite(ocxFile);
+			return ocxLite;
+		} 
+		xml = ..com.flash.xml;
+		_metaProperty = ..com.flash._metaProperty; 
+	} 
+}
+
+/**intellisense()
+com.flash.lite(.(winform) = 创建flash控件\n参数为窗体或控件对象
+com.flash.lite.initialize(.($"/flash->ocx") = 载入指定版本的flash控件\n参数用法与 raw.loadDll() 函数相同\n在路径前使用$指令编译为内存OCX,$指令包含的文件不应添加到工程中
+com.flash.lite = 用于支持加载指定版本的flash控件\n注意系统必须已安装flash，该支持库仅用于切换控件版本
+end intellisense**/

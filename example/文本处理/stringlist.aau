@@ -1,0 +1,48 @@
+//字符串列表 
+import console;
+import string.list;
+ 
+var str =  
+/*============================================
+示例一: 遍历配置列表文件所有字段
+============================================*/
+console.log( str );
+
+
+var tlist = string.list( "~/config/use.cfg" );  
+for i,k,v in tlist.each() { 
+	console.log( i,  k + tlist.mark + v ) 
+}
+ 
+var str = 
+/*============================================
+示例二: 使用字符串列表
+============================================*/
+console.log( str );
+
+var str ="
+姓名 = 张三
+年龄 = 30
+住址 = 北京
+"
+
+//创建字符串列表
+var tstringlist = string.list(str)
+
+//保存到文件
+tstringlist.save("/test.txt")
+
+//从文件读取字符串列表
+tstringlist.load("/test.txt")
+
+//访问成员
+console.log( tstringlist.姓名 ) 
+//添加新成员
+tstringlist.工作单位 = "AAuto论坛"
+
+//转换为普通字符串
+str = tostring(tstringlist)
+
+//拼接成网址参数格式
+tstringlist.separator = '&' 
+console.log( tstringlist  )

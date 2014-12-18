@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="gb2312"?>
+<project ver="0.60" name="HTMLayout" libEmbed="true" icon="" CompanyName="" FileDescription="" LegalCopyright="" ProductName="" InternalName="" FileVersion="0.0.1.001" ProductVersion="0.0.1.001" publishDir="/Publish/" ui="win" output="HTMLayout.exe">
+	<file name="main.aau" path="main.aau"/>
+	<folder name="资源文件(web.layout)" path="layout" comment="" embed="true">
+		<file name="titlebar.html" path="layout\titlebar.html" comment="layout\titlebar.html"/>
+		<file name="main.html" path="layout\main.html" comment="layout\main.html"/>
+		<file name="about.html" path="layout\about.html" comment="layout\about.html"/>
+		<folder name="styles" path="layout\styles" comment="layout\styles">
+			<file name="titlebar.css" path="layout\styles\titlebar.css" comment="layout\styles\titlebar.css"/>
+			<file name="main.tabs.css" path="layout\styles\main.tabs.css" comment="layout\styles\main.tabs.css"/>
+			<file name="main.css" path="layout\styles\main.css" comment="layout\styles\main.css"/>
+			<file name="common.css" path="layout\styles\common.css" comment="layout\styles\common.css"/>
+			<folder name="images" path="layout\styles\images" comment="layout\styles\images">
+				<file name="loading.png" path="layout\styles\images\loading.png" comment="layout\styles\images\loading.png"/>
+			</folder>
+		</folder>
+	</folder>
+</project>

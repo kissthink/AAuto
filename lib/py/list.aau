@@ -1,0 +1,80 @@
+//list 列表数组
+import util.metaProperty;
+namespace py;
+	
+class list {
+
+	ctor( object ){ 
+	
+		var tt = type(object) 
+		select(tt) {
+			case type.pointer{ 
+				this.pyList = object;
+			}
+			case type.null{
+				this.pyList = PyList_New();
+			}
+			else {
+				if(object[["pyList"]] )
+					return object; 
+				elseif(object[["pyObject"]] )
+					this.pyList = object[["pyObject"]]; 
+				else{	
+					error("pyObject构造参数不支持此数据类型:" + tt ,2);
+				}
+				..py.IncRef( this.pyList );
+			} 
+		}
+	}
+	@_metaProperty
+}
+
+namespace list {
+
+	_metaProperty = ..util.metaProperty(   
+	
+		_topointer = function(){
+			return owner.pyList;
+		}   
+		getItem = function(k){
+			return owner[k]
+		}  
+		append = function(v){
+			if(v!==nul)PyList_Append(owner.pyList,..py.object(v) ); 
+		}
+		get = function(k){ 
+			var item = PyList_GetItem(owner.pyList,k);
+			if(item){
+				//特例 borrow reference
+				..py.IncRef(item);
+				return ..py.object(  item ) ;
+			} 
+		}
+		set = function(k,v){
+			if(v===null)
+				PyList_DelItem(owner.pyList,k);
+			else {
+			 	PyList_SetItem(owner.pyList,k,..py.object(v) ); 
+			} 
+		}
+		_len = function(){
+			return PyList_Size(owner._pyObject);
+		} 
+		_type = "py.list";
+	) 
+	
+	var dll = assert( ..py._dll,"请先导入py支持库" );
+	PyList_New = dll.api("PyList_New","pyObject()","cdecl")  
+	PyList_GetItem = dll.api("PyList_GetItem","pyObject(PyObject dp,INT key)","cdecl")  
+	PyList_SetItem = dll.api("PyList_SetItem","pyObject(PyObject dp,INT key,pyObject item)","cdecl") 
+	PyList_Append = dll.api("PyList_Append","pyObject(PyObject dp,pyObject item)","cdecl")  
+	PyList_Size = dll.api("PyList_Size","INT(PyObject dp)","cdecl") 
+}
+
+
+/**intellisense()
+py.list() = 创建新的字典对象\n!pyList. 
+!pyList.get("键名") = 返回成员
+!pyList.get() = !pyObject.
+!pyList.append(.(对象) = 追加到列表
+end intellisense**/

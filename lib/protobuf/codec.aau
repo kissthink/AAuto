@@ -1,0 +1,61 @@
+//codec ±à½âÂë
+namespace protobuf;
+ 
+class codec{ 
+ 
+    set_value = function(number) { 
+    
+    	if( number <= 2_1111111 ){
+    		return ..string.pack(number);
+    	}
+		
+        var str = ..string.format("%b",number);  
+        var string_array = {};
+        var pre = '1';
+        
+        while ( #str > 0 ) {
+            if ( #str < 8 ) {
+                str = ..string.repeat(7 - #str % 7,"0") ++ str; 
+                pre = '0';
+            }
+             
+            ..table.push(
+            	string_array,
+            	( tonumber( pre ++ ..string.right(str,7) ,2 ) )
+            )
+          
+            str = ..string.left( str,#str - 7);
+            pre = '1';
+            if (str == '0000000')
+                break;
+        }
+        
+        return ..string.pack( string_array ); 
+    }
+   
+    get_value = function(str) { 
+        var valuestring = '';
+        var string_length = #str ;
+
+        var i = 2;
+
+        while (string_length > i) { 
+            valuestring = ..string.sub(str, i, i+6) ++ valuestring;
+            i += 8;
+        } 
+		return tonumber(valuestring,2);
+    }
+  
+    hex_to_str = function(hex) {
+        var str = '';
+
+		for(i=1;#hex;2){
+			 str = str ++ ..string.pack( 
+			 	( tonumber( ..string.sub(hex, i, i+1),16) )  
+			 ); 
+		}
+		
+        return str;
+    }
+
+} 

@@ -1,0 +1,23 @@
+//遍历目录
+import fsys;
+
+//打开控制台窗口
+io.open();
+ 
+//批量处理文件
+fsys.enum(  io._exedir + "\lib", //指定要遍历的目录
+			"*.*", //指定查询文件名，支持windows掩码
+			function(dir,filename,fullpath,findData){ //指定触发器
+				if(filename){ 
+           			io.print("发现文件：",fullpath )
+				}
+				else{
+					io.print("发现目录：",dir)
+				}
+			} 
+		  ); 
+ 
+io.print( "临时目录",fsys.getTempDir() );
+io.print( "桌面目录",fsys.getSpecial( 0x0000 /*_CSIDL_DESKTOP*/  ) );
+ 
+ 

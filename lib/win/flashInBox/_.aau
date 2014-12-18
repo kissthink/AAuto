@@ -1,0 +1,190 @@
+//flashInBox 透明Flash窗口
+/*
+f-in-box.dll 需要购买商业许可，详请请查看官方网站
+http://www.f-in-box.com/dll/order.html 
+*/
+import win.ui;
+import win.guid;
+namespace win;
+
+var NMHDR_L = ..win.ui.NMHDR;
+
+class flashInBox {
+
+	ctor( tParam,tansparnet,flags = 2/*_FPCS_NEED_ALL_KEYS*/ ){
+		if(!__ocxCode) {
+			var x,e = initialize(); 
+			if( !x ) return null,e;
+		}
+		
+		tParam = ..table.mixin(  { mode="popup";bottom=399;right=599 },tParam ); 
+		tParam.style = flags | ( tParam.style : 0 ); 
+		
+		tParam.className = topointer( FPC_GetClassAtom(__ocxCode) ) ;
+		if( !tParam.className )
+			error("FPC_GetClassAtom failed! ",2); 
+		
+		if( tansparnet ){
+			tParam = ..table.mixin( tParam,{
+				exmode = "none";
+				mode = "popup";
+				border = "none"
+			} );
+			
+			tParam.exstyle = 0x80000/*_WS_EX_LAYERED*/ | ( tParam.exstyle : 0);	
+		}
+		 
+		this._form =  ..win._form( tParam )   
+		this.hwnd  = this._form.hwnd;
+		
+		var hr,pObject = FPC_QueryInterface(this.hwnd,..win.guid.fromString("{00020400-0000-0000-C000-000000000046}") );
+		if(  (hr)>=0/*_SUCCEEDED*/ ){
+			this._object = ..com.QueryObject( pObject )  
+			..com.Release(pObject)
+		}
+		else {
+			error("获取COM接口失败",2) 
+		}
+
+		this._form.isDialogMessage = function(hwnd,msg){ }; 
+		this._form._onDestroy = function(){ 
+			//必须按以下顺序释放资源
+			collectgarbage("collect") 
+			if( ..com.IsObject(this._object) ){
+				..com.ReleaseConnection(this._object); 
+				..com.Release(this._object) 
+			}
+		} 
+		 
+		var sink, cookie =  ..com.Connect(this._object, this );
+	}; 
+	show = function(x){
+		this._form.show(x);
+	}
+	putMovie = function( moviePath){
+		var spm = SFPCPutMovieFromMemory();  
+		spm.lpData = ( #moviePath < 0x104/*_MAX_PATH*/ ) ? ..string.load(moviePath) : moviePath;
+		if( ! spm.lpData ){
+			error("加载flash失败",2)
+		}
+		spm.dwSize = #spm.lpData; 
+		 
+		return ::SendMessageByStruct(this.hwnd,0x1402/*_FPCM_PUTMOVIEFROMMEMORY*/,0,spm)
+	};
+	loadMovie = function(layer=0,url){
+		var spm = SFPCPutMovieFromMemory();  
+		spm.lpData = ( #moviePath < 0x104/*_MAX_PATH*/ ) ? ..string.load(moviePath) : moviePath;
+		if( ! spm.lpData ){
+			error("加载flash失败",2)
+		}
+		spm.dwSize = #spm.lpData; 
+		
+		return FPCLoadMovieFromMemory(this.hwnd,layer,spm.lpData,spm.dwSize);
+	};
+	putStandardMenu = function(bEnable){
+		FPC_PutStandardMenu(owner.hwnd,bEnable);
+	}; 
+	@_metaProperty;
+}
+
+import com.flash; 
+
+namespace flashInBox {
+	xml = ..com.flash.xml;
+	_metaProperty = ..com.flash._metaProperty;
+	
+	var dll = ..raw.loadDll($"~\lib\win\flashInBox\.dll\f_in_box.dll","f_in_box.dll")
+	_dll = dll;
+	 
+	FPCIsFlashInstalled = dll.api("FPCIsFlashInstalled","bool()" );
+	FPC_LoadRegisteredOCX = dll.api("FPC_LoadRegisteredOCX","pointer()" );
+	FPC_LoadOCXCodeFromMemory = dll.api("FPC_LoadOCXCodeFromMemory","pointer(pointer ocx,INT size)" );
+	FPC_UnloadCode = dll.api("FPC_UnloadCode","bool(POINTER hFPC)" );
+	FPC_CanUnloadNow = dll.api("FPC_CanUnloadNow","bool(POINTER hFPC)" );
+	FPC_GetHFPC = dll.api("FPC_GetHFPC","pointer(addr hwnd)" ); 
+	
+	FPCIsTransparentAvailable = dll.api("FPCIsTransparentAvailable","bool()" );
+	FPC_EnableSound = dll.api("FPC_EnableSound","void(pointer hFPC, bool bEnable)" );
+ 
+	FPC_GetClassAtom = dll.api("FPC_GetClassAtomA","WORD(POINTER hFPC)")
+	FPCLoadMovieFromMemory = dll.api("FPCLoadMovieFromMemory","bool(addr hwndFlashPlayerControl,int layer, pointer lpData, INT dwSize)" );  
+	
+	FPC_PutStandardMenu = dll.api("FPC_PutStandardMenu","bool(addr hwndFlashPlayerContro,bool bEnable)" ); 
+	FPC_QueryInterface = dll.api("FPC_QueryInterface","int(addr hwndFlashPlayerContro,struct iid,pointer &ppObject)" );  
+	 
+	enableSound = function(s){
+		if(ocxCode) FPC_EnableSound(ocxCode,s);
+	}
+	
+	//初始化flash
+	initialize = function( ocxFile ){
+		if( __ocxCode ) return null,"OCX was already initialized";
+		
+		if(FPCIsTransparentAvailable() = 0){
+			return null,"Flash Transparent Not Available"; 
+		} 
+		
+		if(FPCIsFlashInstalled() = 0){
+			return null,"Flash Not Installed";
+		} 
+		
+		if( #ocxFile ){ 
+			__ocxCode = FPC_LoadOCXCodeFromMemory(ocxFile,#ocxFile);
+		}
+		else { 	
+			__ocxCode = FPC_LoadRegisteredOCX();
+		}
+		
+		
+		if( !__ocxCode ){
+			return null,"Load Flash OCX failed"; 
+		}
+		  
+		return __ocxCode; 
+	}
+	 
+ 	..table.add_gc(self,function(){
+ 		if( __ocxCode && FPC_CanUnloadNow(__ocxCode) ){
+ 			FPC_UnloadCode(__ocxCode);  
+ 		}
+ 	} ); 
+ 	
+	class SFPCPutMovieFromMemory{ 
+    	pointer lpData; 
+    	INT dwSize; 
+	} 
+	 
+	class SFPCFlashCallInfoStruct  {    
+    	struct hdr = NMHDR_L(); 
+    	string request;
+	};
+}
+
+/**intellisense()
+win.flashInBox = 透明Flash窗口支持库
+win.flashInBox._dll = !dllModule.
+win.flashInBox.enableSound(.(是否播放声音) = 设置声音
+win.flashInBox.initialize(.(flash控件内存数据) = 初始化flash控件,失败返回空值\n系统如果未安装flash控件则返回空值\n可选自内存数据加载特定版本OCX,但仍然需要系统已安装flash\n省略参数则加载系统安装的版本
+win.flashInBox(.(窗体构造参数,是否透明) = 所有参数可选,\n参数一完全兼容win.form对象
+win.flashInBox() = !com_flash.
+_FPCS_TRANSPARENT=@1/*_FPCS_TRANSPARENT*/
+_FPCS_NEED_ALL_KEYS=@2/*_FPCS_NEED_ALL_KEYS*/
+_FPCS_ATTACH_TO_PARENT_INTERNAL=@8/*_FPCS_ATTACH_TO_PARENT_INTERNAL*/
+_FPCS_ATTACH_TO_PARENT=@0x40000009/*_FPCS_ATTACH_TO_PARENT*/
+_FPCS_OPAQUE=@0x10/*_FPCS_OPAQUE*/
+_FPCM_FIRST=@0x1400/*_FPCM_FIRST*/
+_FPCM_QUERYINTERFACE=@0x1401/*_FPCM_QUERYINTERFACE*/
+_FPCM_PUTMOVIEFROMMEMORY=@0x1402/*_FPCM_PUTMOVIEFROMMEMORY*/
+_FPCM_LOADMOVIEFROMMEMORY=@0x1403/*_FPCM_LOADMOVIEFROMMEMORY*/
+_FPCM_GET_FRAME_BITMAP=@0x1404/*_FPCM_GET_FRAME_BITMAP*/
+_FPCM_PUT_STANDARD_MENU=@0x1405/*_FPCM_PUT_STANDARD_MENU*/
+_FPCM_GET_STANDARD_MENU=@0x1406/*_FPCM_GET_STANDARD_MENU*/
+_FPCM_PUT_OVERALL_OPAQUE=@0x1408/*_FPCM_PUT_OVERALL_OPAQUE*/
+_FPCM_GET_OVERALL_OPAQUE=@0x1409/*_FPCM_GET_OVERALL_OPAQUE*/
+_FPCM_PUT_MOVIE_USING_STREAM=@0x140A/*_FPCM_PUT_MOVIE_USING_STREAM*/
+_FPCM_LOAD_MOVIE_USING_STREAM=@0x140B/*_FPCM_LOAD_MOVIE_USING_STREAM*/
+_FPCM_CALL_FUNCTION=@0x140C/*_FPCM_CALL_FUNCTION*/
+_FPCM_SET_RETURN_VALUEA=@0x140E/*_FPCM_SET_RETURN_VALUEA*/
+_FPCN_FIRST=@0x13FF/*_FPCN_FIRST*/
+_FPCN_FLASHCALL=@0x13FB/*_FPCN_FLASHCALL*/
+end intellisense**/

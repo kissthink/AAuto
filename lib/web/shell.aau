@@ -1,0 +1,50 @@
+//shell 浏览器外壳接口
+import web.form
+import com.shell;
+namespace web
+
+class shell{
+	ctor( obj ){ 
+		if(  ..com.GetTypeInfo(obj.document).GetDocumentation().name != "DispHTMLDocument" ){
+			return;
+		} 
+ 
+		this._form = { web = this}
+		try{
+			this._form.hwnd = obj.HWND  
+		}
+		 
+		this._object = obj;
+		this._browser = this._object;   
+		try{
+			var sink, cookie =..com.Connect(this._browser, this );
+		}
+	}; 
+	 
+	@_metaProperty;
+}
+
+namespace shell {  
+	_metaProperty =  ..web.form._metaProperty  
+	each = function(){
+		var iter_raw,obj,ind = ..com.shell.eachWindows();
+		return function(ind){ 
+			var ok,ind,obj = call(iter_raw,owner,ind);   
+			while(ok ? obj ?  ..com.GetTypeInfo(obj.document).GetDocumentation().name != "DispHTMLDocument" ){
+				ok,ind,obj = call(iter_raw,owner,ind);
+			} 
+			return ind,(obj ? ..web.shell(obj));
+		},obj,ind
+	}  
+} 
+ 
+//自动提示
+/******intellisense( ) 
+web.shell = 使用WebBowser对象创建web窗口
+web.shell( __/*WebBowser对象*/ ) = 创建web窗口 
+web.shell.each = @for(i,wb in web.shell.each() ){ 
+	io.print( wb.location );
+} 
+?web.shell = !wb.  
+?web.shell.each = !wb.
+end intellisense******/

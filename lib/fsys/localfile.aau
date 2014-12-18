@@ -1,0 +1,66 @@
+//localfile 资源路径本地化
+import fsys;
+namespace fsys;
+
+class localfile{
+	ctor( path,extname ){ 
+		if( #path > 0x104/*_MAX_PATH*/){
+			var bin = path;
+			this._tempdir= ..io.tmpname( ..string.random(5) );
+			..fsys.createDir(this._tempdir);
+			
+			this._path = ..fsys.joinpath( this._tempdir, ..string.concat(..string.random(5),extname) );
+			..string.save(this._path,bin );
+			..table.gc(this,"free");
+		}
+		elseif( ..io.localpath(path) ) {
+			if(  not  ..io.exist(path) ){
+				var bin = ..string.load(path); 
+				if( !bin ) return;
+				
+				var p = ..io.splitpath(path);
+				this._tempdir= ..io.tmpname( p.name );
+				..fsys.createDir(this._tempdir);
+				
+				this._path = ..fsys.joinpath( this._tempdir,p.file );
+				..string.save(this._path,bin );
+				..table.gc(this,"free");
+			}
+			else {
+				this._path = ..io.fullpath(path)
+			} 
+		}
+		else {
+			this._path = path;
+		}
+		path = null; extname = null;
+	};
+	temp = function(){
+		return this._tempdir;
+	};
+	free = function(){
+		if( this._tempdir ) ..fsys.delete( this._tempdir )
+	};
+	path = function(){
+		return this._path;
+	};
+	@_meta;
+}
+
+namespace localfile{
+	_meta =  {
+		_tostring = function(){
+			return owner._path;
+		}
+	}
+}
+
+/**intellisense()
+fsys.localfile = 资源路径本地化
+fsys.localfile(.("/rest/") = 创建资源文件路径本地化对象,\n该对象用于保证资源文件返回的是本地路径\n路径会保持原来的文件名
+fsys.localfile(.(内存数据,".默认后缀名") = 参数@1长度大于260字节,\n则使用指定的后缀名生成临时文件保存该数据
+fsys.localfile() = !fsys_localfile.
+!fsys_localfile.path() = 本地化的完整路径
+!fsys_localfile.temp() = 如果创建了临时文件则返回临时目录\n如果该函数返回值为空则path为普通路径
+!fsys_localfile.free() = 删除临时文件
+end intellisense**/

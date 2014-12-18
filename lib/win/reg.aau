@@ -1,0 +1,375 @@
+//reg 注册表操作
+namespace win; 
+
+class reg{
+	ctor( rpath,check,root,samDesired,createOption,securityAttributes){
+		if( type(rpath) != type.string ) error("注册表路径必须是字符串对象",2);
+		
+		if(!root){
+			this.path = rpath;
+			var sep = ..string.indexAny( rpath,"\" );  
+			if(sep){
+				var lpath = ..string.left(rpath,sep-1);
+				rpath = ..string.sub(rpath,sep+1) 
+				root = assert( __predefinedKeys[lpath],'错误的注册表路径\n注册表路径必须使用斜杠"\\"分隔路径'); 
+			}
+			else{
+	   			this.handle = __predefinedKeys[rpath]
+	   			assert( this.handle,"错误的注册表路径");  
+			}
+		}
+		 
+		if(not this.handle){
+			var retrySamDesired;
+			if( samDesired===null){
+				samDesired = 0xF003F/*_KEY_ALL_ACCESS*/;
+				retrySamDesired = true; 
+			}
+			elseif( ( samDesired & ~( 0x200/*_KEY_WOW64_32KEY*/   | 0x0100/*_KEY_WOW64_64KEY*/ ) ) == 0  ) {
+				samDesired = samDesired | 0xF003F/*_KEY_ALL_ACCESS*/;
+				retrySamDesired = true;  
+			}
+			
+			var re,tempkey = RegOpenKeyEx( root ,rpath ,0,samDesired,0 ); 
+			if( re==0x5/*_ERROR_ACCESS_DENIED*/ && retrySamDesired  ){
+				samDesired = samDesired & ( 0x200/*_KEY_WOW64_32KEY*/   | 0x0100/*_KEY_WOW64_64KEY*/ ); 
+				re,tempkey = RegOpenKeyEx( root ,rpath ,0,0x20019/*_KEY_READ*/ | 0x20006/*_KEY_WRITE*/ | samDesired,0 ); 
+				if( re==0x5/*_ERROR_ACCESS_DENIED*/  ){
+					re,tempkey = RegOpenKeyEx( root ,rpath ,0,0x20019/*_KEY_READ*/ | samDesired,0 ); 
+					if( re==0x5/*_ERROR_ACCESS_DENIED*/  ){  
+						re,tempkey = RegOpenKeyEx( root ,rpath ,0,0x20000/*_STANDARD_RIGHTS_READ*/ | 0x1/*_KEY_QUERY_VALUE*/ | samDesired,0 );
+					} 
+				}
+			} 
+			
+			if( !tempkey ){
+				if(check)
+					return null,"打开注册表出错!",re; 
+					
+				if(!securityAttributes) securityAttributes = {};
+				if(createOption===null)createOption = 0/*_REG_OPTION_NON_VOLATILE*/;
+				re,tempkey,disposition = RegCreateKeyEx( root ,rpath,0,/*lpClass*/,createOption,samDesired,securityAttributes,0,0 );
+					
+				if( re==0x5/*_ERROR_ACCESS_DENIED*/  ){
+					samDesired = samDesired & ( 0x200/*_KEY_WOW64_32KEY*/   | 0x0100/*_KEY_WOW64_64KEY*/ );
+					re,tempkey,disposition = RegCreateKeyEx( root ,rpath,0,/*lpClass*/,createOption
+					,samDesired | 0x20019/*_KEY_READ*/ | 0x20006/*_KEY_WRITE*/,securityAttributes,0,0 );
+				}
+			}
+			 
+     		if (re != 0/*_ERROR_SUCCESS*/ )
+        		return null,"打开注册表出错!",re;
+     		 
+        	this.handle = tempkey; 
+        }
+        
+	};
+	openReg = function(subpath, check ){
+		reg =  ..win.reg(subpath,check,this.handle,samDesired,createOption,securityAttributes);
+		if(reg){
+			reg.path =  ..string.concat(this.path , "\" , subpath);
+			return reg;
+		}
+	};
+	eachKey = function(len=256){ 
+		var index = 0;
+		return function(){
+		import win;
+			var re,lpName,lpcbName,lpClass,lpcbClass,lpftLastWriteTime = RegEnumKeyEx(this.handle,index,len,len,/*lpReserved*/, ,0, ::FILETIME() );
+	 
+			if (re != 0/*_ERROR_SUCCESS*/ )
+				return null;
+			index++;
+			return ..string.str(lpName),lpftLastWriteTime;
+		}
+	
+	};
+	enumKey = function(proc,len=256){
+		var tkeys ={};
+		for(keyname,writetime in this.eachKey() ){
+			//先取回所有的节点，防止回调函数删除节点，迭代器数字索引错位
+			..table.push(tkeys,keyname);  
+		}
+		
+		var subreg;
+		for(i=1;#tkeys){
+			subreg=this.openReg(tkeys[i]); 
+			subreg.enumKey(proc,len);//迭代
+			subreg.close();
+			
+			proc(this,tkeys[i]); 
+		} 
+
+	};
+	eachValue = function (len = 256) {
+		var index = 0;
+		return function () {
+			var re, valuename, valuenamelen, vType, data, datalen = RegEnumValue(this.handle, index, len, len, , 0, len, len);
+			
+			if (re == 0x103/*_ERROR_NO_MORE_ITEMS*/)
+				return null;
+			
+			if ( data && ( vType == 0x1/*_REG_SZ*/ || vType == 0x2/*_REG_EXPAND_SZ*/ ) )
+				data = ..string.str(data);
+			elseif ( Type == 7/*_REG_MULTI_SZ*/ || vType == 0x3/*_REG_BINARY*/ )
+				data = ..string.left(data, datalen); 
+			else {
+				if( vType == 0x4/*_REG_DWORD*/){
+					data = ..raw.convert(data,{INT v }).v; 
+				}
+				elseif( vType == 0x5/*_REG_DWORD_BIG_ENDIAN*/){
+					data = ..raw.convert(data,{WORD a;WORD b });
+					data = ..raw.convert({WORD a = data.b;WORD b = data.a },{INT v }).v;	 
+				}
+				elseif( vType == 0xB/*_REG_QWORD*/){
+					data = ..raw.convert(data,{ LONG v }).v;
+				}
+			}
+			
+			index++;
+			return ..string.str(valuename), data, vType;
+		}
+	};
+	setDwValue = function( name,value) {
+		var res=RegSetValueEx( this.handle,name,0,0x4/*_REG_DWORD*/,{INT dw = value },4);
+		return (res==0/*_ERROR_SUCCESS*/) ;
+	};
+	setDwValueBigEndian = function( name,value) { 
+		value = ..raw.convert({ INT v = value} ,{WORD a;WORD b });
+		value = ..raw.convert({WORD a = value.b;WORD b = value.a },{INT v }).v;		
+		res=RegSetValueEx( this.handle,name,0,0x4/*_REG_DWORD*/,{INT dw = reverseEndian(value) },4);
+		return (res==0/*_ERROR_SUCCESS*/) ;
+	};
+	setQwValue = function( name,value,value2) {
+		var res=RegSetValueEx( this.handle,name,0,0xB/*_REG_QWORD*/,{INT dw = value;INT dw2 = value2 },8);
+		return (res==0/*_ERROR_SUCCESS*/) ;
+	};
+	setSzValue = function( name,value)  {
+		var res=RegSetValueExString( this.handle,name,0,0x1/*_REG_SZ*/,value,#value+1);
+		return (res==0/*_ERROR_SUCCESS*/) ;
+	};
+	setMultiSzValue = function( name,...)  {
+    	var v,v2 = ...;
+    	if( v2 ) t = {...};
+    	if( type(v) == type.table )   v = ..string.join(v,'\0');
+    	if(  ..string.endWith( v,'\0\0') == false) v ++= '\0\0';
+		var res =RegSetValueExString( this.handle,name,0,0x7/*_REG_MULTI_SZ*/,v,#v );
+		return (res == 0/*_ERROR_SUCCESS*/ ) ;
+	};
+	setBinValue = function( name,value) { 
+		var res=RegSetValueExString( this.handle,name,0,0x3/*_REG_BINARY*/,value,#value);
+		return (res==0/*_ERROR_SUCCESS*/) ;
+	};
+	queryValue = function(name) { 
+     	var r,t,len = RegQueryValueExLen( this.handle,name,0,0,null,0);
+     	
+     	select(t) { 
+     		case 0x1/*_REG_SZ*/,0x2/*_REG_EXPAND_SZ*/ {
+     			r,t,p,len = RegQueryValueExStr( this.handle,name,0,0,len,len); 
+     			if( p ) return ..string.str(p),t;
+     		}
+     		case 0x4/*_REG_DWORD*/ {
+     			r,t,p,len = RegQueryValueEx( this.handle,name,0,0,{INT val },len);
+     			return p.val,t;
+     		}
+     		case 0x7/*_REG_MULTI_SZ*/,0x3/*_REG_BINARY*/ {
+     			r,t,p,len = RegQueryValueExString( this.handle,name,0,0,len,len); 
+     			return p,t;
+     		} 
+     		case 0xB/*_REG_QWORD*/ {
+     			r,t,p,len = RegQueryValueEx( this.handle,name,0,0,{INT a;INT b },len);
+     			return p ,t;
+     		}   
+     		case 0x5/*_REG_DWORD_BIG_ENDIAN*/ {
+     			r,t,p,len = RegQueryValueEx( this.handle,name,0,0,{WORD a;WORD b },len);
+     			p = ..raw.convert({WORD a = p.b;WORD b = p.a },{INT v }).v
+     			return p ,t;
+     		}
+     	}
+     	return null;
+ 	};
+	delValue = function(name) {
+		var res=RegDeleteValue(this.handle,name);
+		return (res==0/*_ERROR_SUCCESS*/) 
+	};
+	delKey = function(name) {
+		var res=RegDeleteKey(this.handle,name); 
+		return (res==0/*_ERROR_SUCCESS*/) 
+	};
+	delKeyTree = function(name) {
+		var k = this.openReg(name,true);
+		if(!k) return false;
+		
+		k.enumKey(
+        	function(cur,kn){
+            	RegDeleteKey(cur.handle,kn); 
+        	}
+    	)
+    	k.close();
+    	
+		var res=RegDeleteKey(this.handle,name); 
+		return (res==0/*_ERROR_SUCCESS*/) 
+	};
+	close = function(){
+     	if (this.handle)
+     	{
+         	RegCloseKey(this.handle);
+         	this.handle=null;
+     	}
+	};
+	save = function( filepath ){   
+        setprivilege('SeBackupPrivilege',true)     
+        ret = RegSaveKey(this.handle, ..io.fullpath(filepath) );  
+        return !ret   
+  	
+	};
+	load = function(filepath){   
+        setprivilege('SeRestorePrivilege',true)   
+        ret = RegRestoreKey(this.handle, ..io.fullpath(filepath) ,0x00000008/*_REG_FORCE_RESTORE*/  ) 
+        return !ret;
+	}; 
+}
+
+//类有独立的名字空间
+namespace reg{    
+	::Advapi32 :=  ..raw.loadDll("Advapi32.dll")
+	RegCreateKeyEx = Advapi32.api("RegCreateKeyExA","int( addr hKey,str subKey,INT Reserved,str lpClass,INT opt,INT samDesired,struct lpSecurityAttributes,addr &phk,INT &lpdwDisposition)" );
+	RegOpenKeyEx = Advapi32.api("RegOpenKeyExA","int(addr hKey,string subKey,INT ulOpt,INT samDesired,addr &phk)" ); 
+	RegCloseKey = Advapi32.api("RegCloseKey","int(addr hKey)" );
+	RegDeleteValue = Advapi32.api("RegDeleteValue","int(addr hKey,string name)" )
+	RegDeleteKey = Advapi32.api("RegDeleteKeyA","int(addr hKey,string lpSubKey)" )
+ 	
+	RegSetValueEx = Advapi32.api("RegSetValueExA","int(addr hKey,string name,INT Reserved,INT dwType,struct lpData,INT cbData)" ); 
+	RegQueryValueEx = Advapi32.api("RegQueryValueExA","int(addr hKey,string name,INT Reserved,INT &dwType,struct&lpData,INT&lpcbData)" ); 
+	RegSetValueExString = Advapi32.api("RegSetValueExA","int(addr hKey,string name,INT Reserved,INT dwType,string lpData,INT cbData)" ); 
+	RegQueryValueExString = Advapi32.api("RegQueryValueExA","int(addr hKey,string name,INT Reserved,INT &dwType,string&lpData,INT&lpcbData)" ); 
+	RegQueryValueExStr = Advapi32.api("RegQueryValueExA","int(addr hKey,string name,INT Reserved,INT &dwType,str&lpData,INT&lpcbData)" ); 
+	RegQueryValueExLen = Advapi32.api("RegQueryValueExA","int(addr hKey,string name,INT Reserved,INT &dwType,pointer lpData,INT&lpcbData)" ); 
+ 	
+    RegSaveKey =  Advapi32.api("RegSaveKeyA","int(addr hKey,string lpFile,pointer lpSecurityAttributes)")
+    RegRestoreKey = Advapi32.api("RegRestoreKeyA","int(addr hKey,string lpFile,int dwFlags)")
+    
+    RegEnumValue = Advapi32.api("RegEnumValueA","int(addr hKey,int dwIndex,string &name,int& lpcbValueName,pointer lpReserved,int& lpType,string& lpData,int& lpcbData)")
+    RegEnumKeyEx = Advapi32.api("RegEnumKeyExA","int(addr hKey,int dwIndex,string &lpName,int& lpcbName,pointer lpReserved,string  lpClass,int& lpcbClass,struct& lpftLastWriteTime)")
+	RegOverridePredefKey = Advapi32.api("RegOverridePredefKey","int(addr hKey,addr lpSubKey)" )
+	
+	namespace __predefinedKeys{
+		HKEY_CLASSES_ROOT=0x80000000;
+		HKCR=0x80000000;
+		HKEY_CURRENT_USER=0x80000001;
+		HKCU=0x80000001;
+		HKEY_LOCAL_MACHINE=0x80000002;
+		HKLM=0x80000002;
+		HKEY_USERS=0x80000003;
+		HKEY_PERFORMANCE_DATA=0x80000004;
+		HKEY_PERFORMANCE_TEXT=0x80000050;
+		HKEY_PERFORMANCE_NLSTEXT=0x80000060;
+		HKEY_CURRENT_CONFIG=0x80000005;
+		HKEY_DYN_DATA=0x80000006;
+		HKEY_CURRENT_USER_LOCAL_SETTINGS=0x80000007;
+	}  
+	
+	overridePredefinedKey = function(pred,rpath,proc){
+		var predKey = pred ? __predefinedKeys[pred]
+	   	if(!predKey) error("错误参数@1:注册表预定义键名字错误",2);
+	   	
+	   	if( type(rpath) != type.string ) error("错误参数@2:注册表重定向路径必须是字符串对象",2);
+	   	if( __predefinedKeys[rpath] ) error("错误参数@2:注册表重定向路径不能是根键名字",2);
+	   	var reg,err = ..win.reg(rpath);
+	   	if(!reg) return null,err;
+	   	
+	   	if(!proc) error("错误参数@3:请指定回调函数",2);
+	   	var err = RegOverridePredefKey(predKey,reg.handle);
+	   	reg.close();
+	   	
+	   	if( 0x0/*_ERROR_SUCCESS*/ == err ){
+	   		proc();
+	   		RegOverridePredefKey(predKey,0); 
+	   		return true;
+	   	}
+	}
+}
+
+regWow64 = function(rpath,check,root,samDesired,createOption,securityAttributes){
+	if(samDesired===null) samDesired = 0xF003F/*_KEY_ALL_ACCESS*/;
+	return reg(rpath,check,root, ( samDesired & ~0x200/*_KEY_WOW64_32KEY*/ ) | 0x0100/*_KEY_WOW64_64KEY*/
+		,createOption,securityAttributes )
+}
+
+regWow32 = function(rpath,check,root,samDesired,createOption,securityAttributes){
+	if(samDesired===null) samDesired = 0xF003F/*_KEY_ALL_ACCESS*/;
+	return reg(rpath,check,root, ( samDesired & ~0x0100/*_KEY_WOW64_64KEY*/ ) | 0x200/*_KEY_WOW64_32KEY*/
+		,createOption,securityAttributes )
+}
+
+regReader = function(rpath,createOption,securityAttributes){ 
+	return reg(rpath,true,, 0x20019/*_KEY_READ*/,createOption,securityAttributes )
+}
+
+/**intellisense()
+win.reg("HKEY_CURRENT_USER__") = 打开已存在或创建新的注册表路径
+win.reg("HKEY_CURRENT_USER__",true) = 仅仅打开存在的注册表路径，如果不存在返回null
+win.regReader("HKEY_CURRENT_USER__") = 仅仅以只读模式打开存在的注册表路径,如果不存在返回null\n此函数显式指定只读权限速度较快
+win.regWow64("HKEY_LOCAL_MACHINE__") = 打开已存在或创建新的注册表路径,\n仅限在fsys.wow64.disableFsRedirection回调函数中使用\n在64位系统中访问64位注册表
+win.regWow64("HKEY_LOCAL_MACHINE__",true) = 仅仅打开存在的注册表路径,\n仅限在fsys.wow64.disableFsRedirection回调函数中使用\n在64位系统中访问64位注册表,\n如果不存在返回null
+win.regWow32("HKEY_LOCAL_MACHINE__") = 打开已存在或创建新的注册表路径,\n仅限在fsys.wow64.disableFsRedirection回调函数中使用\n在64位系统中访问32位注册表
+win.regWow32("HKEY_LOCAL_MACHINE__",true) = 仅仅打开存在的注册表路径,\n仅限在fsys.wow64.disableFsRedirection回调函数中使用\n在64位系统中访问32位注册表,\n如果不存在返回null
+win.reg.overridePredefinedKey("根键","重定向键",回调函数) = @.overridePredefinedKey("HKEY_CLASSES_ROOT","HKEY_CURRENT_USER\Software\Classes",\n    function(){\n        __/*注册表已成功重定向*/\n    }\n);
+!win_reg.setDwValue("__",) = 设置32位数值
+!win_reg.setDwValueBigEndian("__",) = 设置大端序32位数值
+!win_reg.setQwValue("__",) = 设置64位数值
+!win_reg.setSzValue("__",) = 设置字符串值
+!win_reg.path = 注册表路径
+!win_reg.setMultiSzValue("__",) = 设置复合字符串值
+!win_reg.setBinValue("__",) = 设置二进制值
+!win_reg.queryValue("__") = 查询值
+!win_reg.delValue("__") = 删除值
+!win_reg.delKey("__") = 删除不包含子项的空键
+!win_reg.delKeyTree("__") = 删除包含子项的空键,\n请慎用以避免删除重要的注册表键
+!win_reg.close() = 关闭注册表对象 
+!win_reg.save("/backup__") = 导出注册表到文件
+!win_reg.load("/backup__") = 从文件导入到注册表
+!win_reg.openReg("__") = 打开已存在或创建新的子路径，\n返回新的win.reg对象，
+!win_reg.openReg("__",true) = 仅仅打开已存在的子路径，\n返回新的win.reg对象，\n如果不存在返回null
+!win_reg.eachKey = @for(keyname,writetime in reg.eachKey() ){
+	subreg=reg.openReg(keyname); 
+}
+!win_reg.enumKey = @.enumKey(\n\n	function(\n		reg, /*这是某个子节点(win.reg对象)*/\n		keyname/*这是reg子节点的一个子项的名字*/\n	){  \n		if( reg.delKey(keyname)  )\n			io.print("删除" + keyname + "成功") \n	}  \n) 
+!win_reg.eachValue = @for(name,value,t in reg.eachValue()) {
+	__
+}
+win.regReader() = !win_reg.
+win.regWow32() = !win_reg.
+win.regWow64() = !win_reg.
+win.reg() = !win_reg.
+!win_reg.openReg() = !win_reg.
+!win_reg.openKey() = !win_reg.
+!win_reg.createKey() = !win_reg. 
+
+_REG_BINARY=@0x3/*_REG_BINARY*/
+_REG_CREATED_NEW_KEY=@0x1/*_REG_CREATED_NEW_KEY*/
+_REG_DWORD=@0x4/*_REG_DWORD*/
+_REG_QWORD=@0xB/*_REG_QWORD*/ 
+_REG_DWORD_BIG_ENDIAN=@0x5/*_REG_DWORD_BIG_ENDIAN*/
+_REG_DWORD_LITTLE_ENDIAN=@0x4/*_REG_DWORD_LITTLE_ENDIAN*/
+_REG_EXPAND_SZ=@0x2/*_REG_EXPAND_SZ*/
+_REG_FULL_RESOURCE_DESCRIPTOR=@0x9/*_REG_FULL_RESOURCE_DESCRIPTOR*/
+_REG_LINK=@0x6/*_REG_LINK*/
+_REG_MULTI_SZ=@0x7/*_REG_MULTI_SZ*/
+_REG_NONE=@0x0/*_REG_NONE*/
+_REG_NOTIFY_CHANGE_ATTRIBUTES=@0x2/*_REG_NOTIFY_CHANGE_ATTRIBUTES*/
+_REG_NOTIFY_CHANGE_LAST_SET=@0x4/*_REG_NOTIFY_CHANGE_LAST_SET*/
+_REG_NOTIFY_CHANGE_NAME=@0x1/*_REG_NOTIFY_CHANGE_NAME*/
+_REG_NOTIFY_CHANGE_SECURITY=@0x8/*_REG_NOTIFY_CHANGE_SECURITY*/
+_REG_OPENED_EXISTING_KEY=@0x2/*_REG_OPENED_EXISTING_KEY*/
+_REG_OPTION_BACKUP_RESTORE=@0x4/*_REG_OPTION_BACKUP_RESTORE*/
+_REG_OPTION_CREATE_LINK=@0x2/*_REG_OPTION_CREATE_LINK*/
+_REG_OPTION_NON_VOLATILE=@0x0/*_REG_OPTION_NON_VOLATILE*/
+_REG_OPTION_RESERVED=@0x0/*_REG_OPTION_RESERVED*/
+_REG_OPTION_VOLATILE=@0x1/*_REG_OPTION_VOLATILE*/
+_REG_REFRESH_HIVE=@0x2/*_REG_REFRESH_HIVE*/
+_REG_RESOURCE_LIST=@0x8/*_REG_RESOURCE_LIST*/
+_REG_RESOURCE_REQUIREMENTS_LIST=@0xA/*_REG_RESOURCE_REQUIREMENTS_LIST*/
+_REG_SZ=@0x1/*_REG_SZ*/
+_REG_WHOLE_HIVE_VOLATILE=@0x1/*_REG_WHOLE_HIVE_VOLATILE*/
+end intellisense**/

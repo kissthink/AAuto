@@ -1,0 +1,23 @@
+//字符串列表
+
+io.open();//打开控制台
+
+import string.list;
+tlist = string.list();
+
+tlist.load("/可从指定文件加载.lst")
+
+tlist.a = 123;
+tlist.b = 456;
+tlist.c = 789; 
+
+io.print( tlist.find("b") )
+
+for i,k,v in tlist.each() { 
+	io.print("顺序:"+i,"名字:"+k,"值:"+v ) 
+}
+
+tlist.save("/可保存到文件.lst")
+
+execute("pause") //按任意键继续
+io.close();//关闭控制台

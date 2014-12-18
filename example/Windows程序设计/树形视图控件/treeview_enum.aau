@@ -1,0 +1,39 @@
+//遍历树形控件
+import win.ui;
+/*DSG{{*/
+var winform = ..win.form( bottom=249;parent=...;right=349;text="treeview控件遍的节点" )
+winform.add( 
+btnSelectAll={ bottom=232;right=271;left=172;top=206;z=2;text="全选";cls="button" };
+treeview={ asel=false;bgcolor=15793151;bottom=190;right=326;left=22;cls="treeview";top=17;style=256;z=1;edge=1;exstyle=131072 }
+)
+/*}}*/
+
+var hitem = winform.treeview.insertItem( text="程序目录" );
+var hSubItem = winform.treeview.insertItem( { text="子目录" },hitem/*父节点*/);
+ 
+hitem = winform.treeview.insertItem( { 
+        text = "children数组指定子节点"; 
+        children = { 
+            { text = "子节点"  };
+            { text = "子节点2" };
+        }
+} ) 
+  
+winform.btnSelectAll.oncommand = function(id,event){ 
+ 	
+	winform.treeview.enum(
+		function(hItem,parent){
+			io.print( 
+				"节点",hItem ,
+				"父节点",parent 
+			)					
+			winform.treeview.setChecked(hItem)
+		}
+	)
+} 
+	
+winform.show() 
+win.loopMessage();
+
+ 
+

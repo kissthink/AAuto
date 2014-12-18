@@ -1,0 +1,63 @@
+//监视资源管理器 changeNotification
+
+import win.ui;
+/*DSG{{*/
+var winform = ..win.form( text="请拖动需要监视的文件到下面的文件列表内";bottom=399;parent=...;right=599;max=false )
+winform.add( 
+btnWatch={ bottom=203;right=484;left=332;top=166;z=2;text="开始监视";cls="button" };
+lvChange={ bgcolor=16777215;bottom=384;right=579;left=16;top=212;acceptfiles=1;z=3;edge=1;cls="listview" };
+lvFile={ bgcolor=16777215;bottom=160;right=581;left=18;top=12;acceptfiles=1;z=1;edge=1;cls="listview" }
+)
+/*}}*/
+
+import win.util.changeNotification;
+changeNotification = win.util.changeNotification(winform);
+
+changeNotification.onMakeDir = function(srcPath,destsrcPath){
+	 winform.lvChange.addItem( {srcPath;"创建目录"} )
+}
+changeNotification.onCreate = function(srcPath,destsrcPath){
+	 winform.lvChange.addItem( {srcPath;"创建文件"} )	
+}
+changeNotification.onRenameItem = function(srcPath,destsrcPath){
+	 winform.lvChange.addItem( {srcPath;"重命名文件"} )	
+}
+changeNotification.onRenameFolder = function(srcPath,destsrcPath){
+	 winform.lvChange.addItem( {srcPath;"重命名目录"} )	
+}
+changeNotification.onDelete = function(srcPath,destsrcPath){
+	 winform.lvChange.addItem( {srcPath;"删除文件"} )	
+} 
+changeNotification.onRemoveDir = function(srcPath,destsrcPath){
+	 winform.lvChange.addItem( {srcPath;"删除目录"} )	 
+} 
+
+winform.btnWatch.oncommand = function(id,event){
+	if( winform.btnWatch.text == "开始监视"){
+		changeNotification.deregister();
+		changeNotification.register();
+		winform.btnWatch.text = "停止监视";
+	}
+	else {
+		changeNotification.deregister()
+		winform.btnWatch.text = "开始监视";
+	} 
+} 
+
+winform.lvFile.wndproc = {
+	[0x233/*_WM_DROPFILES*/] = function(hwnd,message,wParam,lParam){
+		var files = win.getDropFile(wParam)
+		for(i=1;#files;1){
+			winform.lvFile.addItem(files[i]) 
+			changeNotification.watch(files[i],true);
+		} 
+	}
+} 
+ 
+winform.lvFile.insertColumn("文件",-1)   
+winform.lvChange.insertColumn("文件",100) 
+winform.lvChange.insertColumn("状态",100) 
+winform.lvChange.fillParent(1);
+
+winform.show() 
+win.loopMessage();

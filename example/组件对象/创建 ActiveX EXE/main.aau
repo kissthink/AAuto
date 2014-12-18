@@ -1,0 +1,44 @@
+import com.activeX;
+
+namespace AAutoCOM{  
+
+	//AAutoCOM为类型库名称,必须将类型描述文件置于 /res/AAutoCOM.tlb 
+	class Test {
+	
+		AAuto = function( code ){
+			var func = loadcode(code)
+			if( func ){
+				return tostring( ( func() ) )
+			}
+		}
+		
+		Add = function(a,b){
+			..io.print("我是com函数，我收到了参数：",a,b)
+			return a + b
+		} 
+		
+		Quit = function(){
+			//ActiveX EXE 必须提供此函数以退出进程
+			..win.quitMessage(); 
+		}
+	}
+}
+
+var activeX = com.activeX("AAutoCOM.Test")
+var ok,message = activeX.main();
+
+if( !ok && !message  ) {  
+	console.log("错误的启动参数,可用的启动参数如下:")
+	console.log("","/r 注册组件")
+	console.log("","/u 卸载组件") 
+	console.log("","/Automation 启动组件")   
+	execute("pause") //按任意键继续
+	io.close();//关闭控制台 
+} 
+elseif( message ){
+	console.log(message); //注册或卸载控件回显信息 
+	console.pause(true);
+}
+else {
+	//ok为真,message为空表示组件成功启动
+}

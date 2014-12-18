@@ -1,0 +1,4 @@
+import win;
+
+ 
+::SendMessage( win.getForeground() ,0x112/*_WM_SYSCOMMAND*/, topointer(0xF170/*_SC_MONITORPOWER*/ ) ,topointer(2) );

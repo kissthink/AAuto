@@ -1,0 +1,32 @@
+import win.ui;
+/*DSG{{*/
+var winform = ..win.form(text="webkit浏览器支持库";right=770;bottom=485;border="none";mode="popup")
+winform.add()
+/*}}*/
+
+//导入webkit支持库
+import web.kit.form;
+import web.kit.jsFunction;
+//import web.kit.fileSystem; //支持嵌入资源文件
+
+//创建webkit浏览器窗口
+var webkit = web.kit.form(winform);
+webkit.go("\html\main.html"); 
+
+//可以使用CSS选择器获取HTML节点对象
+webkit.querySelector("#header .title-bar .title").innerText = "我 的 软 件";
+
+//添加可拖动边框
+import win.ui.resizeBorder;
+win.ui.resizeBorder(winform);
+
+//添加阴影
+import win.ui.shadow;
+win.ui.shadow(winform);
+
+//限定最大化范围
+import win.ui.minmax;
+win.ui.minmax(winform);
+
+winform.show();
+win.loopMessage();

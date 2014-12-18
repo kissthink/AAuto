@@ -1,0 +1,379 @@
+/*
+作者：一鹤
+
+可遵循AAuto许可证在AAuto中自由使用本组件,
+禁止在非AAuto程序中引用本组件的任何部份(包含但不限于 soImage.dll 组件)
+*/ 
+class soImage{
+	ctor( hImage ){ {
+		var t = type(hImage);
+		if( t == type.pointer ){
+			this.hImage = hImage;
+		}
+		else{
+			this.hImage = CreateImageObject();  
+		}
+		
+		..table.add_gc(this,"delete"); 
+	} };
+	@_meta;
+}
+
+namespace soImage{ 
+	
+	_meta = {
+		_get = {
+			delete = function(){
+				if( owner.hImage ){
+					DeleteImageObject(owner.hImage)
+					owner.hImage = null;
+				}
+			}
+			isValid = function(){
+				return ImageIsValid(owner.hImage);
+			}
+			init = function(w=0,h=0,bpp=24,ext){ 
+				return ImageInit(owner.hImage,w,h,bpp,ImageCheckType(ext:"*.bmp") )
+			} 
+			load = function(path){
+				var fullpath = ..io.exist(path)
+				if( fullpath ){
+					return ImageLoad(owner.hImage,fullpath);
+				}	
+				else {
+					var data = ..string.load(path);
+					if( data ){
+						ImageFromString(owner.hImage,data,#data,path);
+					}
+				}
+			}
+			save = function(path){
+				var fullpath = ..io.fullpath(path)
+				if( fullpath ){
+					return ImageSave(owner.hImage,fullpath)
+				}
+			}
+			getBytes = function(ext){
+				if(!ext)ext="*.bmp";
+				var p,len = ImageToString(owner.hImage,ext,0);
+				if(p) return ..raw.tostring(p,1,len);
+			}
+			setBytes = function(buffer,ext){
+				if(!ext)ext="*.bmp";
+				if(!#buffer)return false,"图像数据不能为空";
+				
+				ImageFromString( owner.hImage,buffer,#buffer,ext);
+			}
+			capture = function(hwnd=0,x=0,y=0,cx=0,cy=0){
+				return ImageCapture(owner.hImage,hwnd,x,y,cx,cy);
+			}
+			capture2 = function(hwnd=0,x=0,y=0,cx=0,cy=0){
+				return ImageCapture2(owner.hImage,hwnd,x,y,cx,cy);
+			}
+			fromBitmap = function(hBmp,hPalete){
+				return ImageCreateFromHBITMAP(owner.hImage,hBmp,hPalete);
+			}
+			fromIcon = function(hIcon,xHotspot=0,yHotspot=0){
+				return ImageCreateFromHICON(owner.hImage,hIcon,xHotspot,yHotspot);
+			}
+			toClipBD = function(){
+				return ImageSaveClipBD(owner.hImage);
+			}
+			fromClipBD = function(){
+				return ImageLoadClipBD(owner.hImage);
+			} 
+			getWidth = function(){
+				return ImageWidth(owner.hImage);
+			}
+			getHeight = function(){
+				return ImageHeight(owner.hImage);
+			}
+			clear = function(){
+				return ImageClear(owner.hImage);
+			}
+			resize = function(x,y){
+				return ImageResize(owner.hImage,x,y);
+			} 
+			getDib = function(){
+				return ImageGetDIB(owner.hImage);
+			} 
+			getBits = function(row){
+				var p,len = ImageGetBits(owner.hImage,row,0); 
+				if(p) {
+					var buf = ..raw.malloc(len )
+					::CopyMemory(buf,p,len);
+					return buf;
+				} 
+			} 
+			setBits = function(row,buffer){
+				var p,len = ImageSetBits(owner.hImage,row,buffer,#buffer);
+				if(p) return ..raw.tostring(p,1,len);
+			} 
+			getPixel = function(x,y){
+				return ImageGetPixel(owner.hImage,x,y); 
+			} 
+			setPixel = function(x,y,clr){ 
+				if( type(x)!=type.number )
+					error("xxx",2)
+				ImageSetPixel(owner.hImage,x,y,clr); 
+			} 
+			setTransColor = function(bTrans,nClr){
+				ImageSetTransColor(owner.hImage,bTrans,nClr); 
+			} 
+			getTransColor = function(){
+				ImageGetTransColor(owner.hImage); 
+			}
+			bpp = function(bits){
+				return ImageBpp(owner.hImage,bits);
+			} 
+			crop = function(left,top,right,bottom){
+				ImageCrop(owner.hImage,left,top,right,bottom); 
+			} 
+			median = function(size){
+				ImageMedian(owner.hImage,size); 
+			} 
+			repair = function(radius,iterations){
+				ImageRepair(owner.hImage,radius,iterations); 
+			}  
+			mix = function(img,x=0,y=0,t=0){
+				if( ! img[["hImage"]] ) error("参数一必须是 soImage 对象 ",2)
+				ImageMix( owner.hImage,img[["hImage"]],t,x,y);
+			}
+			paint = function(hdc,x=0,y=0,cx,cy){ 
+				if(!cx) cx = owner.getWidth();
+				if(!cy) cy = owner.getHeight();
+				ImagePaint( owner.hImage,hdc,x,y,cx,cy);
+			}
+			cmp = function( img ){
+				if( ! img[["hImage"]] ) error("参数一必须是 soImage 对象 ",2)
+				return ImageMatch( owner.hImage,img[["hImage"]] );
+			}
+			cmp2 = function( img ){
+				if( ! img[["hImage"]] ) error("参数一必须是 soImage 对象 ",2)
+				return ImageMatch2( owner.hImage,img[["hImage"]] );
+			}
+			cmp3 = function( img ){
+				if( ! img[["hImage"]] ) error("参数一必须是 soImage 对象 ",2)
+				return ImageMatch3( owner.hImage,img[["hImage"]] );
+			}
+			findImage = function( img,x=0,y=0,x2=0,y2=0,step=5){
+				if( ! img[["hImage"]] ) error("参数一必须是 soImage 对象 ",2)
+				var sm,x,y = ImageFind( owner.hImage,img[["hImage"]],x,y,x2,y2,step );
+				if(sm)return sm,x,y;
+			}
+			findColor= function( color,x=0,y=0,x2=0,y2=0 ){ 
+				var ok, x,y = ImageFindColor( owner.hImage,color,x,y,x2,y2  );
+				if(ok)return x,y;
+			} 
+			splitRgb = function( ){ 
+				var ok,a,b,c = ImageSplitRGB( owner.hImage   );
+				if(ok)return ..soImage(a),..soImage(b),..soImage(c);
+			}
+			splitHsl = function( ){ 
+				var ok,a,b,c = ImageSplitHSL( owner.hImage   );
+				if(ok)return ..soImage(a),..soImage(b),..soImage(c);
+			} 
+			splitXyz = function( ){ 
+				var ok,a,b,c = ImageSplitXYZ( owner.hImage   );
+				if(ok)return ..soImage(a),..soImage(b),..soImage(c);
+			}
+			splitYiq = function( ){ 
+				var ok,a,b,c = ImageSplitYIQ( owner.hImage   );
+				if(ok)return ..soImage(a),..soImage(b),..soImage(c);
+			}
+			splitYuv = function( ){ 
+				var ok,a,b,c = ImageSplitYUV( owner.hImage   );
+				if(ok)return ..soImage(a),..soImage(b),..soImage(c);
+			}
+			splitCmyk = function( ){ 
+				var ok,a,b,c,d = ImageSplitCMYK( owner.hImage   );
+				if(ok)return ..soImage(a),..soImage(b),..soImage(c),..soImage(d);
+			}
+			split = function( row,col ){ 
+				var tab = {}
+				var proc_c = ..raw.tocdecl( 
+					function(pImg){
+						..table.push( tab,..soImage(pImg) )
+					},"void(pointer pImg)"
+				);	
+				var len = ImageSplit( owner.hImage,row,col,proc_c );
+				return tab;
+			}
+			splitAuto = function( noise ){ 
+				var tab = {}
+				var proc_c = ..raw.tocdecl( 
+					function(pImg){
+						..table.push( tab,..soImage(pImg) )
+					},"void(pointer pImg)"
+				);	
+				var len = ImageSplitAuto( owner.hImage,noise,proc_c );
+				return tab;
+			}
+			getJpegQuality = function(){ 
+				return ImageGetJpegQuality( owner.hImage ); 
+			}
+			setJpegQuality = function(q ){ 
+				ImageSetJpegQuality( owner.hImage,q ); 
+			}
+			getNumFrames = function(){ 
+				return ImageGetNumFrames( owner.hImage ); 
+			}
+			getFrame = function(){ 
+				return ImageGetFrame( owner.hImage ); 
+			}
+			setFrame = function( nFrame ){ 
+				ImageSetFrame( owner.hImage,nFrame); 
+			}
+			getFrameDelay = function(){ 
+				return ImageGetFrameDelay( owner.hImage ); 
+			}
+			setFrameDelay = function( d ){ 
+				return ImageGetFrameDelay( owner.hImage,d ); 
+			} 
+		}
+	} 
+	
+	checkType = function(ext){
+		if(!ext)return 0;
+		return ImageCheckType(ext);
+	} 
+	
+	var dll = ..raw.loadDll($"~/lib/soImage/.res/soImage.dll","soImage.dll")
+ 
+	DeleteImageObject = dll.api("DeleteImageObject","void(POINTER hImage)" )
+	CreateImageObject = dll.api("CreateImageObject","pointer()" )
+	ImageCheckType = dll.api("ImageCheckType","int(STRING ext)" ) 
+	ImageIsValid = dll.api("ImageIsValid","byte(POINTER hImage)" )
+	ImageInit = dll.api("ImageInit","byte(POINTER hImage,int w,int h,INT bpp,INT imageTyp)" )
+	
+	ImageLoad = dll.api("ImageLoad","byte(POINTER hImage,STRING fileName)" )
+	ImageSave = dll.api("ImageSave","byte(POINTER hImage,STRING fileName)" )
+	ImageLoadClipBD = dll.api("ImageLoadClipBD","byte(POINTER hImage)" )
+	ImageSaveClipBD = dll.api("ImageSaveClipBD","byte(POINTER hImage)" ) 
+	ImageToString = dll.api("ImageToString","pointer(POINTER hImage,STRING ext,INT &len)" )
+	ImageFromString = dll.api("ImageFromString","byte(POINTER hImage,pointer buf,INT len,STRING ext)" ) 
+	
+	ImageCapture = dll.api("ImageCapture","byte(POINTER hImage,addr hwnd,int x,int y,int cx,int cy)" )
+	ImageCapture2 = dll.api("ImageCapture2","byte(POINTER hImage,addr hwnd,int x,int y,int cx,int cy)" ) 
+	ImageCreateFromHBITMAP = dll.api("ImageCreateFromHBITMAP","byte(POINTER hImage,pointer hBmp,pointer hPalete)" )
+	ImageCreateFromHICON = dll.api("ImageCreateFromHICON","byte(POINTER hImage,pointer hIcon,INT xHotspot,INT yHotspot)" )
+	
+	ImageWidth = dll.api("ImageWidth","INT(POINTER hImage)" )
+	ImageHeight = dll.api("ImageHeight","INT(POINTER hImage)" )
+	ImageClear = dll.api("ImageClear","byte(POINTER hImage)" )
+	ImageResize = dll.api("ImageResize","byte(POINTER hImage,int x,int y)" )
+	ImageGetDIB = dll.api("ImageGetDIB","pointer(POINTER hImage)" )
+	ImageGetBits = dll.api("ImageGetBits","pointer(POINTER hImage,int row,int &len)" )
+	ImageSetBits = dll.api("ImageGetBits","void(POINTER hImage,int row,pointer buffer,int len)" )
+	ImageSetPixel = dll.api("ImageSetPixel","void(POINTER hImage,int x,int y,int color)" )
+	ImageGetPixel = dll.api("ImageGetPixel","int(POINTER hImage,int x,int y)" ) 
+	ImageSetTransColor = dll.api("ImageSetTransColor","byte(POINTER hImage,bool bTrans,INT nColor)" )
+	ImageGetTransColor = dll.api("ImageGetTransColor","INT(POINTER hImage)" )
+	
+	ImageBpp = dll.api("ImageBpp","byte(POINTER hImage,int bits)" )
+	ImageCrop = dll.api("ImageCrop","byte(POINTER hImage,int left,int top,int right,int bottom)" )
+	ImageMedian = dll.api("ImageMedian","byte(POINTER hImage,int size)" ) 
+	ImageRepair = dll.api("ImageRepair","byte(POINTER hImage,float radius,int iterations)" )
+	
+	ImageMix = dll.api("ImageMix","byte(POINTER hImage,POINTER mixImage,int type,int x,int y)" )
+	ImagePaint = dll.api("ImagePaint","byte(POINTER hImage,pointer hdc,int x,int y,int cx,int cy)" ) 
+	
+	ImageMatch = dll.api("ImageMatch","int(POINTER hImage,POINTER hCmpImage)" )
+	ImageMatch2 = dll.api("ImageMatch2","double(POINTER hImage,POINTER hCmpImage)" )
+	ImageMatch3 = dll.api("ImageMatch3","int(POINTER hImage,POINTER hCmpImage)" )
+ 
+	ImageFind = dll.api("ImageFind","int(POINTER hImage,POINTER hFindImage,int &x,int &y,int x2,int y2,int step)" )
+	ImageFindColor = dll.api("ImageFindColor","byte(POINTER hImage,INT color,int &x,int &y,int x2,int y2)" ) 
+	
+	ImageSplit = dll.api("ImageSplit","int(POINTER hImage,int row,int col,pointer proc)" )
+	ImageSplitAuto = dll.api("ImageSplitAuto","int(POINTER hImage,int noise,pointer proc)" )
+	ImageSplitRGB = dll.api("ImageSplitRGB","int(POINTER hImage,pointer &a,pointer &b,pointer &c)" )
+	ImageSplitHSL = dll.api("ImageSplitHSL","int(POINTER hImage,pointer &a,pointer &b,pointer &c)" )
+	ImageSplitXYZ = dll.api("ImageSplitXYZ","int(POINTER hImage,pointer &a,pointer &b,pointer &c)" )
+	ImageSplitYIQ = dll.api("ImageSplitYIQ","int(POINTER hImage,pointer &a,pointer &b,pointer &c)" )
+	ImageSplitYUV = dll.api("ImageSplitYUV","int(POINTER hImage,pointer &a,pointer &b,pointer &c)" )
+	ImageSplitCMYK = dll.api("ImageSplitCMYK","int(POINTER hImage,pointer &a,pointer &b,pointer &c,pointer &d)" )
+	
+	ImageGetJpegQuality = dll.api("ImageGetJpegQuality","BYTE(POINTER hImage)" )
+	ImageSetJpegQuality = dll.api("ImageSetJpegQuality","BYTE(POINTER hImage,BYTE q)" )
+ 	ImageGetNumFrames = dll.api("ImageGetNumFrames","BYTE(POINTER hImage)" ) 
+	ImageGetFrame = dll.api("ImageGetFrame","BYTE(POINTER hImage)" )
+	ImageSetFrame = dll.api("ImageSetFrame","BYTE(POINTER hImage,int nFrame)" )
+	ImageGetFrameDelay = dll.api("ImageGetFrameDelay","INT(POINTER hImage)" )
+	ImageSetFrameDelay = dll.api("ImageSetFrameDelay","BYTE(POINTER hImage,INT d)" ) 
+}
+
+/**intellisense()
+soImage() = 创建图像\n!soImage.
+soImage.checkType("*->bmp") = 参数为图像路径或文件名,\n返回数值格式的图像数型
+end intellisense**/
+
+/**intellisense(!soImage)
+delete()  =  删除图像
+init(.(宽,高,位宽,"*->bmp") = 所有参数可选
+isValid() = 图像是否有效
+load(.("路径") = 载入图像文件
+save(.("路径") = 保存图像文件
+getBytes("*->bmp") = 返回图像数据
+setBytes(.(数据,"*->bmp") = 修改图像数据,\n参数一为字符串对象
+capture(.(窗口句柄,x坐标,y坐标,宽度,高度) = 抓屏,所有参数可选
+capture2(.(窗口句柄,x坐标,y坐标,宽度,高度) = 抓屏,所有参数可选
+fromBitmap(.(位图句柄,色板句柄) = 自位图句柄创建图像,\n参数2可选
+fromIcon(.(图标句柄,xHotspot,yHotspot) = 自图标句柄创建图像,\n参数2,3可选 
+toClipBD() = 图像复制到剪贴板
+fromClipBD() = 自剪板板获取图像
+getWidth() = 获取宽度
+getHeight() = 获取高度
+clear() = 清空图像
+resize(宽度,高度) = 调整图像大小
+getDib() = 返回DIP指针
+getBits(__/*行号*/) = 返回指定行图像数据
+setBits(.(行号,数据) = 修改图像指定行数据
+getPixel(.(x,y) = 返回指定坐标点颜色
+setPixel(.(x,y,颜色) = 修改指定坐标点颜色
+setTransColor(.(是否透明,透明颜色) = 修改透明颜色
+getTransColor() = 获取透明颜色
+bpp(8) = 修改图像位宽
+crop(.(左,上,右,下) = 剪切图像
+median(2) = 中值滤波,参数指定半径
+repair(.(修复半径,修复次数) = 修复被破坏的图片 
+mix(.(混合图像,x坐标,y坐标,混合样式) =  除参数1以外，其他参数可选,\n混合样式请使用_MIX_前缀的常量
+paint(.(hdc,x坐标,y坐标,宽度,高度) = 在指定GDI设备句柄上绘图,所有参数可选
+cmp(.(匹配图像) = 返回图像差异值，完全相似返回0 完全不相似为两个图片的面积相加,\n精确匹配能力一般，模糊识别的能力较强
+cmp2(.(匹配图像) = 返回差异值，完全一样为0，完全不一样为1，通常返回的是1到0之间的小数，数字越小表示两个图片越接近相似,\n精确匹配能力较差，模糊识别的能力一般
+cmp3(.(匹配图像) = 返回相似度，完全一样为0，完全相似返回0 完全不相似为单个图片的面积\n精确匹配能力最强，模糊识别的能力最差
+findImage(.(屏幕图像,x坐标,y坐标,结束x坐标,结束y坐标,搜索步进) = 找图，除参数一以外，所有参数可选,\n成功返回相似度,匹配图像的右下角坐标
+findColor(.(匹配颜色,x坐标,y坐标,结束x坐标,结束y坐标) = 找色，除参数一以外，所有参数可选,\n成功返回坐标
+splitRgb() = 拆分为RGB三个图像 
+splitHsl() = 拆分为HSL三个图像 
+splitXyz() = 拆分为XYZ三个图像 
+splitYiq() = 拆分为YIQ三个图像 
+splitYuv() = 拆分YUV三个图像 
+splitCmyk() = 拆分为CMYK四个图像 
+split(.(行,列) = 按指定的行,列数目拆分并返回多个图像，\n返回值为数组
+splitAuto(.(杂点系列) = 自动拆分并返回多个图像，\n返回值为数组
+
+getJpegQuality() = 返回JPGE图像质量
+setJpegQuality(80) = 修改JPGE图像质量,参数为1到100之间
+getNumFrames() = 返回图像帧数目
+getFrame() = 返回图像当前帧索引
+setFrame(0) = 设置图像当前帧
+getFrameDelay() = 返回帧延时
+setFrameDelay(1000) = 修改帧延时,以毫秒为单位
+end intellisense**/
+
+ /**intellisense()
+_MIX_COPY=@0/*_MIX_COPY*/
+_MIX_MASK=@1/*_MIX_MASK*/
+_MIX_DSTMASK=@2/*_MIX_DSTMASK*/
+_MIX_SRCMASK=@3/*_MIX_SRCMASK*/
+_MIX_SRCMASK2=@4/*_MIX_SRCMASK2*/
+_MIX_DSTBLEND=@5/*_MIX_DSTBLEND*/
+_MIX_SCREEN=@6/*_MIX_SCREEN*/
+_MIX_ADD=@7/*_MIX_ADD*/
+_MIX_SUB=@8/*_MIX_SUB*/
+_MIX_AND=@9/*_MIX_AND*/
+_MIX_XOR=@0xA/*_MIX_XOR*/
+_MIX_OR=@0xB/*_MIX_OR*/
+end intellisense**/
+

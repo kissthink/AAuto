@@ -1,0 +1,200 @@
+//client 客户端
+import wsock; 
+import wsock.err;
+namespace wsock.tcp
+
+class client {
+
+	ctor(bufferSize = 1024){ 
+		if(! ..wsock.open() ){ 
+			error( ( wsock.err.lasterr() ),2 ) 
+		}
+		 
+		var hSocket= ..wsock.socket(0x2/*_AF_INET*/,0x1/*_SOCK_STREAM 建立流式套接口*/,0x6/*_IPPROTO_TCP*/ )
+		if( hSocket= _INVALID_SOCKET ){ 
+			wsock.close() //关闭wsock
+			error( ( wsock.err.lasterr() ),2 ) 
+		} 
+
+		..table.gc(this,"close"); 
+	};
+	connect = function(ip,port){
+		if(!ip && port) error("请指定IP或端口地址",2);
+		var service = ..wsock.sockaddr_in( ip,port );
+		if(!service) return;
+		service.sin_family = 0x2/*_AF_INET*/
+		
+		if ..wsock.connect( hSocket,service,..raw.sizeof(service)) =-1/*_SOCKET_ERROR*/	{  
+			return null,"连接服务端失败"
+		} 
+		return true;
+	};
+	connectTimeout = function(ip,port,timeout){
+		if(!ip && port) error("请指定IP或端口地址",2);
+		if( !timeout ) return this.connect(ip,port); 
+		
+		var service = ..wsock.sockaddr_in( ip,port );
+		if(!service) return;
+		service.sin_family = 0x2/*_AF_INET*/
+		
+		..wsock.ioctlsocket(hSocket,0x8004667E/*_FIONBIO*/,1); 
+		var states = ..wsock.connect(hSocket,service,..raw.sizeof(service)); 
+		if( states == -1/*_SOCKET_ERROR*/){
+			var fd_set = ..wsock.fd_set();
+			fd_set.fd_count = 1;
+			fd_set.fd_array = { hSocket };
+			var ret; 
+			if( 0 < ..wsock._select(0,{},fd_set,{},{
+					int tv_sec = timeout; 
+					int tv_usec = 0;
+				} )  ){
+				
+				var r,e = ..wsock.getsockoptByInt(hSocket, 0xFFFF/*_SOL_SOCKET*/, 0x1007/*_SO_ERROR*/,0,4);
+				ret = e == 0; 
+			}
+			..wsock.ioctlsocket(hSocket,0x8004667E/*_FIONBIO*/,0);
+			return ret;
+		}
+		return true; 
+	};
+	eachRead = function(sizeMax){
+		var recvbuf,reads;
+		return function(){
+			var bufSize = bufferSize;
+			if( sizeMax !==  null ){
+				if( sizeMax < bufSize ){
+					bufSize = sizeMax;
+				}
+				if(!bufSize) return;
+			}
+			
+        	var reads,recvbuf = ..wsock.recv( hSocket,bufSize,bufSize,0);
+        	if( reads>0 ) {   
+				if(reads<bufSize){ 
+					recvbuf = ..string.left(recvbuf,reads)
+					return recvbuf,reads,sizeMax; //缓冲区没读满，也是读完了
+				}
+				if( sizeMax !== null  ) { 
+					sizeMax -= bufSize;
+					if( ! sizeMax ) return recvbuf,reads,0;
+					if( sizeMax < bufSize ) bufSize = sizeMax; 
+				}
+				return recvbuf,reads,sizeMax
+			}  
+		} 
+	}; 
+	read = function(len){ 
+		if( len[["_struct"]] ){
+			var s = len;
+			var l =  ..raw.sizeof(s);
+			var r = this.read(l);
+			if(r) return ..raw.convert(r,s);
+			return;
+		}
+		var tab = {}
+		for(str,size in this.eachRead(len) ){ 
+			..table.push(tab,str);
+		} 
+		return ..string.join(tab);
+	};
+	readTo = function(ends){ 
+		var s = ""; 
+		var recv = ..wsock.recv;
+		var endWith = ..string.endWith;
+		while( 
+		    var reads,recvbuf;
+		    reads,recvbuf = recv( hSocket,1,1,0);
+		    reads >= 0
+		) {
+			 if( reads == 0 ){
+			 	sleep(10); continue ;
+			 }
+			 s = s ++ recvbuf;
+			 if( endWith(s,ends) ) break;
+		}
+		 
+		return s;
+	};
+	readAll = function(){
+		var tab = {}
+		for(str,size in this.eachRead() ){ 
+			..table.push(tab,str);
+		} 
+		return ..string.join(tab);
+	};
+	writeBuffer = function(str,len){;
+		var max = #str; 
+		if( !len )
+			len = max;
+		else 
+			len = ..math.min(max,len); 
+			
+		var step = ..math.min(bufferSize,len );
+		var safePtr = ..raw.convert( { pointer p = str } ,{ pointer p }).p; 
+		
+		for(pos=0;len;step){ 
+			if( ..wsock.send( hSocket,topointer(safePtr,pos), pos+step <= len ? step : len % step ,0)==-1 ){  
+				return null,"tcp客户端发送数据错误";
+			}
+		}; 
+		
+		return true;
+	};
+	write = function(s,...){
+		var st = type(s);
+		if( st != "string"  ){
+			if( st == "number") s = tostring(s);
+			elseif( f[["_struct"]]) s = ..raw.malloc(s); 
+			else error("参数类型错误",2);
+		}
+				
+		var r,e = this.writeBuffer( s );
+		if( !... || !r ) return r,e;
+		return this.write(...);
+	};
+	setTimeouts = function(send=30000,receive=30000){
+		return ( ..wsock.setsockoptByInt(hSocket,0xFFFF/*_SOL_SOCKET*/,0x1005/*_SO_SNDTIMEO*/,send,4) == 0 )
+			&& ( ..wsock.setsockoptByInt(hSocket,0xFFFF/*_SOL_SOCKET*/,0x1006/*_SO_RCVTIMEO*/,receive,4)  == 0 ) 
+	}; 
+	getLocalIp = function(){ 
+	    var localAddr = ..wsock.sockaddr_in();  
+    	var addrLen = ..raw.sizeof(localAddr);  
+    	if ( 0 == ..wsock.getsockname(hSocket, localAddr,addrLen))   {  
+        	return ..wsock.inet_ntoa(localAddr.sin_addr);  
+    	}  
+    };
+    getRemoteIp = function(){ 
+	    var localAddr = ..wsock.sockaddr_in();  
+    	var addrLen = ..raw.sizeof(localAddr);  
+    	if ( 0 == ..wsock.getpeername(hSocket, localAddr,addrLen))   {  
+        	return ..wsock.inet_ntoa(localAddr.sin_addr);  
+    	}  
+    };
+	close = function(){
+		if( hSocket ){ 
+			..wsock.closesocket(hSocket)
+			..wsock.close();
+			hSocket = null;
+		}  
+	}
+}
+
+/**intellisense()
+wsock.tcp.client = TCP客户端支持库
+wsock.tcp.client(.(缓冲区大小) = 创建TCP客户端,\n缓冲区大小为可选参数,默认为1KB
+?.tcp.client = !tcp_client.
+!tcp_client.connectTimeout(.(IP或域名,端口号,超时秒数) = 创建连接\n成功返回true
+!tcp_client.connect(.(IP或域名,端口号) = 创建连接\n成功返回true
+!tcp_client.eachRead = @for(str,readSize,remainSize in ??.eachRead(__/*可选指定最大长度*/) ){ 
+	
+} 
+!tcp_client.readTo(.('指定结束字符串') = 读取直到以指定的字符串结束\n该函数每次仅读取一个字节,效率较低
+!tcp_client.read(.(读取长度) = 读取数据\n参数可以指定长度,也可以使用接收数据的结构体作为参数
+!tcp_client.readAll() =  接收全部数据\n该函数读取直至连接关闭,应慎用该函数防止服务器保持连接无法返回
+!tcp_client.writeBuffer(.(数据,长度) = 发送数据,\n参数一为字符串或字符串指针,可选使用参数2指定长度\n成功返回true
+!tcp_client.write(.(->->->) = 发送数据,\n支持任意多个字符串参数\n成功返回true
+!tcp_client.close() = 关闭TCP客户端\n如果未显式调用此函数\n在对象析构时,将会自动调用.
+!tcp_client.setTimeouts(.(发送超时,接收超时) = 设置超时,以亳秒为单位(1秒为1000毫秒)
+!tcp_client.getLocalIp() = 返回连接的本地IP
+!tcp_client.getRemoteIp() = 返回连接的远程IP
+end intellisense**/

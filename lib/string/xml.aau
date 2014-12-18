@@ -1,0 +1,370 @@
+//xml 简单xml解析
+namespace string;
+
+var push = ..table.push;
+var pop = ..table.pop;
+var sub = sub;
+var trim = trim;
+var find = find;
+var match = match; 
+var format = format;
+
+var nodePrototype = {
+	enumNodes = function(p,findTagName){ 
+		for(index,tagName,childCount,xNode in owner.eachChild(tagName) ){ 
+			var ret,ret2 = p(owner,index,tagName,childCount,xNode)
+			if( ( ret !== null ) && ( !ret ) ) return ret,ret2;
+		}
+		for(index,tagName,childCount,xNode in owner.eachChild(tagName) ){ 
+			var ret,ret2 = xNode.enumNodes(p,findTagName);
+			if( ( ret !== null ) && ( !ret ) ) return ret,ret2;
+		}
+	};
+	queryEles = function(opt){
+		var cmp = ..string.cmpMatch;
+		
+		var attr; 
+		var result = {}
+		var ok,ele = owner.enumNodes( 
+			function(parentElement,index,tagName,childCount,xNode){ 
+				for(k,v in opt){
+					attr = xNode[k]
+					if( ( attr!=v ) && ( ! cmp( attr,v ) )  )
+						return;
+				} 
+				push( result,xNode ) 
+			}
+		);	
+		return result;
+	};
+	queryEle = function(opt){
+		return owner.queryEles(opt)[1]
+	};
+	eachChild = function(tagName){
+		var root = owner;
+		if( tagName ) root = owner[tagName];
+		
+		var len = #root; 
+		return function(ind){
+			ind++;
+			if(ind<=len){
+				var node = root[ind];
+				return ind,node.tagName,#node,node;
+			}
+		}, ,0
+	};
+	innerText = function(){
+		var children = {};
+		for(i=1;#owner;1){
+			if( !owner[i].tagName && owner[i].text )
+				push(children,owner[i].text );
+			else 
+				push(children,owner[i].innerText() ) 
+		}
+		var s = ..string.join( children,"")
+		s = replace(s,"&[a-zA-Z]+;",{
+			["&nbsp;"] = ' ';
+			["&quot;"] = '"';
+			["&apos;"] = "'";
+			["&ldquo;"] = '“';
+			["&rdquo;"] = '”';
+			["&rdquo;"] = '”';
+			["&mdash;"] = '—';
+			["&lt;"] = '<';
+			["&gt;"] = '>';  
+			["&euro;"] = "�";
+			["&cent;"] = '￠';
+			["&pound;"] = '￡';
+			["&yen;"] = '￥'; 
+			["&frasl;"] = "/";
+			["&raquo;"] = "▼";
+			["&times;"] = "×";
+			["&division;"] = "÷";
+			["&currency;"] = "¤"; 
+			["&brvbar;"] = "|";
+			["&sect;"] = "§";
+			["&uml;"] = "¨";
+			["&macr;"] = "ˉ";
+			["&deg;"] = "°";
+			["&plusmn;"] = "±";
+			["&acute;"] = "′";
+			["&micro;"] = "μ";
+			["&middot;"] = "·";
+			["&ordm;"] = "o";
+		} ) 
+		s = replace(s,"&[a-zA-Z]+;","");     	
+		s = replace(s,
+    		"&#(\d+);",
+    		function(c){
+    			c = tonumber(c);
+    			var a,b = c & 0xFF,c>>8 & 0xFF;
+     			return b? ..string.pack(a,b) : ..string.pack(a);
+    		} 
+		); 
+		return s;
+	};
+	innerXml = function(line='\r\n'){
+		var children = {};
+		var html;
+		var m;
+		for(i=1;#owner;1){
+			html = owner[i].outerXml(line) ;
+			push(children,owner[i].outerXml(line) );
+			if( !m && ( i>1 || owner[i].tagName ||  ..string.indexOf(html,'\n') ) ){
+				 m = true;
+			}
+		}
+		var s = ..string.join( children,"");
+		if( m ) s = line ++ s;
+		return s;
+	};
+	outerXml = function(line='\r\n'){
+		var prop = {""};
+		var tv;
+		
+		if( ( !owner.tagName ) ){
+			if( owner.text ){
+				var xml = owner.text;
+				return xml;
+			}
+				
+			if( owner.cdata )
+				return '<![CDATA['+ owner.cdata +']]>' + line;
+		}
+		
+		for k,v in ..table.eachName(owner,,{"version";"encoding"}){ 
+			if( k =="tagName"  )
+				continue;
+				 
+			var tv = type(v);
+			if( tv != "string" && tv!="number" && tv !="boolean" )
+				continue ; 
+			
+			v = tostring(v);
+			v = replace(v,'@@<',"&lt;");
+			v = replace(v,'@@>',"&gt;");
+			v = replace(v,'@@"',"&quot;"); 
+			v = replace(v,"@@'","&apos;");
+			push(prop, k + '="' + v + '"' );
+		}
+		prop = #prop > 1 ? ..string.join( prop," ") : "" ;
+		 
+		if( ! owner.tagName ){ 
+			return owner.innerXml(line);
+		}
+		
+		var innerXml = owner.innerXml(line);
+		if( owner.tagName[1] == '?'# ){
+			return format('<%s%s?>%s', owner.tagName, prop,line )
+		} 
+		if(innerXml){
+			return format('<%s%s>%s</%s>%s', owner.tagName
+				, prop , innerXml, owner.tagName,line  )
+		}
+		else {
+			return format('<%s%s/>', owner.tagName, prop )
+		}
+	}
+}
+
+var eleMeta = { _get = nodePrototype;_tostring = nodePrototype.outerXml;_jsonType="object" }
+var function pushEle(parent,ele){
+	if(ele.tagName && ( ele.tagName != "tagName") ){
+		var t = type(parent[ele.tagName]);
+		if( t == type.null ){
+			parent[ele.tagName] = {};
+			push( parent[ele.tagName],ele );
+		}
+		elseif( t == type.table ){
+			push( parent[ele.tagName],ele );
+		};
+	}
+	push( parent,ele ); 
+	ele@ = eleMeta;
+} 
+	
+var function parseProperties (ele, str) {  
+	replace(
+		str + " ", 
+		"([\w_:]+)\s*(<=\s*""[^""]+"">|<=\s*'[^']+'>|<=\s*\S+>|\s)", 
+		function (w, a, b){
+			if( w = "tagName" ) return;
+			a = ..string.trimleft(a,"=");
+			a = ..string.trimleft(a);
+			if( a[1] == '"'# ) a = ..string.trim(a,'"');
+			elseif( a[1] == '\''# ) a = ..string.trim(a,"'");
+    		ele[w] = a
+		} 
+	) 
+}
+ 
+class xml{
+	ctor( xmlstr ){
+		if(!xmlstr) error("XML文本参数不能为空",2);
+		
+		var nodeStack = {};
+		var topNode = this;
+		push(nodeStack, topNode);  
+		
+		var strfrom = 1;  
+		var tagfrom,tagto //find pos
+				,slash_front ,tagName ,properties, slash_back = find(xmlstr, "\<([\/]?)(<[\?!\w_:]+>|<:+>)(.*?)([\/\?]?)\>", strfrom);
+			
+		while(tagfrom) {
+			if( tagfrom && xmlstr[tagfrom+1]=='!'#  ) { 
+				if( sub(xmlstr,tagfrom,tagfrom+8 ) == "<![CDATA[" ){ 
+					var cdata = match(xmlstr,"(.*?)<@]]>@>", tagfrom+9)
+					if(cdata){  
+						pushEle( topNode,{cdata=cdata} )
+						strfrom = tagfrom + 12 + #cdata
+						tagfrom,tagto,slash_front ,tagName,properties, slash_back =  find(xmlstr, "\<([\/\?]?)(<[!\w_:]+>|<:+>)(.*?)([\/\?]?)\>" , strfrom);
+						continue;
+					}
+				} 
+				else{
+					var tagfrom2,tagto2 = find(xmlstr,"^\<\!\-\-.*?\-\-\>" , tagfrom);
+					if( tagto2 ){
+						strfrom = tagto2+1 
+						tagfrom,tagto,slash_front ,tagName,properties, slash_back =  find(xmlstr, "\<([\/\?]?)(<[!\w_:]+>|<:+>)(.*?)([\/\?]?)\>" , strfrom );
+						continue;
+					}
+					else {
+						var tab = {  tagName=tagName }
+						parseProperties( tab,properties);
+						pushEle(topNode,tab)
+						strfrom = tagto+1 
+						tagfrom,tagto,slash_front ,tagName,properties, slash_back =  find(xmlstr, "\<([\/\?]?)(<[!\w_:]+>|<:+>)(.*?)([\/\?]?)\>" , strfrom );
+						continue;
+					}
+				 }  
+				 
+				 if(!tagfrom) {
+				 	break;
+				 }
+			}
+			elseif( ..string.cmp(tagName,"script") == 0){
+			
+				if #slash_back   {  
+					// e.g. <tagName />
+					var tab = {  tagName=tagName }
+					parseProperties( tab,properties);
+					pushEle(topNode,tab)
+					tagfrom,tagto,slash_front ,tagName,properties, slash_back =  find(xmlstr, "\<([\/\?]?)(<[!\w_:]+>|<:+>)(.*?)([\/\?]?)\>" , strfrom);
+					continue;
+				}
+				var script = match(xmlstr,"(.*?)<@@</script>@>", tagto+1) 
+				if(script){  
+					pushEle( topNode,{text=script} )
+					strfrom = tagto + 1 + #script + #"</script>"
+					tagfrom,tagto,slash_front ,tagName,properties, slash_back =  find(xmlstr, "\<([\/\?]?)(<[!\w_:]+>|<:+>)(.*?)([\/\?]?)\>" , strfrom);
+					continue;
+				}
+			}
+			 
+			var innerText = sub(xmlstr, strfrom, tagfrom-1)
+			var innerText = trim(innerText);
+			if( #innerText ){ 
+				push(topNode, { text = innerText;@eleMeta } )  
+			} 
+			if #slash_back   {  
+				// e.g. <tagName />
+				var tab = {  tagName=tagName }
+				parseProperties( tab,properties);
+				pushEle(topNode,tab)
+			}
+			elseif slash_front  != "/"  {  
+			 	// e.g. <tagName prop="value" >
+				topNode = { tagName=tagName }
+				parseProperties( topNode,properties);
+				push(nodeStack, topNode);
+			}
+			else {
+				// e.g. </tagName>
+				if( nodeStack[#nodeStack].tagName != tagName ){
+					var matchIdx;
+					for(i=#nodeStack;2;-1){
+						if( nodeStack[i].tagName == tagName ){
+							matchIdx = i;
+						}
+					}
+					
+					if( !matchIdx && ( ..string.cmp(nodeStack[#nodeStack].tagName,tagName) == 0 ) ){
+						var ele = ..table.pop(nodeStack)
+						topNode = nodeStack[#nodeStack]
+						pushEle(topNode, ele)  
+					}
+					else {
+						if(!matchIdx){
+							for(i=#nodeStack;2;-1){
+								if( ..string.cmp( nodeStack[i].tagName,tagName) == 0 ){
+									matchIdx = i;
+								}
+							}
+						}
+						
+						if( !matchIdx ){
+							var tab = { tagName = tagName }
+							pushEle(topNode,tab) 
+						}
+						else{
+							topNode = nodeStack[matchIdx];
+							for(i=matchIdx+1;#nodeStack;1){
+								pushEle(topNode,nodeStack[i]);
+							} 
+							..table.pop(nodeStack,#nodeStack-matchIdx);
+							
+							var ele = ..table.pop(nodeStack)
+							topNode = nodeStack[#nodeStack]
+							if(!topNode) break;
+							pushEle(topNode, ele) 
+						}
+					}
+
+				}
+				else {
+					var ele = ..table.pop(nodeStack)
+					topNode = nodeStack[#nodeStack]
+					pushEle(topNode, ele) 
+				}
+				
+				if #nodeStack < 1 { break; }
+			}
+			
+			strfrom = tagto+1 
+			tagfrom,tagto,slash_front ,tagName,properties, slash_back = find(xmlstr, "\<([\/]?)(<[!\?\w_:]+>|<:+>)(.*?)([\/\?]?)\>" , strfrom);	
+		}
+		
+		var innerText = sub(xmlstr, strfrom)
+		var innerText = trim(innerText);
+		if( #innerText ){  
+			push(nodeStack[#nodeStack], { text = innerText ;@eleMeta;} )
+		}
+	  	
+		if #nodeStack> 1 { 
+			for(i=#nodeStack;2;-1){
+				var ele = ..table.pop(nodeStack);
+				topNode = nodeStack[#nodeStack];
+				pushEle(topNode, ele);  
+			} 
+		}   
+	};
+	@eleMeta;
+}
+
+/**intellisense()
+string.xml = 简单XML解析,\n严格的校验XML语法正确性不是本模块的义务和目标,\n所以,此解析器尽可能兼容错误,兼容了HTML,SGML的部份规则:\n1、不要求存在根标签 \n2、尝试自动修正不配对的标记 \n3、在有必要的时候尝试忽略大小写
+string.xml(__/*xml字符串*/) = 创建xml对象\n严格的校验XML语法正确性不是本模块的义务和目标,\n所以,此解析器尽可能兼容错误,兼容了HTML,SGML的部份规则:\n1、不要求存在根标签 \n2、尝试自动修正不配对的标记 \n3、在有必要的时候尝试忽略大小写
+?string.xml = !string_xml.
+!string_xml.eachChild(标签名) = @for(index,tagName,childCount,xNode in ??.eachChild(__/*标签名*/) ){
+	io.print( index,tagName,childCount,xNode ) 
+}
+!string_xml.outerXml() = 转换为XML文本,\n可在参数中自定义换行符
+!string_xml.innerXml() = 将子节点转换XML文本,\n可在参数中自定义换行符
+!string_xml.innerText() = 返回节点内部文本
+!string_xml.queryEles(查询条件) = @.queryEles(\n	tagName = "?xml";\n)
+!string_xml.queryEle(查询条件) = @.queryEle(\n	tagName = "__/*标签名*/";\n)
+!string_xml.queryEles() = !string_xml.
+!string_xml.enumNodes(枚举函数,节点名) = @.enumNodes( \n	function(parentElement,index,tagName,childCount,xNode){ \n	\n	},__/*可选指定节点名*/\n)
+!string_xml.tagName = 节点标签名 
+!string_xml.eachChild() = !string_xml.
+end intellisense**/

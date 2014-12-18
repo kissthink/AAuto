@@ -1,0 +1,110 @@
+//httpFile 网络安装包
+import fsys;
+import sevenZip.lzma;
+import fsys.untar;
+import inet.downBox;
+namespace sevenZip.lzma.httpFile;
+
+download = function(url,title="下载",saveDir,extraDir,saveName,parentForm){
+	var tUrl = ..inet.url.split(url);
+	if(!tUrl){
+		error("错误的URL参数",2)
+	}
+	var tPath = ..io.splitpath(tUrl.path)
+	
+	saveDir = ..io.fullpath(saveDir : "~\download\" )
+	..fsys.createDir(saveDir);
+	
+	if(!saveName){
+		saveName = tPath.file;
+	}
+	if(!extraDir){
+		extraDir = ..string.match(saveName,"(.+)\.[^\.]+$"  );
+		if(!extraDir) extraDir = saveName + ".uncompress";
+		extraDir = ..fsys.joinpath(saveDir,extraDir)
+	}
+	else {
+		extraDir = ..io.fullpath(extraDir);
+	} 
+	
+	//download file 
+	var pathCabinet = ..fsys.joinpath(saveDir,saveName)
+	var downBox = ..inet.downBox(parentForm,title,false) 
+	
+	downBox.endProc = function(){  
+		..win.delay(1000);
+		downBox.text = "正在解压:" + saveName; 
+		downBox.onClose = function(){ 
+			return false;
+		}
+		
+		var tarTempName = pathCabinet + ".tar";  
+		
+		downBox.progress.hide = false;
+		downBox.progress.setRange(1,downBox.contentLength  );  
+		var step = downBox.progress.step;
+		
+		var processed = 0;
+		..sevenZip.lzma.decodeFile(pathCabinet,tarTempName,function(inProcessed,outProcessed){
+			processed += inProcessed; 
+			 downBox.progress.pos = processed / step;
+		} ); 
+		
+		var tarFile = ..fsys.untar(tarTempName,extraDir);
+		tarFile.onProgressFile = function(path){
+			downBox.labInfo.text = path;
+		};
+		 
+		downBox.progress.setRange(1,tarFile.blocksCount );  
+		var step = downBox.progress.step;
+		var processed = 0;
+		for(fileName,writeSize,remainSize in tarFile.eachBlock() ){
+			processed++;  
+			downBox.progress.pos = processed / step;
+		}
+		tarFile.close();
+		..io.remove( tarTempName );
+		
+		downBox.onClose = null;
+		owner.endModal(); 
+	}
+	downBox.download(url,pathCabinet ) 
+	
+	//download failed
+	if(!downBox.complete){ 
+		return;
+	} 
+	
+	if( ! ..io.exist(pathCabinet,4) ){  
+		return false; 
+	} 
+ 
+ 	//search setup file
+ 	var fileRootDir;
+ 	..fsys.enum( extraDir, "*.*",
+ 		function(dir,filename,fullpath,findData){ 
+ 			if(filename){ 
+ 				fileRootDir = dir;
+ 	           	return false;
+ 			} 
+ 		}  
+ 	);
+ 	if(!fileRootDir)return;
+ 	
+ 	var setupFile = ..fsys.joinpath(fileRootDir,"setup.dl.aau")
+	if( ..io.exist(setupFile) ){
+		var handle = ..thread.create( setupFile ); 
+		if( ..win.isClosed() ){
+			..thread.wait(handle) 
+		}
+		else {
+			..thread.waitOne(handle) 
+		}  
+	}
+	return true; 		
+}
+
+/**intellisense(sevenZip.lzma)
+httpFile = 网络安装包
+httpFile.download(.(URL,对话框标题,下载目录,解压目录,存储文件名,父窗口) = 下载zip文件,除url以外，其他所有参数可选\n如果zip文件第一个包含文件的目录下包含 setup.dl.aau ,自动执行该文件安装
+end intellisense**/

@@ -1,0 +1,107 @@
+//扩展库发布工具
+import ide;
+import win.ui;
+import win.ui.atom;
+/*DSG{{*/
+var winform = ..win.form(text="扩展库打包发布工具";right=385;bottom=368;border="dialog frame";max=false;min=false)
+winform.add(
+btnPub={cls="button";text="发布扩展库";left=26;top=62;right=353;bottom=101;z=1};
+edit={cls="edit";left=26;top=123;right=353;bottom=334;edge=1;multiline=1;z=3};
+editLibName={cls="edit";text="process.command";left=26;top=21;right=353;bottom=49;edge=1;multiline=1;z=2}
+)
+/*}}*/
+
+var atom = winform.atom("{6A8DE24F-E4BE-4B4A-A629-C4F2792FED9F}");
+if(!atom){ 
+    win.quitMessage();	return;
+}
+
+setupCode = /*
+import fsys; 
+fsys.createDir("~\lib\${LIBDIR}");
+fsys.copy( "\${FILENAME}","~\lib\${LIBDIR}" ); 
+
+import ide;
+ide.refreshStdLib();
+
+import win;
+win.msgboxTimeout("${LIBNAME}扩展库已安装成功!","快手(AAuto Quicker) - ${LIBNAME}扩展库安装程序")
+*/
+
+import fsys;
+import string.template;
+import fsys.tar;
+import sevenZip.lzma;
+
+winform.btnPub.oncommand = function(id,event){ 
+
+	var fb = fiber.create( 
+		function(){ 
+    		var libname = winform.editLibName.text;
+    		if(!#libname){
+        		winform.msgboxErr("请输入扩展库名字")
+        		return;
+    		}
+    		
+    		var libpath,libdir = io.libpath(libname)
+    		if(!libpath){
+        		winform.msgboxErr("扩展库名字错误")
+        		return;
+    		}
+ 		
+    		var libfilename = fsys.getFileName(libpath)
+		
+    		if( libfilename == "_.aau" ){ 
+        		libfilename = fsys.getFileName(libdir)
+        		libpath = libdir;
+        		libdir = fsys.getParentDir(libdir)
+    		} 
+
+    		libdir = fsys.path.relative(libdir,"~/lib/",false) || fsys.path.relative(libdir,"/lib/",false)
+    		if(!libdir){
+        		inform.msgboxErr("扩展库名字错误")
+        		return;
+    		}
+    		
+    		var tmp = string.template(setupCode)
+    		var setupCode = tmp.format(
+        		LIBNAME = libname;
+        		LIBDIR = libdir;
+        		FILENAME = libfilename;
+    		)
+    		
+    		fsys.delete("/.pub-lib/temp/")
+    		fsys.createDir("/.pub-lib/temp/")
+    		
+    		fsys.copy(libpath,"/.pub-lib/temp/")
+    		string.save("/.pub-lib/temp/setup.dl.aau",setupCode )
+    		
+    		winform.edit.text = "";
+    		var tarFile = fsys.tar("/.pub-lib/"+ libname + ".tar");
+    		tarFile.onWriteFile = function( filename ){
+        		winform.edit.appendText("已打包" + filename + '\r\n')
+        		win.pumpMessage()
+    		}
+    		tarFile.pack("/.pub-lib/temp/",,false)
+    		tarFile.close();
+		
+    		sevenZip.lzma.encodeFile("/.pub-lib/"+ libname + ".tar"
+        		,"/.pub-lib/"+ libname + ".tar.lzma",function(inSize,outSize){
+            		winform.edit.appendText("输入大小"+ fsys.formatSize(inSize)," 压缩大小:",fsys.formatSize(outSize),'\r\n') 
+            		win.pumpMessage()
+        		}
+    		)
+    		fsys.delete("/.pub-lib/temp/")
+    		fsys.delete("/.pub-lib/"+ libname + ".tar")
+    		
+    		import process;
+    		process.explore_select("/.pub-lib/"+ libname + ".tar.lzma")
+    		winform.edit.appendText("全部操作已完成")
+    		
+    	},..io.exist( ide.getProjectDir() )
+	)
+	fiber.resume (fb);
+}
+
+winform.show() 
+win.loopMessage();

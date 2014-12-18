@@ -1,0 +1,153 @@
+//tooltip 提示控件
+namespace win.ui;
+
+class tooltip{
+	ctor(winform,tParam){
+		if( ! winform ){ 
+			error("第一个构造参数必须指定有效窗口",2) 
+		} 
+		this.parent = winform;
+		this.hParent = winform[["hwnd"]] : winform;
+		
+		var style = 0x80000000/*_WS_POPUP*/ | 0x1 /*_TTS_ALWAYSTIP*/;
+		if( tParam[["style"]] ) style = style | tParam[["style"]]; 
+		this.hwnd = ::CreateWindowEx( 
+			( tParam[["exstyle"]] or 0) | 0x8/*_WS_EX_TOPMOST*/, "tooltips_class32", , 
+			style,0, 0, 0, 0, this.hParent, 0 );
+		::SendMessageInt(this.hwnd,  0x0400+24/*TTM_SETMAXTIPWIDTH*/, 0, 410);
+		
+		if(  winform[["tooltipCtrl"]][["destroy"]] ){
+			winform.tooltipCtrl.destroy();
+		}
+		winform[["tooltipCtrl"]] = this;
+		this.create = function (tParam) {};
+	};
+	destroy = function(){
+		if( this.hwnd ){
+			::DestroyWindow(this.hwnd);
+			this.hwnd = null;
+		}
+	};
+	addTool = function(ctrl,text,flags){
+		if( flags === null ) flags = 0;
+		flags = flags | 1/*_TTF_IDISHWND*/;
+		
+		var ti = TOOLINFO();
+		ti.cbSize = ..raw.sizeof(ti);
+		ti.uId = ctrl[["hwnd"]] : ctrl
+		ti.uFlags = flags;
+		ti.lpszText = topointer(text) == topointer(-1) ? topointer(text) : text;  
+		::SendMessageByStruct(this.hwnd, 0x0400+4/*_TTM_ADDTOOL*/, 0, ti); 
+		return ti;  
+	};
+	setMaxWidth = function(width){
+		::SendMessageInt(this.hwnd, 0x0400+24/*TTM_SETMAXTIPWIDTH*/, 0, width);
+	};
+	delTool = function(ti){ 
+		::SendMessageByStruct(this.hwnd, 0x0400+5/*_TTM_DELTOOL*/, 0, ti);
+	};
+	updateTipText = function(ti,text){
+		ti.lpszText = topointer(text) == topointer(-1) ? topointer(text) : text;  
+		::SendMessageByStruct(this.hwnd, 0x0400+12/*_TTM_UPDATETIPTEXT*/, 0, ti);
+	};
+	update = function(){
+		::SendMessage(this.hwnd,0x400 + 29 /*_TTM_UPDATE*/); 
+	};  
+	track = function(ti,x,y){
+		if( ! ( ti.uFlags & 0x20/*_TTF_TRACK*/ ) ){
+			error("创建该提示必须指定_TTF_TRACK选项",2)  
+		}
+		if( !x && x!==0 ){
+			::SendMessageByStruct(this.hwnd, 0x0400+17/*TTM_TRACKACTIVATE*/,0, ti);
+			return;
+		} 
+		::SendMessageInt(this.hwnd,  0x0400+18/*TTM_TRACKPOSITION*/, 0, ::MAKELONG(x,y));
+		::SendMessageByStruct(this.hwnd, 0x0400+17/*TTM_TRACKACTIVATE*/, 1, ti); 
+	};
+	popup = function(ti,active){
+		if( ti  ){
+			if( !active ){
+				::SendMessageByStruct(this.hwnd, 0x0400+17/*TTM_TRACKACTIVATE*/,0, ti);
+				return;
+			}  
+			::SendMessageByStruct(this.hwnd, 0x0400+17/*TTM_TRACKACTIVATE*/, 1, ti); 
+		}
+		else{
+			::SendMessage(this.hwnd,0x400 + 34 /*_TTM_POPUP*/); 
+		}
+	};   
+	relayEvent = function(msg){
+		::SendMessageByStruct(this.hwnd,0x400 + 7 /*_TTM_RELAYEVENT*/,0,msg); 
+	};
+	setDelayTime = function(time,flag){
+		::SendMessageInt(this.hwnd,0x400 + 3 /*_TTM_SETDELAYTIME*/,flag,time : -1); 
+	}
+	setBkColor = function(clr){
+		::SendMessageInt(this.hwnd,0x400 + 19 /*_TTM_SETTIPBKCOLOR*/,0,clr); 
+	}
+	setTextColor = function(clr){
+		::SendMessageInt(this.hwnd,0x400 + 20 /*_TTM_SETTIPTEXTCOLOR*/,0,clr); 
+	} 
+}
+
+namespace tooltip {
+
+	class TOOLINFO {
+ 		INT cbSize;
+ 		INT uFlags;
+ 		ADDR hwnd;
+ 		ADDR uId;
+ 		struct rect = ::RECT();
+ 		pointer hinst;
+ 		pointer lpszText;
+ 		int lParam;
+	}
+}
+
+/**intellisense()
+win.ui.tooltip = 提示控件
+win.ui.tooltip() = !win_ui_tooltip.
+win.ui.tooltip(.(winform,创建参数) = 创建提示提示控件,参数@2可省略\n参数@1为窗体对象 
+!win_ui_tooltip.update() = 刷新
+!win_ui_tooltip.setMaxWidth(.(宽度) = 设置提示框最大宽度
+!win_ui_tooltip.relayEvent( msg ) = 将鼠标消息发送到tooltip控件\n在winform.pretranslate中调用此函数
+!win_ui_tooltip.setDelayTime(.(超时值,选项) = 设置超时值
+!win_ui_tooltip.setTextColor(.(颜色值) = 设置文本颜色
+!win_ui_tooltip.setBkColor(.(颜色值) = 设置背景颜色
+!win_ui_tooltip.updateTipText(.(hwnd,text) = 更新提示文本
+!win_ui_tooltip.addTool( = 创建并返回toolInfo对象\n返回值可作为其他函数的参数
+!win_ui_tooltip.addTool(.(hwnd,text,flags) = 除hwnd窗口句柄以外其他参数可选\ntext如果为-1则使用_TTN_NEEDTEXT消息回调获取文本\nflags为_TTF_前缀常量组合\n\n_TTF_SUBCLASS 如果指定该选项,控件自己显示提示不需要relayEvent()转发消息\n_TTF_TRACK 使用了该选项则可以使用track()函数手动弹出提示
+!win_ui_tooltip.delTool(.(toolInfo) = 删除提示
+!win_ui_tooltip.track( = 弹出提示 
+!win_ui_tooltip.track(.(toolInfo,x,y) = 在指定位置弹出提示\n要使用此函数,addTool的最后一个参数必须指定 _TTF_TRACK
+!win_ui_tooltip.track(.(toolInfo,false) = 关闭指定窗口的提示
+!win_ui_tooltip.popup( = 弹出提示
+!win_ui_tooltip.popup(.() = 在最后一次处理的鼠标消息所在位置弹出提示
+!win_ui_tooltip.popup(.(toolInfo,true) = 显示提示
+!win_ui_tooltip.popup(.(toolInfo,false) = 关闭提示
+end intellisense**/
+
+ /**intellisense()
+_TTS_ALWAYSTIP=@1/*_TTS_ALWAYSTIP*/
+_TTS_NOPREFIX=@2/*_TTS_NOPREFIX*/
+_TTS_NOANIMATE=@0x10/*_TTS_NOANIMATE*/
+_TTS_NOFADE=@0x20/*_TTS_NOFADE*/
+_TTS_BALLOON=@0x40/*_TTS_BALLOON*/
+_TTS_CLOSE=@0x80/*_TTS_CLOSE*/
+_TTF_IDISHWND=@1/*_TTF_IDISHWND*/
+_TTF_CENTERTIP=@2/*_TTF_CENTERTIP*/
+_TTF_RTLREADING=@4/*_TTF_RTLREADING*/
+_TTF_SUBCLASS=@0x10/*_TTF_SUBCLASS*/
+_TTF_TRACK=@0x20/*_TTF_TRACK*/
+_TTF_ABSOLUTE=@0x80/*_TTF_ABSOLUTE*/
+_TTF_TRANSPARENT=@0x100/*_TTF_TRANSPARENT*/
+_TTF_PARSELINKS=@0x1000/*_TTF_PARSELINKS*/
+_TTF_DI_SETITEM=@0x8000/*_TTF_DI_SETITEM*/
+_TTN_FIRST=@0xFFFFFDF8/*_TTN_FIRST*/
+_TTN_LAST=@0xFFFFFFCA/*_TTN_LAST*/
+_TTN_GETDISPINFO=@0xFFFFFDF8/*_TTN_GETDISPINFO*/
+_TTN_SHOW=@0xFFFFFDF7/*_TTN_SHOW*/
+_TTN_POP=@0xFFFFFDF6/*_TTN_POP*/
+_TTN_LINKCLICK=@0xFFFFFDF5/*_TTN_LINKCLICK*/
+_TTN_NEEDTEXT=@0xFFFFFDF8/*_TTN_NEEDTEXT*/
+end intellisense**/

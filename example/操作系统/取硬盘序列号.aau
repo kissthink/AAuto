@@ -1,0 +1,28 @@
+io.open();//打开控制台
+
+//导入库
+import sys.volume;
+
+//取所有分区信息、分区序列号
+var drives = sys.volume.getLogicalDrives()
+for(i,drv in drives){
+    var info = sys.volume.getInfo( drv)  ;
+    if(info)
+          io.print( 
+          	"分区:"+info.drive,
+          	"序列号"+ info.serial,
+          	info.serialNum,"文件系统:" + info.fsys, 
+          	"压缩:" + ((info.flag & 0x8000/*_FILE_VOLUME_IS_COMPRESSED*/) ? "是" : "否") 
+          	);	
+
+}
+ 
+
+//导入取物理序列号库
+import sys.hd;
+hdinfo=..sys.hd.getInfo(); 
+
+io.print( "物理序列号", hdinfo.sSerialNumber );
+ 
+execute("pause") //按任意键继续
+io.close();//关闭控制台

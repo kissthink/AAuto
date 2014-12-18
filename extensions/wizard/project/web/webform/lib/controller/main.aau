@@ -1,0 +1,20 @@
+
+namespace controller;
+ 
+class main{
+	ctor (wb, frame) {
+		this.wb = wb;
+		this.document = wb.getDoc( frame );  
+	}
+	
+	external = { 
+	
+		onUnload = function(){
+			// ..console.log("main.html ÒÑ¹Ø±Õ")	
+		};
+		
+		getSysPath = function(option){ 
+			option.onEnd( ..win.getenv("PATH") );
+		};	
+	}	
+}

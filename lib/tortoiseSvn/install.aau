@@ -1,0 +1,28 @@
+//install 安装程序
+import process;
+import process.admin;
+import inet.downBox;
+
+namespace tortoiseSvn.install{
+
+	VERSION = "1.8.7.25475";
+	SVNVERSION = "1.8.9";
+	getMsiUrl = function(ver,svnver){ 
+		return "http://downloads.sourceforge.net/project/tortoisesvn/1.8.7/Application/TortoiseSVN-"
+			+ ( ver : VERSION ) + "-"  + ( ..process().isWow64() ? "x64":"win32" ) + "-svn-" + ( svnver : SVNVERSION ) 
+			+ ".msi?r=&ts=" +  tonumber(..time()) + "&use_mirror=jaist"; 
+	}; 
+	
+	setup = function(msiUrl) {
+		var downBox = ..inet.downBox( ,"正在下载TortoiseSVN...",true ) 
+		if( downBox.download( msiUrl : getMsiUrl(),"~/download/tool/TortoiseSVN.msi") ){
+			..process.admin.runas_wait("msiexec",{"/i"; ..io.fullpath("~/download/tool/TortoiseSVN.msi");"/quiet" }); 
+		}
+	}
+
+}
+
+/**intellisense(tortoiseSvn.install)
+getMsiUrl(.(TortoiseSVN版本,SVN版本) = 安装包下载地址\n参数可省略
+setup(.(下载地址) = 下载安装\n参数可省略
+end intellisense**/

@@ -1,0 +1,125 @@
+//res 资源文件
+import fsys;
+namespace fsys.res;
+ 
+EnumResourceNames = ::Kernel32.api( "EnumResourceNames", "bool(pointer hModule,str type,pointer func,pointer lParam)"); 
+BeginUpdateResource = ::Kernel32.api( "BeginUpdateResourceA", "pointer(string filename,bool delExisting)");
+EndUpdateResource  = ::Kernel32.api( "EndUpdateResourceA", "bool(pointer hUpdate,bool fDiscard)");
+UpdateResource  = ::Kernel32.api( "UpdateResourceA", "bool(pointer hUpdate,string type,string name,WORD lang,string data,INT cb)");
+LoadLibraryEx = ::Kernel32.api( "LoadLibraryExA", "pointer(str file,pointer hFile,int flags)");
+FreeLibrary = ::Kernel32.api( "FreeLibrary", "bool(POINTER hModule)");
+
+open = function(path,delExisting){
+	path = ..io.exist(path);
+	if(!path) error("错误的文件路径",2);
+	
+	var hUpdate = BeginUpdateResource(path,delExisting);
+	if( hUpdate ) return {
+		update = function(resType,resName,resData,lang=0){
+			if( type(resType) == type.number ) resType = topointer(resType);
+			if( type(resName) == type.number ) resName = topointer(resName);
+			return UpdateResource(hUpdate, resType,resName,lang,resData,#resData);
+		};
+		close = function(fDiscard){
+			return EndUpdateResource( hUpdate,fDiscard)
+		} 
+	}
+}
+
+load = function(path,flags){
+	if( flags === null ) flags = 2/*_LOAD_LIBRARY_AS_DATAFILE*/;
+	return LoadLibraryEx( ..io.localpath(path) : path  );
+}
+
+free = function(module){
+	if(!module) error("参数错误",2)
+	return FreeLibrary(module);
+}
+ 
+enum = function( proc,resType = "RES",module ){
+	var freeModule;
+	if( type(module) == type.string ){
+		module = LoadLibraryEx( ..io.localpath(module) : module ,,2/*_LOAD_LIBRARY_AS_DATAFILE*/)
+		if( !module) return null,"加载文件失败";
+		freeModule = module;
+	}
+	elseif(!module){
+		module = _HINSTANSE;
+	}
+ 
+	var proc_c = ..raw.tostdcall(
+		function(hModule,stype,name,lParam){
+			if( stype & 0xFFFF0000 ){
+				stype = ..raw.str( topointer(stype) )
+			}
+			if( name & 0xFFFF0000 ){
+				name = ..raw.str( topointer(name) )
+			}
+			return proc( hModule,stype,name,lParam);
+		} ,"(pointer hModule,int stype,int name,pointer lParam)"
+	);
+	resType = makeIntResource(resType) : resType;
+	var ret = EnumResourceNames(module,resType,proc_c )
+	if(freeModule) FreeLibrary(freeModule);
+	return ret;
+}
+ 
+makeIntResource = function(nRes){ 
+	if( type(nRes) == type.number ){
+		return  ..raw.convert( {word w = nRes },{pointer s} ).s;
+	} 
+} 
+
+saveRes = function(srcDir="/",target="/"){
+
+	srcDir = ..string.upper( ..string.replace(srcDir,"@@\","/") );
+	if( srcDir[1] != '/'#)
+		srcDir =  '/' + srcDir;
+	
+	if( _STUDIO_INVOKED ){ 
+		return ..fsys.copy(srcDir,..fsys.createDir(target));
+	}
+		
+	enum(
+		function(module,resType,resName){
+			if( ..string.startWith(resName,srcDir) ){
+				var str = ..string.load( resName )
+				var path = ..fsys.joinpath(target,resName)
+				..fsys.createDir( ..fsys.getParentDir(path)  )
+				..string.save( path,str ) 
+			}
+			return true;
+		},"RES"
+	)
+}
+
+/**intellisense(fsys.res)
+enum(回调函数,资源类型,模块句柄或路径) =  @.enum(\n	function(module,resType,resName){ \n		return true;\n	}\n)
+saveRes(.(源目录,目标目录) = 保存内嵌资源目录为硬盘文件\n源目录可指定源目录路径\n所有参数可省略
+makeIntResource(__) = 将数值类型资源名,或资源类型名转换为指针
+load(.("DLL路径") = 加载DLL并返回句柄\n仅加载资源不会执行DLL代码\n返回值可作为fsys.res.enum或string.load的最后一个参数\n注意必须调用fsys.res.free函数释放返回的句柄
+frre(.(dll句柄) = 释放DLL
+end intellisense**/
+
+/**intellisense()
+fsys.res.open() = !fsys_res_updater.
+!fsys_res_updater.update(.(资源类型,资源名,数据) = 更新或添加资源
+!fsys_res_updater.close(.(是否丢弃更改) = 关闭并更新资源,\n参数可选，默认为false
+fsys.res.open(.(执行文件路径,是否删除旧的资源) = 打开资源准备更新
+end intellisense**/
+
+/**intellisense()
+_RT_ACCELERATOR=@0x9/*_RT_ACCELERATOR*/
+_RT_BITMAP=@0x2/*_RT_BITMAP*/
+_RT_CURSOR=@0x1/*_RT_CURSOR*/
+_RT_DIALOG=@0x5/*_RT_DIALOG*/
+_RT_FONT=@0x8/*_RT_FONT*/
+_RT_FONTDIR=@0x7/*_RT_FONTDIR*/
+_RT_ICON=@0x3/*_RT_ICON*/
+_RT_MENU=@0x4/*_RT_MENU*/
+_RT_RCDATA=@0xA/*_RT_RCDATA*/
+_RT_STRING=@0x6/*_RT_STRING*/
+_RT_TYPELIB=@"TYPELIB"
+_RT_VERSION = @0x10/*_RT_VERSION*/
+_VS_VERSION_INFO = @0x1/*_VS_VERSION_INFO*/
+end intellisense**/

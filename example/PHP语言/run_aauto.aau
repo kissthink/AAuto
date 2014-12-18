@@ -1,0 +1,24 @@
+//在PHP中自由调用AAuto语言
+
+import php;
+
+//打开控制台
+io.open() ;
+
+//PHP代码
+phpcode =/* 
+	$ret = aauto("
+		import win;
+		win.msgbox('我是aauto代码');
+		return 123;
+	")
+*/ 
+
+//运行PHP代码,返回表达式的值
+var ret = php.eval(phpcode) 
+io.print( ret );
+
+
+//================================
+//请注意: AAuto返回给PHP的值都是字符串类型
+//AAuto代码使用return语句返回值。

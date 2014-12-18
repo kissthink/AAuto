@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="gb2312"?>
+<project ver="0.60" name="HTML5" libEmbed="true" icon="..." CompanyName="单位名称" FileDescription="附加说明......" LegalCopyright="Copyright (C) 作者 2011" ProductName="快手工程16" InternalName="快手工程16" FileVersion="0.0.1.5" ProductVersion="0.0.1.5" publishDir="/Publish/" ui="win" output="HTML5.exe">
+	<file name="main.aau" path="main.aau"/>
+	<folder name="资源文件" path="res" embed="true"/>
+	<folder name="HTML视图" path="view" comment="" embed="true">
+		<file name="main.html" path="view\main.html" comment="view\main.html"/>
+		<folder name="html5" path="view\html5" comment="view\html5">
+			<file name="PIE.js" path="view\html5\PIE.js" comment="view\html5\PIE.js"/>
+			<file name="PIE.htc" path="view\html5\PIE.htc" comment="view\html5\PIE.htc"/>
+			<file name="html5shiv.js" path="view\html5\html5shiv.js" comment="view\html5\html5shiv.js"/>
+			<file name="excanvas.compiled.js" path="view\html5\excanvas.compiled.js" comment="view\html5\excanvas.compiled.js"/>
+		</folder>
+		<folder name="js" path="view\js" comment="view\js">
+			<file name="require.js" path="view\js\require.js" comment="view\js\require.js"/>
+			<file name="main.js" path="view\js\main.js" comment="view\js\main.js"/>
+			<file name="aauto.js" path="view\js\aauto.js" comment="view\js\aauto.js"/>
+			<folder name="jQuery" path="view\js\jQuery" comment="view\js\jQuery">
+				<file name="jQuery.min.js" path="view\js\jQuery\jQuery.min.js" comment="view\js\jQuery\jQuery.min.js"/>
+			</folder>
+		</folder>
+	</folder>
+</project>

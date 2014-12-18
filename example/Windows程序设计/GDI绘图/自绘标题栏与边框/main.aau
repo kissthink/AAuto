@@ -1,0 +1,207 @@
+/*
+AAuto 窗口非客户区的绘制 作者: lujjjh  
+$Id: main.aau 997 2010-11-09 14:05:43Z crane.he $
+*/ 
+
+import win.ui;
+/*DSG{{*/
+var winform = ..win.form(text="自绘标题栏与边框";right=349;bottom=249)
+winform.add()
+/*}}*/
+
+var hSkinDc;
+try {
+	var picture = com.picture.load( "/res/skin.gif"  ); 
+	var hSkin =  picture.CopyHandle() ; 
+	hSkinDc = ::CreateCompatibleDC();
+	::SelectObject( hSkinDc, hSkin );
+	
+	//转换为托管指针,不用时自动释放
+	hSkinDc = gcdata(  
+		_topointer =  hSkinDc;
+		_gc = function(){
+			::DeleteDC(hSkinDc);
+			::DeleteObject(hSkin);
+		} 
+	)
+}   
+if( !hSkinDc ) {
+	winform.msgboxErr( '无法读取皮肤文件！\r\n请检查皮肤图片路径是否有误。' );
+	return null;
+} 
+
+ncPaint = function ( hdc ) {
+
+	var rcWindow = winform.getRect();
+	var re, rcWindow = ::OffsetRect( rcWindow, -rcWindow.left, -rcWindow.top );// 偏移区域，方便操作
+	
+	// 双缓冲绘图 - 创建一个内存设备上下文
+	gdi.doubleBuffer( hdc,rcWindow.right, rcWindow.bottom,
+	
+	    function( hdc,hMemDc,hMemBitmap ){ 
+	    
+			// 创建一个透明色画刷
+			var hBrush = ::CreateSolidBrush( 0xff00ff );
+			// 先填充透明色
+			::FillRect( hMemDc, rcWindow, hBrush );
+			::DeleteObject( hBrush );
+			
+			// 标题栏
+			::BitBlt( hMemDc, 0, 0, 3, 31, hSkinDc, 0, 0, 0xCC0020/*_SRCCOPY*/ );
+			::StretchBlt( hMemDc, 3, 0, rcWindow.right - 6, 31, hSkinDc, 3, 0, 1, 31, 0xCC0020/*_SRCCOPY*/ );
+			::BitBlt( hMemDc, rcWindow.right - 3, 0, 3, 31, hSkinDc, 4, 0, 0xCC0020/*_SRCCOPY*/ );
+			
+			// 外边框
+			::StretchBlt( hMemDc, 0, 31, 2, rcWindow.bottom - 33, hSkinDc, 0, 31, 2, 1, 0xCC0020/*_SRCCOPY*/ );
+			::StretchBlt( hMemDc, rcWindow.right - 2, 31, 2, rcWindow.bottom - 33, hSkinDc, 5, 31, 2, 1, 0xCC0020/*_SRCCOPY*/);
+			::BitBlt( hMemDc, 0, rcWindow.bottom - 2, 2, 2, hSkinDc, 0, 32, 0xCC0020/*_SRCCOPY*/);
+			::StretchBlt( hMemDc, 2, rcWindow.bottom - 2, rcWindow.right - 4, 2, hSkinDc, 2, 32, 3, 2, 0xCC0020/*_SRCCOPY*/ );
+			::BitBlt( hMemDc, rcWindow.right - 2, rcWindow.bottom - 2, 2, 2, hSkinDc, 5, 32, 0xCC0020/*_SRCCOPY*/ );
+			
+			// 画图标
+			var hIcon = win.getClassPointer( winform.hwnd, 0xFFFFFFF2/*_GCL_HICON*/ );
+			::DrawIconEx( hMemDc, 8, 8, hIcon, 16, 16, 0, , 0x0003/*_DI_NORMAL*/ );
+			
+			// 写标题
+			var title = winform.text; 
+			::SelectObject( hMemDc, ::GetStockObject( 0x11/*_DEFAULT_GUI_FONT*/) );
+			::SetTextColor( hMemDc, 0xffffff );
+			::SetBkMode( hMemDc, 0x1/*_TRANSPARENT*/ );//透明模式
+			::DrawText( hMemDc, title, #title, ::RECT( 28, 2, rcWindow.right - 100, 29 ), 0x0/*_DT_LEFT*/ | 0x4/*_DT_VCENTER*/ | 0x20/*_DT_SINGLELINE*/ | 0x40000/*_DT_WORD_ELLIPSIS*/ );
+			
+			// 画非客户区按钮
+			ncPaintButton( hMemDc );
+			
+			// 自内存设备复制到屏幕上显示
+			::TransparentBlt( hdc, 0, 0, rcWindow.right, rcWindow.bottom, hMemDc, 0, 0, rcWindow.right, rcWindow.bottom, 0xff00ff );
+	    }
+	)
+ 
+}
+  
+var buttonStates ={ default = 0 ; over = 1; pressed = 2 }
+ncPaintButton = function ( hdc, minState = "default", maxState = "default", closeState = "default" ) { 
+
+	var rcWindow = winform.getRect() 
+	var re, rcWindow = ::OffsetRect( rcWindow, -rcWindow.left, -rcWindow.top );
+	
+	::TransparentBlt( hdc, rcWindow.right - 100, 1, 26, 17
+		, hSkinDc, 7,  buttonStates[minState]   * 17, 26, 17, 0xff00ff );
+		
+	::TransparentBlt( hdc, rcWindow.right - 74,  1, 26, 17
+		, hSkinDc, 33, buttonStates[maxState]   * 17, 26, 17, 0xff00ff );
+		
+	::TransparentBlt( hdc, rcWindow.right - 48,  1, 41, 17
+		, hSkinDc, 59, buttonStates[closeState] * 17, 41, 17, 0xff00ff );
+} 
+
+winform.wndproc = function ( hwnd, message, wParam, lParam ) {
+	select(message) {
+		case 0x14/*_WM_ERASEBKGND*/ { // 当窗口背景需要重画时，系统会发送这个消息给窗口
+		
+			var hdc = topointer(wParam); // WM_ERASEBKGND 的 wParam 就是窗口的设备上下文句柄
+			var lpRect = winform.getClientRect()
+			var hBrush = ::GetStockObject( 0x0/*_WHITE_BRUSH*/ ); // 获取白色画刷作为背景刷子
+			::FillRect( hdc, lpRect, hBrush  ); // 用白色画刷填充整个窗口客户区
+			return 1; // 告诉 AAuto 我们已经处理了这个消息，不用交给系统处理了
+		}
+		case 0x83/*_WM_NCCALCSIZE*/	{ // 当窗口需要计算非客户区大小时，系统会发送这个消息给窗口
+		
+			var lpRect = raw.convert( topointer( lParam ), ::RECT() ); // lParam 是一个 RECT
+			lpRect.left += 2; // 左、右、下各留 2 个像素
+			lpRect.top += 31; // 标题栏留出 31 个像素
+			lpRect.right  -= 2;
+			lpRect.bottom -= 2; 
+			raw.mixin(topointer(lParam),lpRect);// 将修改完毕的区域拷贝给 lParam
+			return 0;
+		}
+		case 0x85/*_WM_NCPAINT*/ { // 当窗口非客户区需要重画时，系统会发送这个消息给窗口
+			var hdc = ::GetDCEx( hwnd, wParam, 0x1/*_DCX_WINDOW*/ | 0x80/*_DCX_INTERSECTRGN*/ );
+			// 以上为 MSDN 推荐写法，但是可能会无法获取
+			if( !hdc ){ 
+				hdc = ::GetWindowDC( hwnd );
+			} 
+			
+			ncPaint( hdc );
+			::ReleaseDC( hwnd, hdc );
+			return 1;
+		}
+		case 0xAF/*_WM_NCUAHDRAWFRAME*/, 0xAE/*_WM_NCUAHDRAWCAPTION*/
+			return 0x85/*_WM_NCPAINT*/;
+		case 0x86/*_WM_NCACTIVATE*/	{ // 当窗口非客户区被激活或失去焦点时，系统会发送这个消息给窗口
+			if ( wParam == 1 ) {
+				return 0;
+			} else { 
+				winform.capture = false;
+				return 1;
+			}
+		}
+		case 0x6/*_WM_ACTIVATE*/ { // 当窗口被激活或失去焦点时，系统会发送这个消息给窗口 
+			::SendMessageInt( hwnd, 0x86/*_WM_NCACTIVATE*/, ::LOWORD( wParam ), 0 );
+			return 0;
+		}
+		case 0x84/*_WM_NCHITTEST*/ {
+			var rcWindow = winform.getRect() 
+			var x,y = win.getMessagePos(lParam)
+			
+			var htborder = ..win.hitBorder(rcWindow,x,y,5);
+			if(htborder) return htborder;
+			
+			var hdc = ::GetWindowDC( hwnd ); 
+			
+			if( ::PtInRect( ::RECT( rcWindow.right - 100, rcWindow.top + 1, rcWindow.right - 74, rcWindow.top + 18 ), x, y ) ) {
+				ncPaintButton( hdc, "over" );
+				::ReleaseDC( hwnd, hdc );
+				return 0x8/*_HTMINBUTTON*/;
+			} elseif( ::PtInRect( ::RECT( rcWindow.right - 74, rcWindow.top + 1, rcWindow.right - 48, rcWindow.top + 18 ), x, y ) ) {
+				ncPaintButton( hdc,  , "over" );
+				::ReleaseDC( hwnd, hdc );
+				return 0x9/*_HTMAXBUTTON*/;
+			} elseif( ::PtInRect( ::RECT( rcWindow.right - 48, rcWindow.top + 1, rcWindow.right - 7, rcWindow.top + 18 ), x, y ) ) {
+				ncPaintButton( hdc,  ,  , "over" );
+				::ReleaseDC( hwnd, hdc );
+				return 0x14/*_HTCLOSE*/;
+			}
+			ncPaintButton( hdc );
+			::ReleaseDC( hwnd, hdc );
+			
+			if( ::PtInRect( ::RECT( rcWindow.left, rcWindow.top, rcWindow.right, rcWindow.top + 31 ), x, y ) )
+				return 0x2/*_HTCAPTION*/;
+			return 0x1/*_HTCLIENT*/;
+		}
+		case 0xA1/*_WM_NCLBUTTONDOWN*/ {
+			var hdc = ::GetWindowDC( hwnd );
+			select( wParam ) {
+				case 0x8/*_HTMINBUTTON*/ {
+					ncPaintButton( hdc, "pressed" );
+					return 1;
+				}
+				case 0x9/*_HTMAXBUTTON*/ {
+					ncPaintButton( hdc, , "pressed" );
+					return 1;
+				}
+				case 0x14/*_HTCLOSE*/ {
+					ncPaintButton( hdc, , , "pressed" );
+					return 1;
+				}
+			}
+			::ReleaseDC( hwnd, hdc );
+		}
+		case 0xA2/*_WM_NCLBUTTONUP*/ {
+			select( wParam ) {
+				case 0x8/*_HTMINBUTTON*/
+					::PostMessage( hwnd, 0x112/*_WM_SYSCOMMAND*/, 0xF020/*_SC_MINIMIZE*/, 0 );
+				case 0x9/*_HTMAXBUTTON*/
+					::PostMessage( hwnd, 0x112/*_WM_SYSCOMMAND*/, ..win.isZoomed( hwnd ) ? 0xF120/*_SC_RESTORE*/ : 0xF030/*_SC_MAXIMIZE*/, 0 );
+				case 0x14/*_HTCLOSE*/
+					::PostMessage( hwnd, 0x10/*_WM_CLOSE*/, 0, 0 );
+			}
+		}
+	}
+}
+
+winform.bottom--;
+winform.bottom++; 
+
+winform.show( true ); 
+win.loopMessage();

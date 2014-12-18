@@ -1,0 +1,66 @@
+//script 微软脚本引擎 
+//Author xAuto 
+ 
+import com;
+namespace web;
+
+class script {
+	ctor(language = 'JavaScript'){
+		this.msc = ..com.CreateObject("ScriptControl");
+		this.msc.UseSafeSubset = true;
+		this.msc.Language = language;
+		this.msc.AllowUI =true;
+	}  
+	@objmeta;
+}
+
+script.objmeta = {
+
+	_get = function(k){ 
+		return owner.msc[k]
+	};
+	_set = function(k,v){ 
+		var t = type(v);
+		if( t ==type.table ) {
+			owner.msc.AddObject(k,..com.IsObject(v) ? v : ..com.ImplInterface(v) );  
+		}
+		elseif( t == type.function ){
+			owner.msc.AddObject(k,..com.ImplInterface(v) ); 
+		}
+		else{
+			owner.msc[k] = v;
+		} 
+	} 
+}
+
+/**intellisense()
+!web_script.ExecuteStatement("__") = 执行代码，无返回值
+!web_script.TimeOut = 脚本超时时间，以毫秒为单位
+!web_script.UseSafeSubset = 脚本控件是否可以运行未被标记为“脚本安全”的组件
+!web_script.Reset() = 重置脚本虚拟机，丢试所有脚本和对象
+!web_script.AddCode("__") = 添加脚本代码
+!web_script.Language = 置或返回正在使用的 Script 语言名称\n 可选值"VbScript","JavaScript"
+!web_script.Eval("__") = 执行并计算表达式代码，返回表达式的值
+!web_script.ExecuteStatement("__") = 执行代码，无返回值
+!web_script.run("函数名__",参数) = 运行js函数
+!web_script.Modules = 组件模块集合\n可使用com.each()迭代器遍历 
+!web_script.Procedures(__/*序号*/) =  模块中定义函数的集合 
+!web_script.Procedures() = !web_script_func.
+!web_script_func.Name = 函数名字
+!web_script_func.NumArgs = 参数数目
+!web_script_func.HasReturnValue = 是否有返回值
+!web_script.SiteHwnd = 脚本中显示UI的父窗口句柄
+!web_script.State = 为0不转发事件\n为1则转发事件
+!web_script.Timeout = 脚本超时\n-1表示不超时
+!web_script.UseSafeSubset = bool值\n设置宿主是否关心安全
+!web_script.Error = 发生错误时此属性返回错误对象
+!web_script.AllowUI = 是否允许消息框等界面元素
+!web_script.Reset() = 丢弃所有对象和代码\n并将State属性设为0
+!web_script.CodeObject = 脚本对象\n通过此对象可直接调用脚本中的函数
+!web_script.CodeObject.函数名__() = 调用脚本函数并返回值,支持不定个数参数
+?web.script  =  !web_script.
+web.script = 脚本解释器支持库
+web.script("JavaScript") = 创建Javascript脚本解释器
+web.script("VBScript") = 创建VBScript脚本解释器
+web.script() = 创建Javascript脚本解释器\n!web_script.
+end intellisense**/

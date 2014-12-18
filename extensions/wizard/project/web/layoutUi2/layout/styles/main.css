@@ -1,0 +1,53 @@
+﻿html,body{
+    margin:0; /*去掉默认的页面边距*/
+    height:100%;/*因为HTML元素的高度默认是按需增加的,所有需要显示指定根节点高度*/
+    background:#fff;/*网页背景色*/
+    overflow:hidden;/*避免出现滚动条*/
+}
+
+/*最大化后body会自动添加maximize属性,如果是圆角界面可以在这里移除圆角*/
+body[maximize]{ 
+	border-radius:0;
+}
+
+body[maximize] #header{
+	border-radius:0;
+}
+
+#header{
+    height:32px;
+    background:rgb(52,152,220);
+}
+
+#container .lside{ 
+    width:150px;  
+    background:rgb(110,179,210);
+}
+
+#container .rside{
+    height:100%; 
+    background:#FFF; 
+}
+
+#container .lside > *{
+    margin:38px 0px;
+}
+
+#container .rside > *{
+    margin:38px 10px;
+    font-size:9pt;
+}
+
+#footer {
+	background:rgb(239,237,238);
+	height:25px;
+}
+
+#footer button{
+    behavior:~ "main.footerButtons";
+}
+
+/*这里下面的 > 不要换成空格，避免子菜单被绑定多次behavior导致事件被触发多次*/
+#header .window-menu  > menu{
+    behavior:~ "main.menu";   
+}

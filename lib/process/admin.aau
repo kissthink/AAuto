@@ -1,0 +1,97 @@
+//admin 管理权限
+import process;
+import win.version;
+namespace process.admin;
+	
+::Advapi32 := ..raw.loadDll("Advapi32.dll")
+OpenProcessToken = ::Advapi32.api( "OpenProcessToken", "pointer(POINTER ProcessHandle,INT DesiredAccess,pointer &TokenHandle)");
+GetTokenInformation = ::Advapi32.api( "GetTokenInformation", "int(POINTER TokenHandle,int infoClass,struct &TokenInfo,INT len,INT &retLen)");
+ 
+isRunAs = function(hProcess) { 
+	if(!hProcess){
+		hProcess = ..process.getHandle();
+	}
+	var bIsElevated = false;
+	if ( ..win.version.majorVersion < 6  )
+		return false,..win.version.majorVersion;
+
+	var ok,hToken = OpenProcessToken(hProcess,0x0008/*_TOKEN_QUERY*/);
+	if ( hToken ) { 
+		var ok,te，retLength = GetTokenInformation(hToken,20/*TokenElevation*/,{ INT TokenIsElevated },4,0)
+		if (ok && retLength == 4) { 
+				bIsElevated = !!te.TokenIsElevated;
+		}
+		..raw.closehandle( hToken );
+	}
+	return bIsElevated;
+} 
+
+runas = function(file,parameters,showCmd,workdir,hwnd,wait,waitTimeout){ 
+	if( !file ) file = ..io._exepath;
+	var operation = ..win.version.isVistaLater ? "runas" : "open";
+	return ..process.execute( file, parameters,operation,showCmd,workdir,hwnd,wait,waitTimeout)
+}
+
+runas_wait = function( file,parameters,showCmd,workdir,hwnd,waitTimeout){
+	return runas(file,parameters,showCmd,workdir,hwnd,"close",waitTimeout)
+}
+
+runas_waitInput = function( file,parameters,showCmd,workdir,hwnd,waitTimeout){
+	return runas(file,parameters,showCmd,workdir,hwnd,"input",waitTimeout)
+}
+
+runas_leastPrivileges = function(path,arguments,workdir,taskName){
+	if( ( ! ..win.version.isVistaLater ) || ( ! isRunAs() ) ){
+		..process.execute(path,arguments);
+		return true;
+	};
+	
+	var ret;
+	try{
+		import com; 
+		var schedule = ..com.CreateObject("Schedule.Service");
+		schedule.Connect();
+ 	 	
+		var root = schedule.GetFolder("\") 
+		if(!taskName) taskName = ..io._exefile;
+		try{ root.DeleteTask( taskName ); }
+	 	
+		var taskDef = schedule.NewTask(0); 
+		var regInf = taskDef.getRegistrationInfo();
+		regInf.Description = taskName;
+		regInf.Author = "runas_leastPrivileges";
+ 		
+		var pri = taskDef.getPrincipal();
+		pri.Id = "runas_leastPrivileges_principal";
+		pri.LogonType = schedule.TASK_LOGON_INTERACTIVE_TOKEN;
+		pri.RunLevel = schedule.TASK_RUNLEVEL_LUA //least privileges
+ 		
+		var settings = taskDef.getSettings(); 
+		settings.StartWhenAvailable = true;
+		
+		var tg = taskDef.getTriggers().Create(schedule.TASK_TRIGGER_REGISTRATION);
+		tg.Id = "runas_leastPrivileges_trigger"
+		tg.Delay = "PT0S" //0秒后立即执行
+		
+		var act = taskDef.getActions().Create( schedule.TASK_ACTION_EXEC )
+		act.Path = ..io.fullpath(path)
+		act.Arguments = ..process.joinArguments(arguments);
+		act.WorkingDirectory = workdir || ..io.splitpath(path).dir;
+ 		
+		root.RegisterTaskDefinition(taskName, taskDef, schedule.TASK_CREATE_OR_UPDATE,"","", schedule.TASK_LOGON_INTERACTIVE_TOKEN); 
+		sleep(10); try{  root.DeleteTask(taskName ); } 
+		ret = true;
+	}	
+	catch(e){
+		..process.execute(path,arguments);
+	}
+	return ret;
+}
+
+/**intellisense(process.admin)
+isRunAs(.(进程句柄) = 判断进程是否以管理权限运行,\n成功返回true,XP返回flase,以及majorVersion版本号,\n参数可选,默认为当前句柄 
+runas(.(执行程序路径,启动参数,窗口显示样式,工作目录,窗口句柄,等待选项) = 运行应用程序,\n如果是vista以后系统请求管理权限,\n省略参数@1则默认指定为当前EXE路径,其他参数可选
+runas_wait(.(执行程序路径,启动参数,窗口显示样式,工作目录,窗口句柄) = 运行应用程序,并等待进程结束,\n如果是vista以后系统请求管理权限,,\n省略参数@1则默认指定为当前EXE路径,其他参数可选
+runas_waitInput(.("__", parameters="",showCmd,workdir=",hwnd=0) = 运行应用程序,并等待界面激活输入状态,\n如果是vista以后系统请求管理权限,,\n省略参数@1则默认指定为当前EXE路径,其他参数可选
+runas_leastPrivileges(.(执行程序路径,启动参数,工作目录,任务名) = 管理权限进程内降权以非管理权限启动进程,进程如果已创建则忽略,\n注意启动程序路径应明确指定,以斜杠开头或其他绝对路径\n启动参数可以是一个数组或文本也可以不指定,任务名不必指定
+end intellisense**/

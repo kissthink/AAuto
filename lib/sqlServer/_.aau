@@ -1,0 +1,679 @@
+import com;
+import string.list;
+
+class sqlServer {
+
+	ctor( param,...){
+		var connectionString;
+		if( type(param) == type.table ){
+			var tList = ..string.list(,";","=")
+			tList.mixin(param) 
+			
+			if( !tList["Provider"] && !tList["provider"]  )  tList.Provider="SQLOLEDB.1";
+			if( !tList["Data Source"] && !tList["data source"] && !tList["Server"] && !tList["server"] )  tList["Data Source"]=".";
+			if( !tList["Integrated Security"] && !tList["integrated security"]  && !#tList["Password"] && !#tList["password"] && !#tList["PWD"] && !#tList["pwd"]) {
+				tList["Integrated Security"]="SSPI"; //windows身份验证模式 
+			}
+			connectionString = tostring( tList );
+		}
+		else { 
+			if( !param ) error("请指定数据库连接串",2) 
+			connectionString = ..string.format( param,... ); 
+		}
+
+		var conn = ..com.CreateObject("ADODB.Connection")
+		conn.ConnectionString = connectionString;
+		var ok,err = call(conn.open,conn);
+		if(!ok) return null,"打开数据库连接失败:" +err;
+		
+		this.connection = conn;
+		this._tables = {@{_weak="kv"}}
+		..table.add_gc(this,"close");
+	}; 
+	existsTable = function(name){ 
+		return !!this.findTableObject(name);
+	};
+	findTableObject = function(name,cache=true){
+		if(cache && this._tables[name] ) return this._tables[name];
+		
+		var cat = ..com.CreateObject("ADOX.Catalog")  
+		cat.ActiveConnection = conn; 
+		for index,tbl in ..com.each(cat.Tables) {
+			if( tbl.Type = "TABLE" and tbl.Name = name ){
+				if(cache) this._tables[name] = tbl;
+				return tbl;
+			}
+		}	
+	};
+	getTable = function(sql,...){
+		var rs,err = this.openRecordSet(sql,,,...);
+		if(!rs) error(err,2);
+		
+		var fields = {};
+		for( i=1;rs.Fields.Count ){
+			fields[i] = rs.Fields(i-1).Name; 
+		}
+ 
+        var trim = ..string.trimright;
+        var result = { fields = fields  };  
+        var v;
+        while(!rs.eof){
+        	var row = {};  
+        	for(i,name in fields){ 
+        		v = rs( name ).value;
+        		if( type( v ) == "string" ) v = trim(v);
+        		row[name] = v;
+        	}
+        	
+        	..table.push( result,row );
+        	rs.movenext();
+        }
+		
+		return result;
+	}
+	createCommand = function(sql,...){
+		var cmd = ..com.CreateObject("ADODB.Command") 
+		cmd.ActiveConnection = conn;
+		cmd.CommandType = 1/*adCmdText*/;
+		if( ... )sql = formatSqlParameters(sql,...);
+		cmd.CommandText = sql;
+		cmd[["bind"]] = function(tbName){
+			var tbl = this.findTableObject(tbName);
+			if(!tbl) error("指定了错误的表名",2)
+			return {
+				parameter = function(name,value,opt=1/*_adParamInput*/){
+					var ok,col = call(tbl.Columns,tbl,name);
+					if(!ok) return null,col;
+					var ok,param1 = call(cmd.CreateParameter,cmd,"@"+name,col.Type,opt ,col.DefinedSize, value);
+				
+					if(!ok) return null,col;
+					cmd.Parameters.Append(param1) 
+					return owner;
+				}
+				parameters = function(tParam){
+					var bind = owner;
+					sql = ..string.replace(sql,"\@(<:+>|<\w+>)",
+						function(name){
+							var ok,err = bind.parameter(name,tParam[name]);
+							if(!ok) error(err,2)
+							return "?"; //OLEDB不支持命名参数
+						}
+					)
+					cmd.CommandText = sql;
+				}
+			}
+		}
+		cmd[["bindParameter"]] = function(tbName,name,value,opt = 1/*_adParamInput*/){
+			return cmd[["bind"]](tbName).parameter(name,value,opt); 
+		}
+		
+		return cmd;
+	}; 
+	openRecordSet = function(sql,cursorType,lockType,...){
+		var rs = ..com.CreateObject("ADODB.RecordSet"); 
+		if( ... )sql = formatSqlParameters(sql,...);
+		var ok,err = call(rs.Open,rs,sql,conn,cursorType,lockType);
+		if(!ok) return null,err;
+		return rs;
+	}; 
+	exec = function(sql,...){ 
+		if( ... )sql = formatSqlParameters(sql,...); 
+		var ret,err = call(conn.Execute,conn,sql );
+		..io.print( sql );
+		if(!ret) error(err,2);
+		return ret;
+	}; 
+	each = function(sql,...){  
+        var rs,err = this.openRecordSet(sql,... ); 
+       	var first = true;
+       	if(!rs)error(err,2);
+       	
+        return function(){ 
+        	if(!first) rs.movenext(); 
+        	else first = false;
+   
+            if( rs.eof )   return;
+ 			return rs;
+ 			
+        },function(){ rs.close();   } ;
+    }; 
+	close = function(){
+		if(conn){
+			conn.close();
+			conn = null;
+			this.connection = null;
+		}
+	};
+} 
+
+namespace sqlServer {
+
+	formatSqlParameters = function(sql,...) {
+	
+		if( type( ... ) == "table" ){
+			var param = ...;
+			return ..string.replace(sql,"\@(<:+>|<\w+>)",
+				function(name){
+					var v =  param[name] 
+					
+					var t  = type(v);	
+					if( t = "string" ){
+						return "'" +  ..string.replace(v,"'","''") + "'";
+					}
+					elseif( t = "number" ){
+						return tostring(v);
+					}
+					elseif( t = "boolean" ){
+						return v ? "1" : "0";
+					}
+					elseif( ( t = "table" ) && ..time.istime(v) ) {
+						var f = v.format;
+						v.format = "%Y-%m-%d %H:%M:%S";
+						var ret  = "'" +  tostring(v) + "'";
+						v.format = f;
+						return ret;
+					} 
+					return ..string.replace(tostring(v),"\p","");
+				} 
+			); 
+		} 
+		
+		return ..string.format(sql,...);
+	}
+}
+
+
+/**intellisense()
+sqlServer( 连接参数表 ) = @sqlServer( \n	server = ".\SQLEXPRESS";\n	database = "数据库名__";\n	uid = "用户名";\n	pwd = "密码"; \n)
+sqlServer( "数据库连接语句",其他格式化参数 ) = @sqlServer("Provider=SQLOLEDB.1;Data Source=.\SQLEXPRESS;Database=数据库名;User ID=登录名;Password=登录密码");
+打开数据库连接,\n如果指定的数据库不存在将自动创建数据库文件\n如果存在格式化参数，则调用string.fomat格式化连接串
+sqlServer() = !sqlServer.
+sqlServer.formatSqlParameters(sql,其他格式化参数) = 如果格式化参数为一个表,则替换所有命名参数,\n否则调用 string.format 函数格式化SQL
+end intellisense**/
+
+/**intellisense(!sqlServer)
+close() = 关闭数据库连接
+getTable(.("select * from [表名]",其他格式化参数) = 返回查询结果集数组\n每个元素代表一行,每行由N个键值对列组成
+openRecordSet(.(sql,游标类型,锁定方法,其他格式化SQL参数) = 打开记录集,游标类型如下:\n0:默认值,启动一个只能向前移动的游标\n1:打开键集类型游标,允许任意移动，并且允许更改记录集\n2:打开动态类型游标,许所有操作，其他用户对记录集的添加、删除、更改在此记录集中\n3:打开静态类型游标\n\n锁定方法如下：\n1:默认值,不能改变数据\n2:悲观锁,编辑时立即锁定数据源的记录\n3:乐观锁,只在调用Update 方法时才锁定记\n4: 乐观批更新
+exec(.(sql,其他格式化SQL参数) =  如果格式化参数为一个表,则替换所有命名参数,\n否则调用 string.format 函数格式化SQL
+createCommand(.(sql,其他格式化SQL参数) = 创建命令对象\n 如果格式化参数为一个表,则替换所有命名参数,\n否则调用 string.format 函数格式化SQL
+existsTable(.("表名") = 病虫断数据库中是表是否存在
+each(sql,其他格式化参数) = @for(rs in ??.each("select * from [表名]") ){ 
+	io.print( rs("字段名").value );__
+}
+each() = !sqlServer_rs.
+createCommand() = !sqlServer_cmd.
+connection = 连接对象
+ 
+connection.ConnectionString = 连接串
+connection.Errors = 错误集合
+connection.Errors.count = 错误数
+connection.Errors(.(0) = 参数指定错误索引
+connection.Errors() = !ado_conn_err.
+
+findTableObject() = !ADOX_Catalog_tbl.
+findTableObject(.("表名") = 返回表对象
+end intellisense**/
+
+/**intellisense(!ado_conn_err)
+Description = 错误描述
+Number = 错误代码
+Source = 错误对象
+SQLState = 数据源 
+NativeError = 数据源错误代码
+end intellisense**/
+
+/**intellisense(!ADOX_Catalog_tbl)
+Columns = 列集合
+Columns(.("列表") = !ADOX_Catalog_column.
+end intellisense**/
+
+/**intellisense(!ADOX_Catalog_column)
+Name = 列名
+Type = 类型
+DefinedSize = 字段大小 
+end intellisense**/
+
+/**intellisense(!sqlServer_rs)
+close() = 关闭记录集 
+EOF = 是否移动到尾部 
+end intellisense**/
+
+/**intellisense(!sqlServer_cmd)
+Execute() = 执行查询 
+CreateParameter(.(名字,字段类型,参数类型,字段大小,参数值) = 创建参数
+Parameters = 参数列表
+Parameters.Append(.(参数对象) = 添加参数
+bind(.("表名") = 创建参数绑定对象,\nSQL中所有参数必须使用@前缀命名,并且在该表中有同类型同名字段
+bind() = !sqlServer_bind.
+bindParameter() = !sqlServer_bind.
+end intellisense**/
+
+/**intellisense(!sqlServer_bind) 
+parameter(.("字段参数名",绑定参数值) = 用于绑定参数名与字段名相同的参数\n必须按顺序调用,返回bind对象自身可连缀式调用parameter函数
+parameters( __/*参数表*/ ) = 使用一个表指定所有命名参数,\nSQL语句中所有参数必须用@前缀指定参数名,\n并且参数名必须使用表中同类型的字段名
+end intellisense**/
+
+ /**intellisense()
+_adUseNone=@1/*_adUseNone*/
+_adFilterConflictingRecords=@5/*_adFilterConflictingRecords*/
+_adRe_adLine=@-2/*_adRe_adLine*/
+_adSchemaCatalogs=@1/*_adSchemaCatalogs*/
+_adErrPropInvalidColumn=@0xE9B/*_adErrPropInvalidColumn*/
+_adVarNumeric=@0x8B/*_adVarNumeric*/
+_adSingle=@4/*_adSingle*/
+_adErrResourceExists=@0xE93/*_adErrResourceExists*/
+_adSchemaTablePrivileges=@0xE/*_adSchemaTablePrivileges*/
+_adSchemaSets=@0x2B/*_adSchemaSets*/
+_adCopyNonRecursive=@2/*_adCopyNonRecursive*/
+_adRsnAddNew=@1/*_adRsnAddNew*/
+_adOpenStreamAsync=@1/*_adOpenStreamAsync*/
+_adFieldOutOfSpace=@0x16/*_adFieldOutOfSpace*/
+_adErrObjectNotSet=@0xD5C/*_adErrObjectNotSet*/
+_adStructDoc=@2/*_adStructDoc*/
+_adMovePrevious=@0x200/*_adMovePrevious*/
+_adXactRe_adCommitted=@0x1000/*_adXactRe_adCommitted*/
+_adErrInvalidConnection=@0xE7D/*_adErrInvalidConnection*/
+_adErrURLNamedRowDoesNotExist=@0xE99/*_adErrURLNamedRowDoesNotExist*/
+_adRe_adAll=@-1/*_adRe_adAll*/
+_adErrNotExecuting=@0xE83/*_adErrNotExecuting*/
+_adRsnMove=@0xA/*_adRsnMove*/
+_adErrRe_adFile=@0xBBB/*_adErrRe_adFile*/
+_adLockRe_adOnly=@1/*_adLockRe_adOnly*/
+_adErrOperationCancelled=@0xE80/*_adErrOperationCancelled*/
+_adSchemaSchemata=@0x11/*_adSchemaSchemata*/
+_adSchemaProcedureParameters=@0x1A/*_adSchemaProcedureParameters*/
+_adBoolean=@0xB/*_adBoolean*/
+_adCompareLessThan=@0/*_adCompareLessThan*/
+_adNumeric=@0x83/*_adNumeric*/
+_adRecUnmodified=@8/*_adRecUnmodified*/
+_adFldIsNullable=@0x20/*_adFldIsNullable*/
+_adXactIsolated=@0x100000/*_adXactIsolated*/
+_adSchemaDBInfoKeywords=@0x1E/*_adSchemaDBInfoKeywords*/
+_adSchemaKeyColumnUsage=@8/*_adSchemaKeyColumnUsage*/
+_adErrStillConnecting=@0xE81/*_adErrStillConnecting*/
+_adFieldPendingUnknown=@0x80000/*_adFieldPendingUnknown*/
+_adRsnRequery=@7/*_adRsnRequery*/
+_adXactRe_adUncommitted=@0x100/*_adXactRe_adUncommitted*/
+_adModeUnknown=@0/*_adModeUnknown*/
+_adSmallInt=@2/*_adSmallInt*/
+_adPropRe_ad=@0x200/*_adPropRe_ad*/
+_adPropRequired=@1/*_adPropRequired*/
+_adVariant=@0xC/*_adVariant*/
+_adResync=@0x20000/*_adResync*/
+_adMarshalModifiedOnly=@1/*_adMarshalModifiedOnly*/
+_adPropWrite=@0x400/*_adPropWrite*/
+_adFieldRe_adOnly=@0x18/*_adFieldRe_adOnly*/
+_adGetRowsRest=@-1/*_adGetRowsRest*/
+_adSchemaLevels=@0x23/*_adSchemaLevels*/
+_adCompareGreaterThan=@2/*_adCompareGreaterThan*/
+_adErrCantChangeConnection=@0xEA4/*_adErrCantChangeConnection*/
+_adPropNotSupported=@0/*_adPropNotSupported*/
+_adRsnResynch=@8/*_adRsnResynch*/
+_adFieldPendingChange=@0x40000/*_adFieldPendingChange*/
+_adSchemaProviderTypes=@0x16/*_adSchemaProviderTypes*/
+_adOpenKeyset=@1/*_adOpenKeyset*/
+_adRecPendingChanges=@0x80/*_adRecPendingChanges*/
+_adPriorityBelowNormal=@2/*_adPriorityBelowNormal*/
+_adErrPropNotAllSettable=@0xE9F/*_adErrPropNotAllSettable*/
+_adFieldCantConvertValue=@2/*_adFieldCantConvertValue*/
+_adErrDataConversion=@0xD5D/*_adErrDataConversion*/
+_adEditDelete=@4/*_adEditDelete*/
+_adBookmark=@0x2000/*_adBookmark*/
+_adFldUpdatable=@4/*_adFldUpdatable*/
+_adErrVolumeNotFound=@0xE95/*_adErrVolumeNotFound*/
+_adModeRecursive=@0x400000/*_adModeRecursive*/
+_adSeekAfterEQ=@4/*_adSeekAfterEQ*/
+_adRsnUpdate=@3/*_adRsnUpdate*/
+_adResyncNone=@0/*_adResyncNone*/
+_adStatusCancel=@4/*_adStatusCancel*/
+_adOpenForwardOnly=@0/*_adOpenForwardOnly*/
+_adInteger=@3/*_adInteger*/
+_adErrWriteFile=@0xBBC/*_adErrWriteFile*/
+_adFieldIsNull=@3/*_adFieldIsNull*/
+_adOpenIfExists=@0x2000000/*_adOpenIfExists*/
+_adErrObjectInCollection=@0xD27/*_adErrObjectInCollection*/
+_adSchemaTableConstraints=@0xA/*_adSchemaTableConstraints*/
+_adBookmarkCurrent=@0/*_adBookmarkCurrent*/
+_adOpenStreamUnspecified=@-1/*_adOpenStreamUnspecified*/
+_adDBTimeStamp=@0x87/*_adDBTimeStamp*/
+_adXactAbortRetaining=@0x40000/*_adXactAbortRetaining*/
+_adFldIsDefaultStream=@0x20000/*_adFldIsDefaultStream*/
+_adSchemaTrustees=@0x27/*_adSchemaTrustees*/
+_adUnsignedTinyInt=@0x11/*_adUnsignedTinyInt*/
+_adFieldCantCreate=@7/*_adFieldCantCreate*/
+_adFieldResourceOutOfScope=@0x19/*_adFieldResourceOutOfScope*/
+_adPriorityNormal=@3/*_adPriorityNormal*/
+_adErrConnectionStringTooLong=@0xEAA/*_adErrConnectionStringTooLong*/
+_adErrCantCreate=@0xE8D/*_adErrCantCreate*/
+_adErrDenyTypeNotSupported=@0xEA7/*_adErrDenyTypeNotSupported*/
+_adErrResourceOutOfScope=@0xE97/*_adErrResourceOutOfScope*/
+_adPosUnknown=@-1/*_adPosUnknown*/
+_adErrIntegrityViolation=@0xE87/*_adErrIntegrityViolation*/
+_adRsnUndoAddNew=@5/*_adRsnUndoAddNew*/
+_adErrIllegalOperation=@0xC93/*_adErrIllegalOperation*/
+_adResyncAutoIncrement=@1/*_adResyncAutoIncrement*/
+_adOpenExecuteCommand=@0x10000/*_adOpenExecuteCommand*/
+_adSchemaReferentialConstraints=@9/*_adSchemaReferentialConstraints*/
+_adFieldResourceExists=@0x13/*_adFieldResourceExists*/
+_adDelayFetchFields=@0x8000/*_adDelayFetchFields*/
+_adFieldPendingDelete=@0x20000/*_adFieldPendingDelete*/
+_adDBTime=@0x86/*_adDBTime*/
+_adErrItemNotFound=@0xCC1/*_adErrItemNotFound*/
+_adDelete=@0x1000800/*_adDelete*/
+_adXactSyncPhaseOne=@0x100000/*_adXactSyncPhaseOne*/
+_adSchemaActions=@0x29/*_adSchemaActions*/
+_adFldRowVersion=@0x200/*_adFldRowVersion*/
+_adSaveCreateNotExist=@1/*_adSaveCreateNotExist*/
+_adCRLF=@-1/*_adCRLF*/
+_adOpenUnspecified=@-1/*_adOpenUnspecified*/
+_adRecalcAlways=@1/*_adRecalcAlways*/
+_adStateExecuting=@4/*_adStateExecuting*/
+_adOpenOutput=@0x800000/*_adOpenOutput*/
+_adErrPropNotSet=@0xEA0/*_adErrPropNotSet*/
+_adChapter=@0x88/*_adChapter*/
+_adErrPropInvalidOption=@0xE9C/*_adErrPropInvalidOption*/
+_adCmdFile=@0x100/*_adCmdFile*/
+_adEmpty=@0/*_adEmpty*/
+_adHoldRecords=@0x100/*_adHoldRecords*/
+_adSchemaProcedureColumns=@0x1D/*_adSchemaProcedureColumns*/
+_adAddNew=@0x1000400/*_adAddNew*/
+_adCompareEqual=@1/*_adCompareEqual*/
+_adUpdate=@0x1008000/*_adUpdate*/
+_adApproxPosition=@0x4000/*_adApproxPosition*/
+_adFieldVolumeNotFound=@0x15/*_adFieldVolumeNotFound*/
+_adwrnSecurityDialog=@0xE85/*_adwrnSecurityDialog*/
+_adErrOutOfSpace=@0xE96/*_adErrOutOfSpace*/
+_adUpdateBatch=@0x10000/*_adUpdateBatch*/
+_adSchemaProperties=@0x25/*_adSchemaProperties*/
+_adNotify=@0x40000/*_adNotify*/
+_adErrColumnNotOnThisRow=@0xE8E/*_adErrColumnNotOnThisRow*/
+_adFieldIgnore=@0xF/*_adFieldIgnore*/
+_adOpenSource=@0x800000/*_adOpenSource*/
+_adRecMaxChangesExceeded=@0x2000/*_adRecMaxChangesExceeded*/
+_adCreateStructDoc=@-2147483648/*_adCreateStructDoc*/
+_adParamNullable=@0x40/*_adParamNullable*/
+_adSeek=@0x400000/*_adSeek*/
+_adFieldCannotDeleteSource=@0x17/*_adFieldCannotDeleteSource*/
+_adIndex=@0x800000/*_adIndex*/
+_adFldMayBeNull=@0x40/*_adFldMayBeNull*/
+_adFieldDefault=@0xD/*_adFieldDefault*/
+_adLockUnspecified=@-1/*_adLockUnspecified*/
+_adFieldB_adStatus=@0xC/*_adFieldB_adStatus*/
+_adSchemaCollations=@3/*_adSchemaCollations*/
+_adXactRepeatableRe_ad=@0x10000/*_adXactRepeatableRe_ad*/
+_adRecDBDeleted=@0x40000/*_adRecDBDeleted*/
+_adUnsignedBigInt=@0x15/*_adUnsignedBigInt*/
+_adMoveOverWrite=@1/*_adMoveOverWrite*/
+_adDelayFetchStream=@0x4000/*_adDelayFetchStream*/
+_adSimpleRecord=@0/*_adSimpleRecord*/
+_adCriteriaTimeStamp=@3/*_adCriteriaTimeStamp*/
+_adFieldOK=@0/*_adFieldOK*/
+_adErrInvalidTransaction=@0xE82/*_adErrInvalidTransaction*/
+_adCriteriaAllCols=@1/*_adCriteriaAllCols*/
+_adRsnClose=@9/*_adRsnClose*/
+_adFldUnspecified=@-1/*_adFldUnspecified*/
+_adOptionUnspecified=@-1/*_adOptionUnspecified*/
+_adFieldUnavailable=@8/*_adFieldUnavailable*/
+_adAsyncExecute=@0x10/*_adAsyncExecute*/
+_adFieldIntegrityViolation=@0xA/*_adFieldIntegrityViolation*/
+_adAffectCurrent=@1/*_adAffectCurrent*/
+_adMoveDontUpdateLinks=@2/*_adMoveDontUpdateLinks*/
+_adAsyncFetch=@0x20/*_adAsyncFetch*/
+_adSchemaProcedures=@0x10/*_adSchemaProcedures*/
+_adAsyncFetchNonBlocking=@0x40/*_adAsyncFetchNonBlocking*/
+_adPromptAlways=@1/*_adPromptAlways*/
+_adExecuteStream=@0x400/*_adExecuteStream*/
+_adWChar=@0x82/*_adWChar*/
+_adRecalcUpFront=@0/*_adRecalcUpFront*/
+_adExecuteRecord=@0x800/*_adExecuteRecord*/
+_adParamUnknown=@0/*_adParamUnknown*/
+_adConnectUnspecified=@-1/*_adConnectUnspecified*/
+_adResyncInserts=@8/*_adResyncInserts*/
+_adModeShareDenyRe_ad=@4/*_adModeShareDenyRe_ad*/
+_adModeWrite=@2/*_adModeWrite*/
+_adStateClosed=@0/*_adStateClosed*/
+_adVarWChar=@0xCA/*_adVarWChar*/
+_adRsnDelete=@2/*_adRsnDelete*/
+_adStateOpen=@1/*_adStateOpen*/
+_adBookmarkLast=@2/*_adBookmarkLast*/
+_adSchemaDimensions=@0x21/*_adSchemaDimensions*/
+_adEditNone=@0/*_adEditNone*/
+_adErrPermissionDenied=@0xE88/*_adErrPermissionDenied*/
+_adOpenDynamic=@2/*_adOpenDynamic*/
+_adChar=@0x81/*_adChar*/
+_adStateFetching=@8/*_adStateFetching*/
+_adUseServer=@2/*_adUseServer*/
+_adDate=@7/*_adDate*/
+_adFailIfNotExists=@-1/*_adFailIfNotExists*/
+_adRecPermissionDenied=@0x10000/*_adRecPermissionDenied*/
+_adUseClientBatch=@3/*_adUseClientBatch*/
+_adFieldTruncated=@4/*_adFieldTruncated*/
+_adDBDate=@0x85/*_adDBDate*/
+_adErrNotReentrant=@0xE7E/*_adErrNotReentrant*/
+_adErrInvalidParamInfo=@0xE7C/*_adErrInvalidParamInfo*/
+_adSchemaCubes=@0x20/*_adSchemaCubes*/
+_adOpenStatic=@3/*_adOpenStatic*/
+_adTinyInt=@0x10/*_adTinyInt*/
+_adLF=@0xA/*_adLF*/
+_adSaveCreateOverWrite=@2/*_adSaveCreateOverWrite*/
+_adPriorityHighest=@5/*_adPriorityHighest*/
+_adRecInvalid=@0x10/*_adRecInvalid*/
+_adModeRe_adWrite=@3/*_adModeRe_adWrite*/
+_adPosBOF=@-2/*_adPosBOF*/
+_adUnsignedInt=@0x13/*_adUnsignedInt*/
+_adCurrency=@6/*_adCurrency*/
+_adErrStillExecuting=@0xE7F/*_adErrStillExecuting*/
+_adDecimal=@0xE/*_adDecimal*/
+_adSchemaViewTableUsage=@0x19/*_adSchemaViewTableUsage*/
+_adErrOpeningFile=@0xBBA/*_adErrOpeningFile*/
+_adXactSerializable=@0x100000/*_adXactSerializable*/
+_adErrPropNotSupported=@0xEA2/*_adErrPropNotSupported*/
+_adError=@0xA/*_adError*/
+_adGUID=@0x48/*_adGUID*/
+_adUserDefined=@0x84/*_adUserDefined*/
+_adVarBinary=@0xCC/*_adVarBinary*/
+_adMarshalAll=@0/*_adMarshalAll*/
+_adUseClient=@3/*_adUseClient*/
+_adRecSchemaViolation=@0x20000/*_adRecSchemaViolation*/
+_adSchemaFunctions=@0x28/*_adSchemaFunctions*/
+_adXactUnspecified=@-1/*_adXactUnspecified*/
+_adBSTR=@8/*_adBSTR*/
+_adVarChar=@0xC8/*_adVarChar*/
+_adErrObjectOpen=@0xE79/*_adErrObjectOpen*/
+_adCopyAllowEmulation=@4/*_adCopyAllowEmulation*/
+_adErrCantConvertvalue=@0xE8C/*_adErrCantConvertvalue*/
+_adBinary=@0x80/*_adBinary*/
+_adIDispatch=@9/*_adIDispatch*/
+_adFldIsCollection=@0x40000/*_adFldIsCollection*/
+_adFldIsRowURL=@0x10000/*_adFldIsRowURL*/
+_adFileTime=@0x40/*_adFileTime*/
+_adFldIsChapter=@0x2000/*_adFldIsChapter*/
+_adRsnMoveFirst=@0xC/*_adRsnMoveFirst*/
+_adErrUnavailable=@0xE98/*_adErrUnavailable*/
+_adXactAsyncPhaseOne=@0x80000/*_adXactAsyncPhaseOne*/
+_adFldLong=@0x80/*_adFldLong*/
+_adPropVariant=@0x8A/*_adPropVariant*/
+_adErrSchemaViolation=@0xE8A/*_adErrSchemaViolation*/
+_adArray=@0x2000/*_adArray*/
+_adFldMayDefer=@2/*_adFldMayDefer*/
+_adFldUnknownUpdatable=@8/*_adFldUnknownUpdatable*/
+_adFldFixed=@0x10/*_adFldFixed*/
+_adFldRowID=@0x100/*_adFldRowID*/
+_adResyncUpdates=@4/*_adResyncUpdates*/
+_adCriteriaKey=@0/*_adCriteriaKey*/
+_adFldCacheDeferred=@0x1000/*_adFldCacheDeferred*/
+_adSchemaPrimaryKeys=@0x1C/*_adSchemaPrimaryKeys*/
+_adWriteLine=@1/*_adWriteLine*/
+_adFldKeyColumn=@0x8000/*_adFldKeyColumn*/
+_adResyncUnderlyingValues=@1/*_adResyncUnderlyingValues*/
+_adLongVarBinary=@0xCD/*_adLongVarBinary*/
+_adRsnMoveLast=@0xF/*_adRsnMoveLast*/
+_adModeRe_ad=@1/*_adModeRe_ad*/
+_adRecNew=@1/*_adRecNew*/
+_adClipString=@2/*_adClipString*/
+_adCmdText=@1/*_adCmdText*/
+_adCriteriaUpdCols=@2/*_adCriteriaUpdCols*/
+_adEditAdd=@2/*_adEditAdd*/
+_adSchemaCheckConstraints=@5/*_adSchemaCheckConstraints*/
+_adRsnFirstChange=@0xB/*_adRsnFirstChange*/
+_adSchemaReferentialContraints=@9/*_adSchemaReferentialContraints*/
+_adSeekAfter=@8/*_adSeekAfter*/
+_adRecOK=@0/*_adRecOK*/
+_adEditInProgress=@1/*_adEditInProgress*/
+_adRecModified=@2/*_adRecModified*/
+_adSchemaMeasures=@0x24/*_adSchemaMeasures*/
+_adSchemaIndexes=@0xC/*_adSchemaIndexes*/
+_adErrFeatureNotAvailable=@0xCB3/*_adErrFeatureNotAvailable*/
+_adPromptCompleteRequired=@3/*_adPromptCompleteRequired*/
+_adSeekBefore=@0x20/*_adSeekBefore*/
+_adSearchForward=@1/*_adSearchForward*/
+_adErrInTransaction=@0xCAE/*_adErrInTransaction*/
+_adRecCantRelease=@0x400/*_adRecCantRelease*/
+_adRecConcurrencyViolation=@0x800/*_adRecConcurrencyViolation*/
+_adRecIntegrityViolation=@0x1000/*_adRecIntegrityViolation*/
+_adSchemaConstraintTableUsage=@7/*_adSchemaConstraintTableUsage*/
+_adRecObjectOpen=@0x4000/*_adRecObjectOpen*/
+_adResyncAllValues=@2/*_adResyncAllValues*/
+_adRsnMoveNext=@0xD/*_adRsnMoveNext*/
+_adStatusErrorsOccurred=@2/*_adStatusErrorsOccurred*/
+_adLockOptimistic=@3/*_adLockOptimistic*/
+_adResyncConflicts=@2/*_adResyncConflicts*/
+_adSchemaUsagePrivileges=@0xF/*_adSchemaUsagePrivileges*/
+_adDouble=@5/*_adDouble*/
+_adPosEOF=@-3/*_adPosEOF*/
+_adModeShareDenyNone=@0x10/*_adModeShareDenyNone*/
+_adRecordURL=@-2/*_adRecordURL*/
+_adTypeBinary=@1/*_adTypeBinary*/
+_adFilterFetchedRecords=@3/*_adFilterFetchedRecords*/
+_adIUnknown=@0xD/*_adIUnknown*/
+_adAffectGroup=@2/*_adAffectGroup*/
+_adAffectAll=@3/*_adAffectAll*/
+_adErrUnsafeOperation=@0xE84/*_adErrUnsafeOperation*/
+_adRecOutOfMemory=@0x8000/*_adRecOutOfMemory*/
+_adCompareNotEqual=@3/*_adCompareNotEqual*/
+_adCompareNotComparable=@4/*_adCompareNotComparable*/
+_adSearchBackward=@-1/*_adSearchBackward*/
+_adStatusUnwantedEvent=@5/*_adStatusUnwantedEvent*/
+_adXactChaos=@0x10/*_adXactChaos*/
+_adFilterNone=@0/*_adFilterNone*/
+_adFilterPendingRecords=@1/*_adFilterPendingRecords*/
+_adParamOutput=@2/*_adParamOutput*/
+_adSchemaCommands=@0x2A/*_adSchemaCommands*/
+_adTypeText=@2/*_adTypeText*/
+_adFilterPredicate=@4/*_adFilterPredicate*/
+_adRecCanceled=@0x100/*_adRecCanceled*/
+_adPersistADTG=@0/*_adPersistADTG*/
+_adErrInvalidURL=@0xE91/*_adErrInvalidURL*/
+_adPersistXML=@1/*_adPersistXML*/
+_adParamLong=@0x80/*_adParamLong*/
+_adSchemaAsserts=@0/*_adSchemaAsserts*/
+_adRsnMovePrevious=@0xE/*_adRsnMovePrevious*/
+_adPropOptional=@2/*_adPropOptional*/
+_adCopyOverWrite=@1/*_adCopyOverWrite*/
+_adSchemaForeignKeys=@0x1B/*_adSchemaForeignKeys*/
+_adParamInputOutput=@3/*_adParamInputOutput*/
+_adSeekFirstEQ=@1/*_adSeekFirstEQ*/
+_adModeShareDenyWrite=@8/*_adModeShareDenyWrite*/
+_adFieldInvalidURL=@0x11/*_adFieldInvalidURL*/
+_adErrDenyNotSupported=@0xEA6/*_adErrDenyNotSupported*/
+_adExecuteNoRecords=@0x80/*_adExecuteNoRecords*/
+_adSchemaColumnPrivileges=@0xD/*_adSchemaColumnPrivileges*/
+_adFieldResourceLocked=@0x12/*_adFieldResourceLocked*/
+_adPromptComplete=@2/*_adPromptComplete*/
+_adRecMultipleChanges=@0x40/*_adRecMultipleChanges*/
+_adPromptNever=@4/*_adPromptNever*/
+_adErrInvalidArgument=@0xBB9/*_adErrInvalidArgument*/
+_adPriorityLowest=@1/*_adPriorityLowest*/
+_adUnsignedSmallInt=@0x12/*_adUnsignedSmallInt*/
+_adErrProviderNotFound=@0xE7A/*_adErrProviderNotFound*/
+_adAsyncConnect=@0x10/*_adAsyncConnect*/
+_adWriteChar=@0/*_adWriteChar*/
+_adErrCantChangeProvider=@0xC94/*_adErrCantChangeProvider*/
+_adResyncAll=@0xF/*_adResyncAll*/
+_adSchemaViewColumnUsage=@0x18/*_adSchemaViewColumnUsage*/
+_adModeShareExclusive=@0xC/*_adModeShareExclusive*/
+_adErrPropNotSettable=@0xEA1/*_adErrPropNotSettable*/
+_adCreateCollection=@0x2000/*_adCreateCollection*/
+_adFieldSchemaViolation=@0xB/*_adFieldSchemaViolation*/
+_adFind=@0x80000/*_adFind*/
+_adCreateNonCollection=@0/*_adCreateNonCollection*/
+_adBookmarkFirst=@1/*_adBookmarkFirst*/
+_adStatusOK=@1/*_adStatusOK*/
+_adSchemaTranslations=@0x15/*_adSchemaTranslations*/
+_adCmdTableDirect=@0x200/*_adCmdTableDirect*/
+_adErrDataOverflow=@0xE89/*_adErrDataOverflow*/
+_adXactCursorStability=@0x1000/*_adXactCursorStability*/
+_adSchemaColumnsDomainUsage=@0xB/*_adSchemaColumnsDomainUsage*/
+_adFilterAffectedRecords=@2/*_adFilterAffectedRecords*/
+_adRsnUndoDelete=@6/*_adRsnUndoDelete*/
+_adFieldAlre_adyExists=@0x1A/*_adFieldAlre_adyExists*/
+_adErrDelResOutOfScope=@0xE9A/*_adErrDelResOutOfScope*/
+_adFieldDoesNotExist=@0x10/*_adFieldDoesNotExist*/
+_adSchemaSQLLanguages=@0x12/*_adSchemaSQLLanguages*/
+_adSchemaProviderSpecific=@-1/*_adSchemaProviderSpecific*/
+_adParamInput=@1/*_adParamInput*/
+_adOpenAsync=@0x1000/*_adOpenAsync*/
+_adErrPropInvalidValue=@0xE9D/*_adErrPropInvalidValue*/
+_adErrProviderFailed=@0xBB8/*_adErrProviderFailed*/
+_adRsnUndoUpdate=@4/*_adRsnUndoUpdate*/
+_adErrFieldsUpdateFailed=@0xEA5/*_adErrFieldsUpdateFailed*/
+_adFieldCannotComplete=@0x14/*_adFieldCannotComplete*/
+_adXactBrowse=@0x100/*_adXactBrowse*/
+_adSchemaHierarchies=@0x22/*_adSchemaHierarchies*/
+_adFieldPendingUnknownDelete=@0x100000/*_adFieldPendingUnknownDelete*/
+_adSchemaMembers=@0x26/*_adSchemaMembers*/
+_adLockPessimistic=@2/*_adLockPessimistic*/
+_adSeekBeforeEQ=@0x10/*_adSeekBeforeEQ*/
+_adLongVarChar=@0xC9/*_adLongVarChar*/
+_adRecDeleted=@4/*_adRecDeleted*/
+_adErrCatalogNotSet=@0xEA3/*_adErrCatalogNotSet*/
+_adAffectAllChapters=@4/*_adAffectAllChapters*/
+_adErrNoCurrentRecord=@0xBCD/*_adErrNoCurrentRecord*/
+_adParamSigned=@0x10/*_adParamSigned*/
+_adErrCannotComplete=@0xE94/*_adErrCannotComplete*/
+_adErrSignMismatch=@0xE8B/*_adErrSignMismatch*/
+_adSchemaDBInfoLiterals=@0x1F/*_adSchemaDBInfoLiterals*/
+_adSchemaStatistics=@0x13/*_adSchemaStatistics*/
+_adBigInt=@0x14/*_adBigInt*/
+_adErrURLDoesNotExist=@0xE8F/*_adErrURLDoesNotExist*/
+_adCreateOverwrite=@0x4000000/*_adCreateOverwrite*/
+_adPriorityAboveNormal=@4/*_adPriorityAboveNormal*/
+_adSchemaCharacterSets=@2/*_adSchemaCharacterSets*/
+_adErrBoundToCommand=@0xE7B/*_adErrBoundToCommand*/
+_adDefaultStream=@-1/*_adDefaultStream*/
+_adSchemaColumns=@4/*_adSchemaColumns*/
+_adLockBatchOptimistic=@4/*_adLockBatchOptimistic*/
+_adFieldSignMismatch=@5/*_adFieldSignMismatch*/
+_adErrObjectClosed=@0xE78/*_adErrObjectClosed*/
+_adSchemaViews=@0x17/*_adSchemaViews*/
+_adStateConnecting=@2/*_adStateConnecting*/
+_adFieldDataOverflow=@6/*_adFieldDataOverflow*/
+_adParamReturnValue=@4/*_adParamReturnValue*/
+_adXactCommitRetaining=@0x20000/*_adXactCommitRetaining*/
+_adFieldPendingInsert=@0x10000/*_adFieldPendingInsert*/
+_adLongVarWChar=@0xCB/*_adLongVarWChar*/
+_adErrTreePermissionDenied=@0xE90/*_adErrTreePermissionDenied*/
+_adErrResourceLocked=@0xE92/*_adErrResourceLocked*/
+_adOpenRecordUnspecified=@-1/*_adOpenRecordUnspecified*/
+_adFieldPermissionDenied=@9/*_adFieldPermissionDenied*/
+_adMoveUnspecified=@-1/*_adMoveUnspecified*/
+_adErrProviderNotSpecified=@0xEA9/*_adErrProviderNotSpecified*/
+_adMoveAllowEmulation=@4/*_adMoveAllowEmulation*/
+_adSeekLastEQ=@2/*_adSeekLastEQ*/
+_adOpenStreamFromRecord=@4/*_adOpenStreamFromRecord*/
+_adCmdUnspecified=@-1/*_adCmdUnspecified*/
+_adwrnSecurityDialogHe_ader=@0xE86/*_adwrnSecurityDialogHe_ader*/
+_adErrPropConflicting=@0xE9E/*_adErrPropConflicting*/
+_adCopyUnspecified=@-1/*_adCopyUnspecified*/
+_adCmdTable=@2/*_adCmdTable*/
+_adFldNegativeScale=@0x4000/*_adFldNegativeScale*/
+_adCR=@0xD/*_adCR*/
+_adCmdStoredProc=@4/*_adCmdStoredProc*/
+_adCmdUnknown=@8/*_adCmdUnknown*/
+_adStatusCantDeny=@3/*_adStatusCantDeny*/
+_adCollectionRecord=@1/*_adCollectionRecord*/
+_adSchemaConstraintColumnUsage=@6/*_adSchemaConstraintColumnUsage*/
+_adSchemaTables=@0x14/*_adSchemaTables*/
+end intellisense**/
+

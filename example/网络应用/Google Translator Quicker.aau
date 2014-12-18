@@ -1,0 +1,71 @@
+import win.ui;
+/*DSG{{*/
+var winform = ..win.form(cls="AFORM";text="Google 快译 v1.8 - WWW.AAU.CN";right=417;bottom=397;bgcolor=14215660)
+winform.add(
+button={cls="button";text="翻译为";left=224;top=96;right=296;bottom=124;dr=1;dt=1;multiline=1;z=5};
+cmbsl={cls="combobox";left=131;top=99;right=208;bottom=119;dr=1;dt=1;edge=1;hscroll=1;items={};mode="dropdownlist";z=3};
+cmbtl={cls="combobox";left=310;top=99;right=375;bottom=119;dr=1;dt=1;edge=1;hscroll=1;items={};mode="dropdownlist";z=2};
+edit={cls="edit";text="Just try it!";left=16;top=21;right=402;bottom=95;bgcolor=16777215;dl=1;dr=1;dt=1;edge=1;multiline=1;vscroll=1;z=4};
+editResult={cls="edit";left=17;top=152;right=400;bottom=355;ah=1;bgcolor=16777215;db=1;dl=1;dr=1;dt=1;edge=1;multiline=1;vscroll=1;z=7};
+groupInput={cls="groupbox";text="输入要翻译的文本";left=6;top=5;right=410;bottom=129;dl=1;dr=1;dt=1;edge=1;z=1};
+groupResult={cls="groupbox";text="输出结果";left=9;top=132;right=411;bottom=366;db=1;dl=1;dr=1;dt=1;edge=1;z=6};
+lnkSource={cls="plus";text="查看本程序源代码";left=238;top=370;right=404;bottom=390;color=16711680;db=1;font=LOGFONT( name='Microsoft Sans Serif';underline=1 );notify=1;z=9};
+static={cls="static";text="本程序使用AAuto编程语言制作";left=37;top=370;right=226;bottom=388;db=1;transparent=1;z=8}
+)
+/*}}*/
+
+var langIds = { 土耳其语="tr";爱尔兰语="ga";法语="fr";印尼语="id";塞尔维亚语="sr";泰语="th";越南语="vi";
+荷兰语="nl";马其顿语="mk";阿拉伯语="ar";德语="de";检测语言="auto";冰岛语="is";韩语="ko";加利西亚语="gl";
+加泰罗尼亚语="ca";海地克里奥尔语 ALPHA="ht";克罗地亚语="hr";印地语="hi";马来语="ms";斯洛伐克语="sk";丹麦语="da";
+爱沙尼亚语="et";白俄罗斯语="be";波兰语="pl";芬兰语="fi";罗马尼亚语="ro";希腊语="el";菲律宾语="tl";西班牙语="es";保加利亚语="bg";斯洛文尼亚语="sl";立陶宛语="lt";乌克兰语="uk";马耳他语="mt";英语="en";波斯语="fa";瑞典语="sv";威尔士语="cy";中文="zh-CN";拉脱维亚语="lv";葡萄牙语="pt";希伯来语="iw";俄语="ru";捷克语="cs";挪威语="no";匈牙利语="hu";日语="ja";斯瓦希里语="sw";意第绪语="yi";阿尔巴尼亚语="sq";南非荷兰语="af";意大利语="it" }
+var tlanglist = { "中文"; "检测语言";"英语"; "土耳其语";"爱尔兰语";"法语";"印尼语";"塞尔维亚语";"ALPHA";"泰语";"越南语";"荷兰语";"马其顿语";"阿拉伯语";"德语";"检测语言";"冰岛语";"韩语";"波兰语";"意大利语";"白俄罗斯语";"阿尔巴尼亚语";"印地语";"意第绪语";"斯洛伐克语";"丹麦语";"爱沙尼亚语";"加泰罗尼亚语";"斯瓦希里语";"马来语";"加利西亚语";"希腊语";"菲律宾语";"西班牙语";"保加利亚语";"南非荷兰语";"挪威语";"乌克兰语";"马耳他语";"捷克语";"瑞典语";"威尔士语";"拉脱维亚语";"希伯来语";"葡萄牙语";"俄语";"斯洛文尼亚语";"波斯语";"匈牙利语";"日语";"罗马尼亚语";"芬兰语";"克罗地亚语";"立陶宛语" }
+
+winform.cmbsl.items = tlanglist;
+winform.cmbsl.selIndex = 2;
+winform.cmbtl.items = tlanglist;
+winform.cmbtl.selIndex = 1;
+
+winform.button.oncommand = function(id,event){
+
+	if( ! #winform.edit.text ){
+		winform.msgboxErr("请输入要翻译的文本");
+		return;
+	} 
+	
+	//创建REST客户端
+	import web.rest.jsonLiteClient;
+	var http = web.rest.jsonLiteClient( "Mozilla/5.0+(compatible;+Googlebot/2.1;++http://www.google.com/bot.html)" );
+	var translate = http.declareApi('http://translate.google.cn/translate_a/t');
+	
+	var data = translate.get(
+		pc = 0; client = "nt";
+		tl = langIds[ winform.cmbtl.text ];//目标语言
+		sl = langIds[ winform.cmbsl.text ];//源语言 
+		text = winform.edit.text;
+	) 
+		
+	var sentences = data.sentences;
+	var lst = {}
+	for(i=1;#sentences){ 
+		table.push( lst, sentences[i].trans )  
+	}
+		
+	winform.editResult.text = string.replace( string.join( lst ),"@\r\n",'\r\n');   
+}
+
+//设置超链接样式
+winform.lnkSource.skin(
+	color = { //颜色样式,颜色格式为0xAARRGGBB 其中A为透明度,R为红色分量,G为绿色分量,B为蓝色分量
+		hover = 0xFFFF0000; //鼠标移上去的颜色
+		active = 0xFF00FF00; //鼠标按下去的颜色
+	}
+) 
+
+//打开超链接
+import process;
+winform.lnkSource.onMouseClick = function(wParam,lParam){
+	process.execute("http://www.aau.cn");
+} 
+
+winform.show(true) 
+win.loopMessage();

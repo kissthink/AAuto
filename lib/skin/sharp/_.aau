@@ -1,0 +1,89 @@
+import fsys;
+namespace skin.sharp
+ 
+_dll = ..raw.loadDll( $"~\lib\skin\sharp\.res\SkinH.dll" ,"skinsharp" ) 
+
+Api_Attach = _dll.api("SkinH_Attach","int()");
+Api_Detach = _dll.api("SkinH_Detach","int()");
+Api_DetachEx = _dll.api("SkinH_DetachEx","int(int hwnd)");
+Api_AttachEx = _dll.api("SkinH_AttachEx","int(str skinFile,str pwd)"); 
+Api_AttachExt = _dll.api("SkinH_AttachExt","int(str skinFile,str pwd,int hue,int sat,int bri)"); 
+Api_AttachRes = _dll.api("SkinH_AttachRes","int(str sheBin,INT size,str pwd,int hue,int sat,int bri)");
+Api_SetWindowAlpha = _dll.api("SkinH_SetWindowAlpha","int(int hwnd,int alpha)");
+Api_AdjustHSV = _dll.api("SkinH_AdjustHSV","int(int hue,int sat,int bri)");
+Api_GetColor = _dll.api("SkinH_GetColor","int(int hwnd,int x,int y)");
+Api_Map = _dll.api("SkinH_Map","int(int hwnd,int type)");
+Api_LockUpdate = _dll.api("SkinH_LockUpdate","int(int hwnd,bool update)");
+Api_NineBlt = _dll.api("SkinH_NineBlt","int(pointer hdc,int left,int top,int right,int nMRect)");
+Api_SetTitleMenuBar = _dll.api("SkinH_SetTitleMenuBar","int(int hwnd,bool enable,int nTMenuY,int nTopOffs,int nRightOffs)");
+Api_AdjustAero = _dll.api("SkinH_AdjustAero","int(int alpha,int shwDark,int shwSharp,int shwSize,int x,int y,int red,int green,int blue)");
+setAero = _dll.api("SkinH_SetAero","int(bool bAero)");
+setWindowMovable = _dll.api("SkinH_SetWindowMovable","int(int hwnd,bool moveable)");
+setMenuAlpha= _dll.api("SkinH_SetMenuAlpha","int(int alpha)"); 
+
+attach = function(file,pwd="",hue=0,sat=0,bri=0){
+	updateForms();
+		
+	if(!file)
+		return !Api_Attach()
+	else {
+		var bin = ..string.load(file);
+		return !Api_AttachRes( bin,#bin,pwd,hue,sat,bri);
+	} 
+}
+
+updateForms = function(){
+	for(k,v in ..win.form._forms ){
+		//只要还有一个窗口存在，就不要退出当前线程  
+		if(type(v)==type.table)
+			map(v.hwnd,5002/*_TYPE_WINDOW*/)
+	}     	
+} 
+
+setAlpha = function(hwnd,alpha){
+	return !Api_SetWindowAlpha( hwnd[["hwnd"]] : hwnd,alpha )
+}
+
+adjustHsv = function( hue=0,sat=0,bri=0 ){ 
+	return !Api_AdjustHSV( hue,sat,bri); 
+}
+ 
+getColor = function( hwnd,x=0,y=0 ){ 
+	return !Api_GetColor( hwnd[["hwnd"]] : hwnd,x,y); 
+}
+ 
+map = function( hwnd, sknType ){  
+	return !Api_Map( hwnd[["hwnd"]] : hwnd,sknType ); 
+}
+
+lock = function(hwnd,update=false){
+	return !Api_LockUpdate(hwnd[["hwnd"]] : hwnd,update);
+}
+
+adjustAero = function(alpha=0,shwDark=0,shwSharp=0,shwSize=2,red=-1,green=-1,blue=-1,x=0,y=0){
+	return !Api_AdjustAero(alpha,shwDark,shwSharp,shwSize,x,y,red,green,blue)
+}
+
+..table.add_gc( 
+	self,
+	function(){
+		Api_Detach();
+	} 
+)
+
+/**intellisense(skin.sharp)
+attach(.(皮肤文件路径,密码,色调,饱和度,亮度) = 所有参数可选\n皮肤文件支持内嵌资源
+updateForms() = 更新所有已创建窗体\n刷新窗体背景色
+setAlpha(.(窗体,透明度) = 设置窗体透明度
+setMenuAlpha(__/*透明度*/) =  设置菜单透明度
+adjustHsv(.(色调,饱和度,亮度) = 调整颜色
+getColor(.(窗口,x坐标,y坐标) = 返回控件指定坐标颜色值
+map(.(窗口,_TYPE__) = 如果控件识别类型不正确,请调用此函数修正
+setWindowMovable(.(窗口,是否可移动) = 设置窗口是否可移动
+lock(hwnd,false) = 解除重绘锁定
+lock(hwnd,true) = 禁止窗口重绘\n解决重复绘制影响执行效率问题
+setAero(true) = 开启Aero特效
+setAero(false) =  关闭Aero特效
+adjustAero(.(透明度, 亮度,锐度,阴影大小,红色分量,绿色分量, 蓝色分量) = 设置Aero特效
+end intellisense**/
+ 

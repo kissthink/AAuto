@@ -1,0 +1,13 @@
+import ide;
+import fsys;
+
+var publisDir = ide.getPublisDir();
+if(!#publisDir)return; 
+ 
+var outDllDir =  fsys.joinpath(publisDir,"\lib\sevenZip\cmd\" ); 
+if( ! io.exist(outDllDir) ){
+	..fsys.createDir(outDllDir);
+	
+	var libPath,libDir = io.libpath("sevenZip.cmd")
+	..fsys.copy( fsys.joinpath(libDir,"\.bin") ,outDllDir,0x10/*_FOF_NOCONFIRMATION*/  | 0x200/*_FOF_NOCONFIRMMKDIR*/); 
+}

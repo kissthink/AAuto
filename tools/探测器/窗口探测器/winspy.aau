@@ -1,0 +1,404 @@
+/*  
+ * 窗口探测器
+ * 作者: lujjjh  
+ * 备注: http://www.ecranesoft.com/bbs/showtopic-8494.aspx
+ * -----------------------------
+ * 修改记录
+ * crane 2010/08/14
+ * -----------------------------
+ * $Id: winspy.aau 1259 2010-12-23 08:24:49Z crane.he $
+*/
+
+import win;
+import winex;
+import win.ui;
+import com.picture;
+import win.cur;//鼠标指针函数库
+import mouse;
+/*DSG{{*/
+var winform = win.form(parent=...; right=392;text="winspy for AAuto";bottom=386 )
+winform.add( 
+txtHwnd={ dl=1;bottom=117;right=203;left=97;dt=1;top=96;font=LOGFONT( h=-11 );z=11;readonly=1;edge=1;cls="edit" };
+lbClass={ dl=1;bottom=89;align="right";right=259;left=210;dt=1;top=74;font=LOGFONT( h=-11 );transparent=1;text="类名:";z=4;cls="static" };
+txtPid={ dl=1;bottom=141;right=373;left=267;dt=1;top=120;font=LOGFONT( h=-11 );z=16;readonly=1;edge=1;cls="edit" };
+lbParenHwnd={ dl=1;bottom=89;align="right";right=88;left=20;dt=1;top=74;font=LOGFONT( h=-11 );transparent=1;text="父窗口句柄:";z=6;cls="static" };
+txtText={ dl=1;bottom=191;right=279;left=96;dt=1;top=168;font=LOGFONT( h=-11 );z=10;readonly=1;edge=1;cls="edit" };
+chkForeground={ dl=1;bottom=39;right=275;left=153;dt=1;top=24;font=LOGFONT( h=-11 );z=20;text="自动捕获前台窗口";cls="checkbox" };
+txtStyle={ dl=1;bottom=140;right=203;left=97;dt=1;top=119;font=LOGFONT( h=-11 );z=12;readonly=1;edge=1;cls="edit" };
+button={ dl=1;disabled=1;bottom=193;right=372;left=281;dt=1;top=166;font=LOGFONT( h=-11 );z=21;text="抓取密码";cls="button" };
+chkTopMost={ dl=1;bottom=39;right=149;left=51;dt=1;top=24;font=LOGFONT( h=-11 );z=19;text="保持窗口最前";cls="checkbox" };
+lbHwnd={ dl=1;bottom=110;align="right";right=88;left=31;dt=1;top=98;font=LOGFONT( h=-11 );transparent=1;text="窗口句柄:";z=1;cls="static" };
+txtTid={ dl=1;bottom=165;right=372;left=266;dt=1;top=144;font=LOGFONT( h=-11 );z=17;readonly=1;edge=1;cls="edit" };
+txtPath={ dl=1;bottom=70;right=373;left=97;dt=1;top=47;font=LOGFONT( h=-11 );z=25;readonly=1;edge=1;cls="edit" };
+txtStyleEx={ dl=1;bottom=163;right=203;left=97;dt=1;top=142;font=LOGFONT( h=-11 );z=13;readonly=1;edge=1;cls="edit" };
+txtId={ dl=1;bottom=117;right=373;left=267;dt=1;top=96;font=LOGFONT( h=-11 );z=15;readonly=1;edge=1;cls="edit" };
+lbStyle={ dl=1;bottom=142;align="right";right=88;left=28;dt=1;top=122;font=LOGFONT( h=-11 );transparent=1;text="基本样式:";z=2;cls="static" };
+static={ dl=1;bottom=66;align="right";right=88;left=25;dt=1;top=51;font=LOGFONT( h=-11 );z=26;text="执行文件:";transparent=1;cls="static" };
+lbStyleEx={ dl=1;bottom=162;align="right";right=88;left=26;dt=1;top=147;font=LOGFONT( h=-11 );transparent=1;text="扩展样式:";z=3;cls="static" };
+lbText={ dl=1;bottom=185;align="right";right=88;left=21;dt=1;top=170;font=LOGFONT( h=-11 );transparent=1;text="文本标题:";z=7;cls="static" };
+editCode={ dr=1;dl=1;vscroll=1;right=384;left=6;dt=1;db=1;cls="edit";bottom=379;multiline=1;top=195;font=LOGFONT( h=-11 );z=24;hscroll=1;edge=1 };
+lbId={ dl=1;bottom=114;align="right";right=258;left=209;dt=1;top=99;font=LOGFONT( h=-11 );transparent=1;text="命令ID:";z=5;cls="static" };
+lbPid={ dl=1;bottom=140;align="right";right=258;left=209;dt=1;top=125;font=LOGFONT( h=-11 );transparent=1;text="进程ID:";z=9;cls="static" };
+txtParenHwnd={ dl=1;bottom=94;notify=1;color=16711680;right=203;left=97;multiline=1;top=73;font=LOGFONT( h=-11;name='Microsoft Sans Serif';underline=1 );transparent=1;dt=1;z=22;edge=1;cls="static" };
+staticTip={ dl=1;bottom=25;right=258;left=53;dt=1;top=6;font=LOGFONT( h=-11 );z=18;text="← 拖动左侧图标置于目标窗口上";transparent=1;cls="static" };
+pic1={ dl=1;notify=1;right=41;left=9;dt=1;top=7;font=LOGFONT( name='SimSun';h=-11 );z=23;bottom=39;image=$"\res\1.gif";transparent=1;cls="picturebox" };
+lbTid={ dl=1;bottom=162;align="right";right=258;left=209;dt=1;top=147;font=LOGFONT( h=-11 );transparent=1;text="线程ID:";z=8;cls="static" };
+txtClass={ dl=1;bottom=94;right=373;left=267;dt=1;top=73;font=LOGFONT( h=-11 );z=14;readonly=1;edge=1;cls="edit" }
+)
+/*}}*/
+
+//置顶窗口
+winform.chkTopMost.oncommand = function(id,event){
+	win.setTopmost(winform.hwnd,winform.chkTopMost.checked)  
+}
+
+//加载自定义的鼠标指针
+var hCursor = win.cur.loadfile("\res\spy.cur") ;
+ 
+//主窗体回调函数
+winform.pic1.wndproc = function (hwndTarget, uMsg, wParam, lParam){
+	select (uMsg){
+		case 0x201/*_WM_LBUTTONDOWN*/{
+			winform.pic1.image = $"\res\2.gif";
+			
+			winform.pic1.capture = true; //捕获全局鼠标消息
+			win.cur.beginCur();//持续设定鼠标指针
+		}
+		case 0x202/*_WM_LBUTTONUP*/{ 
+			winform.pic1.image = $"\res\1.gif";
+			
+			winform.pic1.capture = false; //释放鼠标
+			win.cur.endCur(); //恢复正常鼠标指针 
+			genCode()
+		} 
+	}
+}
+
+//显示窗口信息
+function showWindowInfo(hwnd){
+	winform.txtParenHwnd.text = string.format("%X",win.getParent(hwnd) )
+	winform.txtHwnd.text = string.format("%X",hwnd )
+	winform.txtClass.text = win.getClass(hwnd) 
+	winform.txtId.text = win.getId(hwnd);
+	
+	var tid,pid = win.getThreadProcessId(hwnd)
+	winform.txtTid.text,winform.txtPid.text = tid,pid;
+	winform.txtPath.text = process.getPath(pid)
+	
+	var str = winex.getText(hwnd,50) ;
+	if(str){
+		winform.txtText.text = string.replace(str,"[\r\n]","")
+	} 
+	
+	winform.txtStyle.text = tostring(::GetWindowLong(hwnd, 0xFFFFFFF0/*_GWL_STYLE*/) );
+	winform.txtStyleEx.text = tostring(::GetWindowLong(hwnd, 0xFFFFFFEC/*_GWL_EXSTYLE*/) ); 
+}
+
+//点击父窗口句柄时显示父窗口信息
+winform.txtParenHwnd.oncommand = function(id,event){
+    var hwnd = tonumber(  winform.txtParenHwnd.text,16)
+    if(hwnd){
+		showWindowInfo(hwnd);
+		genCode(hwnd)
+	} 
+}
+
+import process
+winform.button.oncommand = function(id,event){
+
+	winform.button.disabled = true;
+	
+	var hwnd = tonumber(  winform.txtHwnd.text,16)
+	var tid,pid = win.getThreadProcessId(hwnd)
+	var prcs = process( pid )
+	var getWindowText_call = prcs.remoteApi("int(int hwnd,string& lpString,int cch)" ,"User32.dll","GetWindowTextA" )
+	nil,winform.txtText.text = getWindowText_call(hwnd,50,50);
+	prcs.free();
+	
+	winform.button.disabled = false;
+	
+}//endproc
+
+CreatePen			= Gdi32.api("CreatePen", "pointer(int nStyle, int nWidth, int nColor)");
+Rectangle			= Gdi32.api("Rectangle", "int(pointer hDC, int nLeft, int nTop, int nRight, int nBottom)");
+SetROP2				= Gdi32.api("SetROP2", "int(pointer hDC, int nMode)"); 
+flashRect = function(rc){
+		var hDC = ::GetWindowDC(0);
+		var screenCx,screenCy = win.getScreen()
+		
+		/** 防止溢出 Start **/
+		rc.right =  math.min(rc.right,screenCx) ;
+		rc.bottom =  math.min(rc.bottom,screenCy) 
+		if (rc.left < 0)
+			rc.left = 0;
+		if (rc.top < 0)
+			rc.top = 0; 
+		/** 防止溢出 End **/
+		
+		var hPen = CreatePen(0x0/*_PS_SOLID*/, 3, 0);
+		var hOldPen = ::SelectObject(hDC, hPen);
+		var oldROP2 = SetROP2(hDC, 0xA/*_R2_NOTXORPEN*/);
+		Rectangle(hDC, rc.left, rc.top, rc.right, rc.bottom);
+		sleep(300);
+		Rectangle(hDC, rc.left, rc.top, rc.right, rc.bottom);
+		SetROP2(hDC, oldROP2);
+		::SelectObject(hDC, hOldPen);
+		::DeleteObject(hPen);
+		::ReleaseDC(0, hDC);
+}
+
+
+
+var hwndTarget;// 用来保存探测到的窗口句柄
+tmid = winform.addtimer(
+	600/*毫秒*/, 
+	function(hwnd,msg,id,tick){
+		// 定时执行代码
+		// 如果鼠标指针是探测状态
+		if ( win.cur.beginning ){
+
+			hwndTarget = winex.fromPointReal( mouse.getPos() ) : winex.fromPoint( mouse.getPos() );
+			if (hwndTarget){
+				var lpRect = win.getRect(hwndTarget,true)
+				showWindowInfo(hwndTarget);
+				flashRect(lpRect)
+			
+			}
+		}
+		elseif( winform.chkForeground.checked ){
+			showWindowInfo( win.getForeground() );
+		}
+	}
+)
+
+getPattern = function(str){
+	if(!#str)
+		return "";
+		
+	var mbs = string.match(str,"[\s\w]*:+[\s\w]*")
+	if(#mbs)
+		return mbs;
+		
+    str = string.replace(str,"(\p)","\\\1") 
+    str = string.replace(str,"\d+","\\d+") 	
+    return str;
+}
+ 
+
+var templateCtrl = /**
+import winex;
+import process;
+import fsys.lnk;
+
+var exepath = "$EXEPATH"; 
+var setpath = fsys.lnk.search( "$EXEFILENAME" )
+if( setpath){
+	exepath = setpath;
+}
+
+if( ! process.find(exepath) ) 
+	process.execute(exepath) 
+	
+
+//查找指定的主窗口
+窗口句柄,线程ID,进程ID = winex.find("$窗口类名","$窗口标题" )
+
+//按类名查找控件
+控件句柄 = winex.findEx(窗口句柄,$第几个相同类名,"$控件类名" )
+
+//按更多特征查找控件
+控件句柄 = winex.findEx(窗口句柄,$第几个匹配,"$控件类名","$控件标题"$控件ID)
+	
+//查找指定的窗口
+窗口句柄,控件句柄,线程ID,进程ID = winex.findExists( "$窗口标题","$控件标题","$窗口类名","$控件类名"$控件ID )
+
+//查找指定的窗口并激活
+窗口句柄,控件句柄,线程ID,进程ID = winex.findActivate( "$窗口标题","$控件标题","$窗口类名","$控件类名"$控件ID )
+	
+//等待指定的窗口
+窗口句柄,控件句柄,线程ID,进程ID = winex.wait( "$窗口标题","$控件标题","$窗口类名","$控件类名"$控件ID )
+
+//等待指定的窗口启用
+窗口句柄,控件句柄,线程ID,进程ID = winex.waitEnabled( "$窗口标题","$控件标题","$窗口类名","$控件类名"$控件ID )
+
+//等待指定的窗口显示
+窗口句柄,控件句柄,线程ID,进程ID = winex.waitVisible( "$窗口标题","$控件标题","$窗口类名","$控件类名"$控件ID )
+
+//等待指定的窗口打开到激活状态,注意个别窗口无法获取激活状态,应避免使用此函数
+窗口句柄,控件句柄,线程ID,进程ID = winex.waitActive( "$窗口标题","$控件标题","$窗口类名","$控件类名"$控件ID )
+
+//模拟点击方法一
+winex.click(控件句柄);
+
+//模拟点击方法二
+winex.click(窗口句柄$控件ID);
+
+//关闭窗口
+winex.close(窗口句柄) 
+
+//退出窗口程序
+winex.quit(窗口句柄) 
+
+//修改标题
+winex.setText(窗口句柄,"我是新的标题");
+
+//最小化
+win.show(窗口句柄,0x6/*_SW_MINIMIZE*/) 
+
+//调用API闪烁窗口
+FlashWindow = ::User32.api("FlashWindow", "int(int hwndTarget, int bInvert)")
+FlashWindow(窗口句柄, 0);
+**/
+
+
+var templateTopWindow = /**
+import winex;
+import process;
+import fsys.lnk;
+
+var exepath = "$EXEPATH"; 
+var setpath = fsys.lnk.search( "$EXEFILENAME" )
+if( setpath){
+	exepath = setpath;
+}
+
+if( ! process.find(exepath) ) 
+	process.execute(exepath) 
+		
+//等待指定的窗口
+窗口句柄, ,线程ID,进程ID = winex.wait( "$窗口标题","$控件标题","$窗口类名","$控件类名"$控件ID )
+
+//查找指定的窗口
+窗口句柄, ,线程ID,进程ID = winex.findExists( "$窗口标题","$控件标题","$窗口类名","$控件类名"$控件ID )
+
+//查找指定的窗口并激活
+窗口句柄, ,线程ID,进程ID = winex.findActivate( "$窗口标题","$控件标题","$窗口类名","$控件类名"$控件ID )
+
+//等待指定的窗口打开到激活状态
+窗口句柄, ,线程ID,进程ID = winex.waitActive( "$窗口标题","$控件标题","$窗口类名","$控件类名"$控件ID )
+
+//查找指定的主窗口
+窗口句柄,线程ID,进程ID = winex.find("$窗口类名","$窗口标题" ) 
+
+//关闭窗口
+winex.close(窗口句柄) 
+
+//退出窗口程序
+winex.quit(窗口句柄) 
+
+//修改标题
+winex.setText(窗口句柄,"我是新的标题");
+
+//最小化
+win.show(窗口句柄,0x6/*_SW_MINIMIZE*/) 
+
+//调用API闪烁窗口
+FlashWindow = ::User32.api("FlashWindow", "int(int hwndTarget, int bInvert)")
+FlashWindow(窗口句柄, 0);
+**/
+
+winex.findEx = function(parent,count,cls ,text, id,resultIn ){
+	var count2=0;
+ 	var result;
+	winex.enum( 
+		function( hwndfind,depth ){
+			result = hwndfind; 
+			if( count || resultIn ){
+				count2++;   
+				if(resultIn){
+					result = count2;
+					if( resultIn != hwndfind){
+						return true;
+					}
+				}
+				else {
+					if( count2 < count ) 
+						return true; //接着找 
+				}
+				
+			}
+			return false;//停止查找
+			
+		} 
+		,parent
+		,cls
+		,text
+		,id
+	)
+	
+	return result;
+}
+
+//使edit控件支持Ctrl+A
+import key;
+winform.editCode.wndproc = function(hwnd,message,wParam,lParam){
+	
+	if(message=0x100/*_WM_KEYDOWN*/){
+		if( wParam == 'A'#){
+			if(key.getState(0x11/*_VK_CTRL*/) ){
+				winform.editCode.setsel(0,-1);
+				return false;
+			}
+		}
+	}
+}
+ 
+import process;
+genCode = function(hwndCtrl){   
+	hwndCtrl := hwndTarget;
+	if(!hwndCtrl)
+		return;
+		
+	hwndTop = win.getRoot(hwndCtrl);
+	var code;
+	if(hwndTop == hwndCtrl ){
+		hwndCtrl = win.findEx(hwndTop,0)
+		code = templateTopWindow;
+	}
+	else { 
+		code = templateCtrl;
+	}
+	
+	var tid,pid = win.getThreadProcessId(hwndTop);
+	var prcs = process(pid);
+	if(!prcs)return;
+	var path = prcs.getPath();
+	code =  string.replace( code,"@$EXEPATH",path) 
+	prcs.free(); 
+	prcs = null;
+	
+	var tpath = io.splitpath(path)
+	code =  string.replace( code,"@$EXEFILENAME",getPattern(tpath.file) );
+	
+    var title = getPattern(winex.getText(hwndTop));
+    var text = getPattern(winex.getText(hwndCtrl,20));
+    var cls = getPattern( win.getClass(hwndTop) )
+    var clsCtrl = getPattern( win.getClass(hwndCtrl) )
+    var id = win.getId(hwndCtrl)
+ 
+	code =  string.replace( code,"@$窗口标题",title)
+	code =  string.replace( code,"@$控件标题",text)
+	code =  string.replace( code,"@$窗口类名",cls)
+	code =  string.replace( code,"@$控件类名",clsCtrl)
+	
+	code =  string.replace( code,"@$控件ID",id ? ( ','+ id ) : "")
+
+	//移除空字符串
+	code =  string.replace( code,'@""',"")
+	 
+	var countCls = winex.findEx(hwndTop, ,clsCtrl, , ,hwndCtrl)
+	var count = winex.findEx(hwndTop, ,clsCtrl,title,id,hwndCtrl)
+	
+	code =  string.replace( code,"@$第几个相同类名",countCls:"")
+	code =  string.replace( code,"@$第几个匹配",count:"")
+	
+	winform.editCode.text = code;
+	winform.button.disabled = false;
+	
+	winform.editCode.lineScroll(1,20)
+	winform.editCode.setsel(0,-1)
+}
+
+winform.show(true);
+win.loopMessage(); 
+return winform;

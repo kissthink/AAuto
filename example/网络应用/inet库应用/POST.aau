@@ -1,0 +1,24 @@
+//HTTP的POST 用法示例 
+import console;  
+import inet.http;
+var http = inet.http();
+
+var html,err,errCode = http.post( "http://test.aau.cn/aauto/test/post/" 
+	,"username=用户名&password=密码" );
+http.close();
+
+if( html ){
+	import process;
+	string.save("/test.html",html )
+	process.execute( "/test.html" );
+}
+else {
+	if( http.statusCode ){
+		//服务端返回错误信息
+		console.log( http.lastResponse(), "HTTP错误代码:" + http.statusCode )
+	}
+	else{
+		//本地内部错误
+		console.log( err,errCode );
+	}
+}

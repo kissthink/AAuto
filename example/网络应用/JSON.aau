@@ -1,0 +1,17 @@
+import web.json;
+import console;
+
+var json = '
+	{ 
+		"action":"","flag1":true, "flag2":null, "result":"success", "itemid":"865691", "url":"", "message":"1件产品下载成功", "total": -3.5E+5 , 
+		"redirection":"/distributor/product/my_product_list.htm?pageNo=1&download=-1&pageTotal=0&supplierId=-1&needPageTotal=true&productNumber=" 
+	} 
+';
+ 
+//json字串解码成table对象
+var tab  = web.json.parse(json);
+console.varDump( tab ) 
+
+// table对象转换为JSON字符串,参数2为true时格式化JSON
+var json = web.json.stringify(tab,true)
+console.log(json)

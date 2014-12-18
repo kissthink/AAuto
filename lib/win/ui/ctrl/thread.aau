@@ -1,0 +1,91 @@
+//thread 线程控件 
+import thread.command;
+import win.ui.ctrl.static;
+namespace win.ui.ctrl;  
+
+class thread { 
+	ctor(parent,tParam){
+		this = ..win.ui.ctrl.static();
+		var command = ..thread.command();
+		command.onError = function(err){
+			error(err,3)
+		};
+		command.onCreate = function(hwnd){
+			this.hwnd  = hwnd;
+		}
+	 
+		var threadHandle,threadId = ..thread.create( 
+			function(hCommand,hParent,tCtrlParam){ 
+				import win;
+				import win.ui;
+				import thread.command;
+				
+				if( !tCtrlParam.loadForm ){
+					thread.command.send(hCommand,"onError","线程控件未指定 loadForm 参数") 
+					return;
+				} 
+
+				try{
+					..win.loadForm(
+						tCtrlParam.loadForm,function(tParam){ 
+							tCtrlParam.loadForm = null;  
+							..table.mixin( tParam,tCtrlParam,{
+								exmode="none";
+								mode="child" 
+							} );
+							..table.mix( tParam,{
+								border = "none";
+							} )
+
+							var winform = win.form(tParam)
+							if( winform[["hwnd"]] ){
+								thread.command.send(hCommand,"onCreate",winform.hwnd);
+							}
+							else {
+								thread.command.send(hCommand,"onError","创建窗体失败") 
+							}
+							return winform;
+						},hParent
+					)
+					..win.loopMessage();
+				}
+				catch(err){
+					thread.command.send(hCommand,"onError",err) 
+				}
+			},command._form.hwnd, parent.hwnd,tParam
+		);
+
+		..win.wait(
+			function(){
+				return this.hwnd ; 
+			},parent.hwnd
+		); 
+		
+		command._form.close();
+		command = null;
+	}; 
+	onCreate = function(){
+		::PostMessage(this.hwnd,0x1/*_WM_CREATE*/,0,0); 
+	}; 
+	_adjust = function(){ 
+		this.redraw( 0x185/*_RDW_ALLCHILDREN | _RDW_INVALIDATE | _RDW_UPDATENOW  | _RDW_ERASE*/ );
+	}; 
+	_onDestroy = function(){  
+		if( !threadHandle ){
+			return;
+		}
+		 
+		//防止重入
+		var handleOnce = threadHandle;
+		threadHandle = null;
+		
+		::PostMessage(this.hwnd,0x10/*_WM_CLOSE*/,0,0); 
+		::PostThreadMessage(threadId,0x12/*_WM_QUIT*/ ,0,0); 
+		..thread.waitOne(handleOnce);
+		..raw.closehandle(handleOnce);
+	};
+}
+
+/*intellisense()
+win.ui.ctrl.thread() = 线程控件\n!static.
+end intellisense*/

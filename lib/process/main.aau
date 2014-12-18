@@ -1,0 +1,37 @@
+//main 应用程序入口
+import process;
+namespace process.main;
+
+start = function(cmdline){ 
+		
+	if( _STUDIO_INVOKED ){  
+		..thread.create("/main." + "aau",cmdline);
+	}
+	else {
+		if( type( cmdline ) == type.table )
+			cmdline = ..table.tostring(cmdline);
+		
+		..process(..io._exefile,cmdline);
+	} 
+}
+
+parseCommandLine = function(...){
+	if( ... !== null ) {  
+		return ...;
+	}
+	else {
+		var cmdline = _CMDLINE;
+		if(!#cmdline)return;
+		
+		if( cmdline[1] == '{'# )
+			cmdline = eval(cmdline);
+			
+		return cmdline;
+	} 	
+}
+
+/**intellisense(process)
+main = 专用于工程main.aau发送,处理命令参数
+main.parseCommandLine(->->->) = 仅限于工程main.aau用于处理命令行
+main.start(.(命令行参数) = 启动当前打开的工程,\n并向main.aau传递命令行参数,\nmain.aau必须调用parseCommandLine函数处理命令行
+end intellisense**/

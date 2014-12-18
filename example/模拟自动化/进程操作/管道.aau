@@ -1,0 +1,31 @@
+import win.ui;
+/*DSG{{*/
+var winform = win.form(parent=...; text="AAuto Form";right=457;bottom=278 )
+winform.add( 
+btnPing={ bottom=47;right=440;left=332;top=14;z=1;text="ping";cls="button" };
+editHost={ bottom=45;right=321;left=16;top=17;z=2;text="www.baidu.com";edge=1;cls="edit" };
+editResult={ vscroll=1;right=442;left=15;multiline=1;top=58;bottom=266;z=3;text="";hscroll=1;edge=1;cls="richedit" }
+)
+/*}}*/
+
+winform.btnPing.oncommand = function(id,event){
+	winform.btnPing.text = "ит╨Р..."
+	winform.btnPing.disabled = true;
+	
+	var result = win.invoke(
+		function(host){
+			import process.popen;
+			subprocess = process.popen("ping " + host) 
+			var ret = subprocess.read(-1);
+			subprocess.close();
+			return ret;
+		},winform.editHost.text
+	) 
+	
+	winform.editResult.text = result;
+	winform.btnPing.text = "ping"
+	winform.btnPing.disabled = false; 
+}
+
+winform.show() 
+win.loopMessage();

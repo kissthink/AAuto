@@ -1,0 +1,35 @@
+import win.ui;
+/*DSG{{*/
+var winform = ..win.form(text="webkit浏览器支持库";right=1123;bottom=570)
+/*}}*/
+
+//导入webkit支持库
+import web.kit.form;
+
+//预定义JS函数
+web.kit.jsBindFunction("closeWindow",0,function(){ 
+	owner.getForm().close();
+})
+
+web.kit.jsBindFunction("dragWindow",0,function(){ 
+	owner.getForm().hitCaption()
+	
+})
+
+web.kit.jsBindFunction("doScript",0,function(){ 
+	owner.doScript("document.write( 'webkit'  );");
+})
+
+//创建webkit浏览器窗口
+var webkit = web.kit.form(winform);
+webkit.write("
+<a href='javascript:closeWindow();'>关闭窗口</a> 
+<div onmousedown='dragWindow();return false;'>拖动窗口</div>
+<a href='javascript:doScript();'>调用JS代码</a>
+")
+
+//直接访问文档对象
+winform.msgbox( webkit.document.location.href )
+
+winform.show() 
+win.loopMessage();

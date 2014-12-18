@@ -1,0 +1,51 @@
+//C语言调用AAuto函数
+
+code_c = /**** 
+	#include <stdio.h>
+	
+	//该函数在C语言中声明,在AAuto中定义 
+	const char *func_aau(int a,int b,int c);
+	
+	int main ()
+	{     
+   		//调用AAuto函数
+   		const char *ret = func_aau(1,2,3);
+   		
+   		io_reopen();
+ 		printf("AAuto函数返回的值:%s\n",ret);
+ 		
+		return 1;
+	} 
+
+****/
+
+
+io.open();//打开控制台,默认编译错误等信息在控制台输出
+
+import tcc; 
+ 
+//创建TCC编译器
+vm = tcc(); 
+
+//编译C源码
+vm.compile(code_c);
+
+//定义一个AAuto函数
+aauto_func = function(a,b,c){
+	io.print( "我是被C语言代码调用的AAuto函数" )
+	io.print( "收到C语言传过来的参数",a,b,c)
+	return "Hello!"
+} 
+
+//导入为C语言函数定义
+vm.setCdecl(
+	aauto_func, //AAuto函数名字
+	"func_aau", //在C语言中调用的函数名字 
+	"string(int a,int b,int c)" //函数原型,与C语言中的声明必须一致.
+)
+ 
+//链接并运行C语言main()函数
+vm.run();
+ 
+vm.close();
+

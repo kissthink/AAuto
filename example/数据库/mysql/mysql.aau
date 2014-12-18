@@ -1,0 +1,49 @@
+import console;
+import mysql.client;
+
+console.log("正在连接数据库服务器...");
+
+var mysqlDb,err = mysql.client(
+	server = "localhost"; //数据库服务器,可省略默认为localhost
+	uid = "root";//用户名,可省略默认为root
+	pwd = "用户密码";
+);
+
+if(!mysqlDb){
+	console.log("连接数据库失败",err)
+	return;
+}
+
+//如果数据库不存在创建数据库，并自动选择数据库
+mysqlDb.createDb("testAAutoMySqlClient")
+
+sql = /*
+CREATE TABLE `library` (
+`name` varchar(100) NOT NULL, 
+`auditing` tinyint(1) DEFAULT '0',
+`bytes` BLOB,
+PRIMARY KEY (`name`),
+UNIQUE KEY `name` (`name`)
+) ENGINE=MyISAM DEFAULT CHARSET=gb2312;
+*/
+mysqlDb.exec(sql);//执行SQL语句
+
+var ret,err  = mysqlDb.listTables() 
+for tbl in ret.each(){
+	console.log("发现数据表:",tbl);
+}
+
+//执行SQL语句，使用命名参数
+mysqlDb.exec("INSERT `library` VALUES('哈哈',@num,@str)",{
+	num = 123;
+	str = "测试:'这是字符串!'命名参数可以自动处理字符串转义";
+} )
+
+//查询数据并返回记录集
+var result = mysqlDb.query("SELECT * FROM `library`");
+for name,auditing,bytes in result.each(){ 
+	io.print( name,auditing,bytes ); //逐行输出所有记录
+}
+
+//移除数据库
+mysqlDb.dropDb("testAAutoMySqlClient");

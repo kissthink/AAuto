@@ -1,0 +1,297 @@
+import fsys;
+import win.ole;
+import util.metaProperty;
+namespace sevenZip
+
+class decoder2{
+
+	ctor(){ 
+		var archiveHandle;
+		var openParamters = ArchiveOpenParamters();
+		var errorMessage;
+		openParamters.printError = ..raw.tocdecl( function(name,message){
+			errorMessage = ..string.concat( name," ", message );
+			if( this.printError ) this.printError(name,message);
+		},"void(string,string)");
+		this._openParamters = openParamters;
+		
+		..table.add_gc(this,"close");
+	};
+	open = function(path,testMode){ 
+		path =  ..io.exist(path,4);
+		if( !path ){
+			return null,"压缩文件路径错误";
+		}
+		
+		if( archiveHandle ){
+			archive_close(archiveHandle);
+			archiveHandle = null;
+		}
+		openParamters.archiveInPath = path;
+		openParamters.testMode = testMode;
+		archiveHandle = archive_open(openParamters);
+		if( !archiveHandle )return false,errorMessage;
+		return true;
+	};
+	close = function(){
+		if( archiveHandle ){
+			archive_close(archiveHandle);
+			archiveHandle = null;
+		}
+	};
+	extract = function( path ){
+		path = path ? ..fsys.createDir(path);
+		if( !path ){
+			return null,"解压缩路径错误";
+		}
+		
+		openParamters.outDir = path;
+		var hr = archive_extract(archiveHandle,openParamters);
+		if(  (hr)<0/*_FAILED*/){
+			 return false,errorMessage,hr;
+		}
+		return true;
+	};
+	count = function(){
+		return archive_getNumberOfItems(archiveHandle);
+	};
+	size64 = function(){
+		var size = ..math.size64()
+		if( 0/*_SUCCEEDED*/ <= archive_getUnpackSize(archiveHandle,size) ) return size;
+	};
+	getItemBoolean = function(idx,pid){
+		var hr,result = archive_getItemPropertyBoolean(archiveHandle,idx-1,pid);
+		if(  (hr)>=0/*_SUCCEEDED*/ ) return result;
+	}; 
+	getItemString = function(idx,pid){
+		var hr,bstr = archive_getItemPropertyBStr(archiveHandle,idx-1,pid);
+		if(  (hr)>=0/*_SUCCEEDED*/ ){
+			var str = fromUnicode(bstr,,true);
+			::SysFreeString(bstr);
+		 	return str;
+		}
+	};
+	getItemTime = function(idx,pid){
+		var str = this.getItemString(idx,pid);
+		if(#str)return ..time(str,"%Y-%m-%d %H:%M:%S");
+	};   
+	getItemNumber = function(idx,pid){
+		var str = this.getItemString(idx,pid);
+		if(#str)return tonumber(str);
+	};
+	getItemSize64 = function(idx,pid){
+		var hr,result = archive_getItemPropertyLong64(archiveHandle,idx-1,pid,..math.size64() ); 
+		if(  (hr)>=0/*_SUCCEEDED*/ ) return result;
+	}; 
+	itemIsFolder = function(idx){
+		var hr,result = archive_itemIsFolder(archiveHandle,idx);
+		if(  (hr)>=0/*_SUCCEEDED*/ ) return result;
+	};
+	@_metaProperty;
+}
+
+namespace decoder2{
+
+	_metaProperty = ..util.metaProperty(
+	
+		openSetTotal = { 
+			_set = function( value ){
+				owner._openParamters.openSetTotal = ..raw.tocdecl(value,"int(LONG files,INT lowBytes,INT hiBytes)");
+			} 	
+		};  
+		openSetCompleted = { 
+			_set = function( value ){
+				owner._openParamters.openSetCompleted = ..raw.tocdecl(value,"int(LONG files,INT lowBytes,INT hiBytes,INT percent)");
+			} 	
+		}; 
+		extractSetTotal = { 
+			_set = function( value ){
+				owner._openParamters.extractSetTotal = ..raw.tocdecl(value,"int(INT lowSize,INT hiSize)");
+			} 	
+		};  
+		extractSetCompleted = { 
+			_set = function( value ){
+				owner._openParamters.extractSetCompleted = ..raw.tocdecl(value,"int(INT lowComplete,INT hiComplete,INT percent)");
+			} 	
+		}; 
+		extractPrepareOperation = { 
+			_set = function( value ){
+				owner._openParamters.extractPrepareOperation = ..raw.tocdecl(value,"int(int askExtractMode,INT itemIndex,string filepath,bool isDir)");
+			} 	
+		};  
+		extractSetOperationResult = { 
+			_set = function( value ){
+				owner._openParamters.extractSetOperationResult = ..raw.tocdecl(value,"int(int operationResult)");
+			} 	
+		}; 
+	)
+ 
+	_dll = ..raw.loadDll( $"~/lib/sevenZip/decoder2/.res/7zxr.dll","sevenZip.decoder2.7zxr.dll" ,"cdecl")
+	archive_open = _dll.api("archive_open","pointer(struct option)") 
+	archive_close = _dll.api("archive_close","void(POINTER archive)") 
+	archive_extract = _dll.api("archive_extract","int(POINTER archive,struct option)") 
+	archive_getNumberOfItems = _dll.api("archive_getNumberOfItems","INT(POINTER archive)" ) 
+	archive_getItemPropertyBStr = _dll.api("archive_getItemPropertyString","int(POINTER archive,INT index,INT propID,pointer &bstr)") 
+	archive_getItemPropertyBoolean = _dll.api("archive_getItemPropertyBoolean","int(POINTER archive,INT index,INT propID,bool &v)" ) 
+	archive_getItemPropertyLong64= _dll.api("archive_getItemPropertyLong64","int(POINTER archive,INT index,INT propID,LONG &v)")  
+	archive_getUnpackSize = _dll.api("archive_getUnpackSize","int(POINTER archive,LONG &v)") 
+	archive_itemIsFolder = _dll.api("archive_itemIsFolder","int(POINTER archive,INT index,bool &v)" ,"cdecl") 
+
+
+	class ArchiveOpenParamters {   
+	
+		string archiveInPath;
+		string outDir;
+		string password;  
+		bool testMode; 
+		pointer printError; 
+		pointer openSetTotal;
+		pointer openSetCompleted;  
+		pointer extractSetTotal;
+		pointer extractSetCompleted;
+		pointer extractPrepareOperation;
+		pointer extractSetOperationResult;
+	};
+
+	createDir = ..fsys.createDir; 
+	joinpath = ..fsys.joinpath;
+	toUnicode = ..string.toUnicode;
+	fromUnicode = ..string.fromUnicode;
+}
+
+/*
+sevenZip.decoder使用DLL的是LZMA SDK提供的开源代码编译,
+LZMA SDK 属于公有领域(即作者放弃版权),sevenZip.decoder是精简版的组件,
+使用内存解压文件、以及固实数据,如果单个文件或固实数据非常大可能因为内存分配失败导致解压失败,
+
+sevenZip.decoder2 引用的DLL组件则使用7zip客户端中的开源代码编译,不会有上面的问题,
+7zip的源码使用LGPL许可,基于LGPL许可的DLL在开源调用接口代码(这里就是本扩展库的源码)的前提下
+可自由免费使用, 7zip官方网站( www.7-zip.org )
+*/
+
+/**intellisense(!sevenZip_decoder2)
+open(.("7z压缩包路径",是否测试模式) = 打开压缩包,\n成功返回true,失败返回false以及错误信息
+close() = 关闭对象
+count() = 返回文件数
+extract(.("解压路径") = 解压文件到指定目录,\n目录不存在则自动创建该目录
+list = @for(i=1;??.count() ){
+	io.print( 
+		??.getItemString(i,3/*_kpidPath*/), 
+		??.getItemBoolean(i,6/*_kpidIsDir*/),
+		??.getItemTime(i,0xC/*_kpidMTime*/),
+		??.getItemNumber(i,7/*_kpidSize*/),
+	)__
+}
+getItemString(.(文件索引,_kpid__) = 文件索引自1开始,返回属性字符串值\n参数2使用_kpid前缀的常量表示属性索引
+getItemBoolean(.(文件索引,_kpid__) = 文件索引自1开始,返回属性布尔值\n参数2使用_kpid前缀的常量表示属性索引
+getItemTime(.(文件索引,_kpid__) = 文件索引自1开始,返回属性时间值\n参数2使用_kpid前缀的常量表示属性索引
+getItemNumber(.(文件索引,_kpid__) = 文件索引自1开始,返回属性数值\n参数2使用_kpid前缀的常量表示属性索引
+getItemSize64(.(文件索引,_kpidSize) = 文件索引自1开始,返回文件大小
+getItemSize64() = !math_size64.
+size64() = 返回解压后大小\n!math_size64.
+printError = @.printError = function(name,message){
+	io.print("出错了", name,message ) 
+}
+openSetTotal = @.openSetTotal = function(files,lowBytes,hiBytes){
+	var size64 = ..math.size64(lowBytes,hiBytes);
+	__/*返回 _S_FALSE 取消解压*/
+}  
+openSetCompleted = @.openSetCompleted = function(files,lowBytes,hiBytes,percent){
+	io.print("已打开",fsys.formatSize(lowBytes,hiBytes) ," %" + percent)__
+}
+extractSetTotal = @.extractSetTotal = function(lowSize,hiSize){
+	var size64 = ..math.size64(lowBytes,hiBytes);
+	..io.print("压缩包大小",size64.format() )
+	__/*返回 _S_FALSE 取消解压*/
+}  
+extractSetCompleted = @.extractSetCompleted = function(lowSize,hiSize,percent){
+	io.print("已解压",fsys.formatSize(lowSize,hiSize)," %" + percent )__
+}
+extractPrepareOperation = @.extractPrepareOperation = function(askExtractMode,itemIndex,filepath,isDir){
+	__
+}
+extractSetOperationResult = @.extractSetOperationResult = function(opRet){
+	if( opRet == 0/*kOK*/ ){
+	
+	}
+	elseif( opRet == 1/*kUnSupportedMethod*/ ){
+		io.print("Unsupported Method")__
+	}
+	elseif( opRet == 0/*kDataError*/ ){
+		io.print("CRC Failed")
+	}
+	elseif( opRet == 0/*kCRCError*/ ){
+		io.print("Data Error")
+	}
+	else {
+		io.print("Unknown Error")
+	}
+}
+end intellisense**/
+
+/**intellisense()
+sevenZip.decoder2 = 7Zip解压支持库,\n支持LZMA/BCJ*算法
+sevenZip.decoder2() = 创建7Zip解压对象\n!sevenZip_decoder2.
+_kpidMainSubfile=@1/*_kpidMainSubfile*/
+_kpidHandlerItemIndex=@2/*_kpidHandlerItemIndex*/
+_kpidPath=@3/*_kpidPath*/
+_kpidName=@4/*_kpidName*/
+_kpidExtension=@5/*_kpidExtension*/
+_kpidIsDir=@6/*_kpidIsDir*/
+_kpidSize=@7/*_kpidSize*/
+_kpidPackSize=@8/*_kpidPackSize*/
+_kpidAttrib=@9/*_kpidAttrib*/
+_kpidCTime=@0xA/*_kpidCTime*/
+_kpidATime=@0xB/*_kpidATime*/
+_kpidMTime=@0xC/*_kpidMTime*/
+_kpidSolid=@0xD/*_kpidSolid*/
+_kpidCommented=@0xE/*_kpidCommented*/
+_kpidEncrypted=@0xF/*_kpidEncrypted*/
+_kpidSplitBefore=@0x10/*_kpidSplitBefore*/
+_kpidSplitAfter=@0x11/*_kpidSplitAfter*/
+_kpidDictionarySize=@0x12/*_kpidDictionarySize*/
+_kpidCRC=@0x13/*_kpidCRC*/
+_kpidType=@0x14/*_kpidType*/
+_kpidIsAnti=@0x15/*_kpidIsAnti*/
+_kpidMethod=@0x16/*_kpidMethod*/
+_kpidHostOS=@0x17/*_kpidHostOS*/
+_kpidFileSystem=@0x18/*_kpidFileSystem*/
+_kpidUser=@0x19/*_kpidUser*/
+_kpidGroup=@0x1A/*_kpidGroup*/
+_kpidBlock=@0x1B/*_kpidBlock*/
+_kpidComment=@0x1C/*_kpidComment*/
+_kpidPosition=@0x1D/*_kpidPosition*/
+_kpidPrefix=@0x1E/*_kpidPrefix*/
+_kpidNumSubDirs=@0x1F/*_kpidNumSubDirs*/
+_kpidNumSubFiles=@0x20/*_kpidNumSubFiles*/
+_kpidUnpackVer=@0x21/*_kpidUnpackVer*/
+_kpidVolume=@0x22/*_kpidVolume*/
+_kpidIsVolume=@0x23/*_kpidIsVolume*/
+_kpidOffset=@0x24/*_kpidOffset*/
+_kpidLinks=@0x25/*_kpidLinks*/
+_kpidNumBlocks=@0x26/*_kpidNumBlocks*/
+_kpidNumVolumes=@0x27/*_kpidNumVolumes*/
+_kpidTimeType=@0x28/*_kpidTimeType*/
+_kpidBit64=@0x29/*_kpidBit64*/
+_kpidBigEndian=@0x2A/*_kpidBigEndian*/
+_kpidCpu=@0x2B/*_kpidCpu*/
+_kpidPhySize=@0x2C/*_kpidPhySize*/
+_kpidHeadersSize=@0x2D/*_kpidHeadersSize*/
+_kpidChecksum=@0x2E/*_kpidChecksum*/
+_kpidCharacts=@0x2F/*_kpidCharacts*/
+_kpidVa=@0x30/*_kpidVa*/
+_kpidId=@0x31/*_kpidId*/
+_kpidShortName=@0x32/*_kpidShortName*/
+_kpidCreatorApp=@0x33/*_kpidCreatorApp*/
+_kpidSectorSize=@0x34/*_kpidSectorSize*/
+_kpidPosixAttrib=@0x35/*_kpidPosixAttrib*/
+_kpidLink=@0x36/*_kpidLink*/
+_kpidError=@0x37/*_kpidError*/
+_kpidTotalSize=@0x1100/*_kpidTotalSize*/
+_kpidFreeSpace=@0x1101/*_kpidFreeSpace*/
+_kpidClusterSize=@0x1102/*_kpidClusterSize*/
+_kpidVolumeName=@0x1103/*_kpidVolumeName*/
+_kpidLocalName=@0x1200/*_kpidLocalName*/
+_kpidProvider=@0x1201/*_kpidProvider*/
+_kpidUserDefined=@0x10000/*_kpidUserDefined*/
+end intellisense**/

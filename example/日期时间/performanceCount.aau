@@ -1,0 +1,10 @@
+//高性能计数器演示
+import time.performance;
+
+io.open()
+
+tk = time.performance.tick();
+
+sleep(2000)
+
+io.print( ( time.performance.tick() - tk ) / 1000 ,"秒" )

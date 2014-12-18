@@ -1,0 +1,94 @@
+//C函数结构化参数表
+
+code_c = /****
+	#include <stdio.h>
+	#include <stdlib.h> 
+ 	
+	/*
+	在C语言中定义 raw.cdeclParameter
+	最好在函数指针中显示的指定调用约定,以避免编译器设置的默认调用约定不同带来的问题
+	*/
+	typedef struct{ 
+		const char *(__cdecl *getType) (const char * name);
+		void * (__cdecl *getFunction) (const char * name,const char *proto);
+		void (__cdecl *setFunction) (const char * name,const char *proto,void * addr); 
+		const char *(__cdecl *getBinary) (const char * name,unsigned int *size);
+		void (__cdecl *setBinary) (const char * name,char * value,unsigned int size);
+		const char *(__cdecl *getString) (const char * name);
+		void (__cdecl *setString) (const char * name,const char * value);
+		void (__cdecl *getNumber) (const char * name,double * value);
+		void (__cdecl *setNumber) (const char * name,double value);
+		unsigned long long (__cdecl *getSize64) (const char * name);
+		void (__cdecl *setSize64) (const char * name,unsigned long long value);
+		void * (__cdecl *getPointer) (const char * name);
+		void (__cdecl *setPointer) (const char * name,void * value);
+		int (__cdecl *callString) (const char * name,const char * arg);
+		int (__cdecl *callNumber) (const char * name,double arg);
+		int (__cdecl *call) (const char * name);
+		unsigned int(__cdecl *len)(const char * name);
+	} aau_cdeclParameter;
+
+	typedef double (*ADDFUNC) (double a,double b);
+	
+	int func_c ( aau_cdeclParameter * opt )
+	{   
+	 	//打开控制台窗口
+   		io_reopen();  
+   		
+ 	 	//取参数中的字段值,字段名可以使用名字空间,例如  x.y.z.字段名
+ 	 	const char * s = opt->getString("测试");  
+   		printf( "Hello! 我是C语言代码\n收到AAuto传来的参数:%s\n", s ); 
+   		
+   		//调用参数中包含的函数名
+		opt->callString("函数名","参数");
+		
+		//可以添加C函数为AAuto函数
+ 		opt->setFunction("test.printf","void(string s,int x,int y)",printf);
+		 
+		//也以声明AAuto中的函数为C函数
+		int (*add) (int a,int b) =  opt->getFunction("test.add","int(int,int)" );
+ 		int c = (*add)(12,3);
+ 		
+ 		unsigned long long  x =  opt->getSize64("size" );
+ 		printf( " LONG64: %I64u", x); 
+		return 0; 
+	} 
+
+****/
+
+ 
+import tcc; 
+vm = tcc( );//创建TCC编译器 
+vm.compile(code_c); //编译C源码
+ 
+//获取C函数
+func_c = vm.getCdecl("func_c","int(struct msg)")
+
+//创建结构化参数
+import raw.cdeclParameter;
+var cdeclParameter = raw.cdeclParameter(
+	size = ..math.size64(2,1);
+	测试 = "hello!";
+	函数名 = function(参数){
+		..io.print("AAuto函数被回调了",参数) 
+	} 
+	func = {
+		doCode = function(s){
+			..io.print("执行了")
+			var f = loadcode(s)
+			if(f)return f();
+		} 
+	}
+	test = {
+		add  = function(a,b){
+			owner.printf("在AAuto中调用C语言声明的函数 %d %d",12,33 ); 
+			return a+b
+		} 
+	}
+) 
+
+//调用C函数
+func_c( cdeclParameter )
+ 
+//关闭C语言编译器
+vm.close();

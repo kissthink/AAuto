@@ -1,0 +1,52 @@
+//生成DLL
+//http://www.aau.cn/thread-8969-1-1.html
+
+code = /** 
+	#include <windows.h>
+	
+	/*
+	入口函数,该函数可以有也可以没有。
+	
+	入口函数会自动加锁以保证线性调用,要避免在DllMain内调用下列函数:
+	1、调用LoadLibrary或其他可能加载DLL的API函数( CreateProcess等 )
+	2、可能再次触发DllMain的函数,例如 CreateThread,ExitThread
+	3、GetModuleFileName, GetModuleHandle 等其他可能触发系统锁的API函数
+	总之在DllMain最好不要调用API函数.
+	*/
+	int __stdcall DllMain(void * hinstDLL, unsigned long fdwReason, void * lpvReserved) {
+	
+		if (fdwReason == 1/*DLL_PROCESS_ATTACH*/ ){ 
+			
+		}
+		return 1;
+	}
+	
+	//__declspec(dllexport) 声明导出函数
+	__declspec(dllexport) int Msgbox( const char * str ) 
+	{    
+		MessageBox( 0,str,"C语言DLL组件",MB_OK);
+		return 0;
+	}  
+**/
+ 
+import tcc; 
+vm = tcc( );//创建TCC编译器 
+
+/*
+加载需要用到的动态库,或静态库
+在"~\lib\tcc\.res\lib" 目录下查找 "动态库名.def" "静态库名.a"
+也可以使用 vm.addLibPath() 函数添加搜索库的目录
+*/
+vm.addLib( 
+	"user32",
+	"kernel32",
+	"gdi32"
+) 
+vm.output( "/bin.dll", code ) //编译C源码，生成DLL
+vm.close(); //收工
+
+//加载生成的DLL
+var dll = raw.loadDll( "/bin.dll" );
+//导入API,记住第二个参数需要指定cdecl调用约定(也就是C语言调用约定)
+Msgbox = dll.api( "Msgbox","int(string str)", "cdecl" ); 
+Msgbox( "C语言你好!" ); 

@@ -1,0 +1,38 @@
+import protobuf.type.scalar
+
+namespace protobuf.type;
+ 
+class string{ 
+
+	ctor(...) {
+		this = ..protobuf.type.scalar(...)
+		this.wired_type = ..protobuf.message.WIRED_LENGTH_DELIMITED; 
+	}
+ 
+	deSerialize = function () { 
+			
+		this.value = ''; 
+		var length = this.reader.next();
+		 
+		var pointer = this.reader.get_pointer();
+		this.reader.add_pointer(length);
+		var value = this.reader.get_message_from(pointer);
+		
+		if(value)
+			this.value = ..string.fromto(value); 
+	}
+ 
+	serialize = function ( rec = -1 ) { 
+		var str = '';
+
+		if ( rec > -1) {
+			str ++= this._codecBase128.set_value( rec << 3 | this.wired_type );
+		}
+	
+		var value = ..string.fromto(this.value,0,65001); 
+		str ++= this._codecBase128.set_value( # value ); 
+		str ++= (value:"");
+
+		return str;
+	}
+}

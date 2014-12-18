@@ -1,0 +1,11 @@
+//发送Unicode文本
+
+import process
+import winex;
+import key;
+
+//打开写字板
+process.execute("wordpad.exe");
+winex.waitActive(,,"WordPadClass","RICHEDIT50W");
+
+key.sendUnicode("测试发送UNICODE字符串") 

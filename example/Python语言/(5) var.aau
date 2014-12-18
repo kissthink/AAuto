@@ -1,0 +1,59 @@
+//5) 局部变量、全局变量
+import console;
+console.open();
+
+/*
+python与aauto的变量命名规则基本类似，
+例如标识符（变量或常量名等）首字符不能是数值，可以是下划线或字母。
+python与aauto一样同样是大小写敏感的语言， Name与name 表示的不是同一个对象名字。
+*/
+
+import py;
+pyCode = /***
+  
+#def定义一个函数,注意#号为注释行开始标记
+def func(): #冒号开始一个语句块
+	print "python中函数内部声明变量默认为局部变量,全局变量声明应显式加上global关键字";
+	global g; #你不能写global g = 456; 
+	global g,g2,g3 #可以一次声明多个全局变量
+	g = 456
+	g2 = None #python中空值为None，类似AAuto中的null,不同的是python中None要显式的赋值
+	local = 789
+	print type( 789 ) is int; #检查变量类型,类似于 aauto中的 type(789) == type.number
+	
+	a = 1;b="2";
+	#print a + b #这句会抛出异常,python一般不会尝试自动进行类型转换
+	
+	return local;
+
+func()
+
+***/ 
+py.exec( pyCode ) //运行python代码
+
+//下面是类似的AAuto代码
+//=========================================================
+
+function func(){
+	io.print( '\n',"恰恰相反的是,AAuto中变量默认为全局变量并且无需声明可以直接使用,而局部变量需要用var语句显示声明。")
+	g = 456;
+	g2 = null; //可以省略
+	var local = 789;
+	io.print( g2,g3 ); //python中这些未定义的变量如果不显示赋值为None会抛出异常,而在AAuto未定义的变量都是null
+	io.print( type(789) == type.number ) //检查变量类型,类似于python中的 type( 789 ) is int
+	
+	var a = 1;var b="2";
+	io.print( a + b ) //aauto会根据需要自动转换为数值
+	return local;
+}
+func()
+
+/**
+注意 python 中访问不存在的变量会抛出 NameError 异常，
+而访问对象不存在的属性会抛出 AttributeError,KeyError，
+所以在 python 中检测一个变量是否存在就需要用 try语句捕获 NameError 异常,
+或者用 locals().has_key('变量名') globals().has_key('变量名') 判断。
+
+在 AAuto中简单一些，可以直接判断null 值，例如
+if( 不存在的变量 === null ) { io.print("变量不存在") } 
+**/

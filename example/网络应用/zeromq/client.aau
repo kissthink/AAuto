@@ -1,0 +1,28 @@
+//客户端
+import zeromq
+
+io.open()
+
+var context = zeromq.context(10) 
+//request模式socket与服务端的reply模式配对使用
+var requester = context.zmq_socket_request() ;
+
+requester.connect( "tcp://localhost:5559" )
+
+if( requester.connect( "tcp://localhost:5559" ) ){
+    ..io.print("连接成功")
+}
+
+var msg = zeromq.message("服务端你好")  
+requester.sendMsg(msg)
+msg.close();
+
+var reply = zeromq.message()  
+requester.recvMsg(reply);  
+io.print ("客户端收到消息 ", reply.getString() );
+reply.close()
+
+context.term(); 
+
+
+ 

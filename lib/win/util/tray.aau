@@ -1,0 +1,198 @@
+//tray 托盘图标
+import win;
+import win.image;
+namespace win.util;
+
+var NOTIFYICONDATA  = class {
+	INT cbSize;
+	int hWnd;
+	INT uID;
+	int uFlags;
+	INT uCallbackMessage;
+	pointer hIcon;  
+	BYTE szTip[128] ;
+	INT dwState=0;
+	INT dwStateMask=0;
+	BYTE szInfo[256]  ;
+	union DUMMYUNIONNAME={
+		INT uTimeout;
+		INT uVersion; // used with NIM_SETVERSION, values 0, 3 and 4
+	};
+	BYTE szInfoTitle[64]  ;
+	INT dwInfoFlags; 
+	/*
+	struct guidItem=..win.guid(); 
+	pointer hBalloonIcon; 
+	*/
+}
+
+class tray {
+	ctor (hwnd, icon, tip = "") {
+		var tnd = NOTIFYICONDATA(); 
+		tnd.cbSize =  ..raw.sizeof(tnd);
+		
+		if (type(hwnd) == type.table && hwnd.hwnd) {//支持winform.hwnd
+			tnd.uCallbackMessage = 0x400+9981/*_WM_TRAYMESSAGE*/
+			hwnd = hwnd.hwnd;
+		} 
+		tnd.hWnd = hwnd;
+		
+		if (type(icon) == type.number) { 
+			//tnd.uID  = 0;
+			if(icon >= 0x7F00/*_IDI_APPLICATION*/) { 
+				tnd.hIcon =  ::LoadIcon(null, topointer(icon));
+			} else {
+				tnd.hIcon =  ::LoadIcon(_HINSTANSE, topointer(icon)); 
+			}
+		} 
+		elseif (type(icon) == type.string) {
+			this.gcIcon = ..win.image.createIcon(icon,true,16,32);
+			tnd.hIcon = this.gcIcon;
+		} 
+		else {
+			tnd.hIcon = icon : _HAPPICON;
+		}
+		
+		tnd.uFlags = 0x2/*_NIF_ICON*/ | 0x4/*_NIF_TIP*/ | 0x1/*_NIF_MESSAGE*/;
+		tnd.szTip = ..string.left(tip, 128);
+ 		Shell_NotifyIcon(0x0/*_NIM_ADD*/, tnd);
+		this.m_tnd = tnd;
+	}; 
+	
+	pop = function(info,title="",icon=1,timeout=10){
+		assert( this.m_tnd ,"托盘图标对象已关闭");
+		this.m_tnd.DUMMYUNIONNAME.uTimeout = timeout * 1000 ;//10秒至20秒
+		this.m_tnd.szInfoTitle = title ;
+		this.m_tnd.szInfo = info  ;
+		this.m_tnd.uFlags = this.m_tnd.uFlags | 0x00000010/*_NIF_INFO*/
+		this.m_tnd.dwInfoFlags =icon;
+		Shell_NotifyIcon(0x1/*_NIM_MODIFY*/, this.m_tnd); 
+	};
+	
+	reset = function(){
+		if(!this.m_tnd)
+			return;
+			
+		Shell_NotifyIcon(0x2/*_NIM_DELETE*/,this.m_tnd) 
+		Shell_NotifyIcon(0x0/*_NIM_ADD*/,this.m_tnd) 
+	};
+	
+	delete = function(){ 
+		if(!this.m_tnd) return; 
+		Shell_NotifyIcon(0x2/*_NIM_DELETE*/, this.m_tnd);
+		if (this.gcIcon) {
+			::DestroyIcon(this.gcIcon);
+			this.gcIcon = null;
+		}
+		this.m_tnd = null; 
+	};
+	@_meta;
+}
+
+namespace tray{
+
+	::Shell32 := ..raw.loadDll("shell32")
+	Shell_NotifyIcon := Shell32.api("Shell_NotifyIconA","int(int dwMessage, struct lpData)");
+	
+	var tray_satic;
+	pop = function(info,title="",icon=1,timeout=10){ 
+		if( !info ){
+			 if( tray_satic ){
+			 	tray_satic.delete();
+			 	tray_satic = null;
+			 }
+			 return;
+		}
+			
+		tray_satic = ..win.util.tray(); //创建托盘图标
+		tray_satic.pop(info,title,icon,timeout)
+	} 
+	
+	
+	_meta = {
+		_get = function(k,v) {
+			if(!owner[["m_tnd"]])
+				return;
+			
+			select(k) {
+				case "message" { 
+					return owner.m_tnd.uCallbackMessage;
+				}
+				case "tip" {
+					return owner.m_tnd.szTip;
+				}
+				case "icon" {
+					return owner.m_tnd.hIcon;
+				}
+			}
+		}
+		_set = function(k,v){
+			if(!owner[["m_tnd"]])
+				return;
+			
+			select(k) {
+				case "message" { 
+					assert( tonumber(v) and ( v>0x400/*_WM_USER*/) ,"回调消息必须是一个大于0x400/*_WM_USER*/的数值")
+					owner.m_tnd.uCallbackMessage =  v;
+					if(v)
+						owner.m_tnd.uFlags = owner.m_tnd.uFlags | 0x1/*_NIF_MESSAGE*/;
+					else{
+						owner.m_tnd.uFlags = owner.m_tnd.uFlags & ~0x1/*_NIF_MESSAGE*/;
+					}
+					
+					Shell_NotifyIcon(0x1/*_NIM_MODIFY*/, owner.m_tnd);
+				}
+				case "tip" {
+					owner.m_tnd.szTip = v;
+					owner.m_tnd.uFlags = owner.m_tnd.uFlags | 0x4/*_NIF_TIP*/;
+					Shell_NotifyIcon(0x1/*_NIM_MODIFY*/, owner.m_tnd);
+				}
+				case "icon" {
+					
+					var gcIcon = owner.gcIcon;
+					owner.gcIcon = null;
+						
+					if (type(v) == type.number) { 
+						if (v >= 0x7F00/*_IDI_APPLICATION*/) { 
+							owner.m_tnd.hIcon =  ::LoadIcon(null, topointer(v));
+						} else {
+							owner.m_tnd.hIcon =  ::LoadIcon(::GetModuleHandle(null), topointer(v)); 
+						}
+					} elseif (type(v) == type.string) {
+						owner[["gcIcon"]] = ..win.image.createIcon(v,true,16,32);
+						owner.m_tnd.hIcon = owner[["gcIcon"]]; 
+						if( !owner[["gcIcon"]] ){
+							if (gcIcon) { ::DestroyIcon(gcIcon); }
+							error("图标未指定有效的ico文件路径或数据!",2)
+						}
+					} else {
+						owner.m_tnd.hIcon = v;
+					}
+					Shell_NotifyIcon(0x1/*_NIM_MODIFY*/, owner.m_tnd);
+					
+					if (gcIcon) {
+						::DestroyIcon(gcIcon);
+					}
+				}
+			}
+		}
+	}
+
+}
+
+/*intellisense()
+!tray.delete() = 删除托盘图标\n如果指定了图标数据或路径则必须在不需要托盘图标时调用delete函数释放
+!tray.reset() = 重置并恢复托盘图标
+!tray.tip = 设置鼠标提示信息
+!tray.message = 指定回调消息\n当用户点击托盘图标时、向主窗体发送此消息
+!tray.icon = 设置托盘的图标，可以是图标ID，也可以是图标数据或图标路径
+!tray.pop("__","") = 弹出汽泡提示\n参数(提示信息,标题)
+!tray.pop("__","",2) = 弹出汽泡提示\n参数(提示信息,标题,警告图标)
+!tray.pop("__","",3) = 弹出汽泡提示\n参数(提示信息,标题,错误图标) 
+win.util.tray(.(主窗体,图标,提示信息) = 创建托盘图标\n主窗体：可以提供窗体句柄或窗体对象\n图标：可以是图标ID，也可以是图标数据或图标路径，默认为窗体图标\n提示信息：鼠标移到托盘图标上提示的信息，省略则没有提示信息
+?win.util.tray = !tray.
+win.util.tray.pop("__","") = 弹出汽泡提示\n参数(提示信息,标题)
+win.util.tray.pop("__","",2) = 弹出汽泡提示\n参数(提示信息,标题,警告图标)
+win.util.tray.pop("__","",3) = 弹出汽泡提示\n参数(提示信息,标题,错误图标)
+win.util.tray.pop() = 删除使用此函数弹出的汽泡提示
+end intellisense*/

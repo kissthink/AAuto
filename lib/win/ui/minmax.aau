@@ -1,0 +1,74 @@
+//minmax 限制窗口大小
+//minmax 限制窗口大小
+import sys.monitor;
+import win.appBar;
+namespace win.ui;
+
+class minmax{ 
+	ctor(winform,minCx,minCy,maxCx,maxCy){  
+		if( ! (minCx && minCy) ){
+			_,_,minCx,minCy = winform.getPos();
+		}  
+		winform.onGetMinMaxInfo = function(hwnd, message, wParam, lParam){
+			this.updateMinMaxInfo();
+			::CopyMemoryByStruct( topointer( lParam ), this, 40 ); 
+			return 0;
+		}; 
+	}; 
+	updateMinMaxInfo = function(){ 
+		var maxX,maxY = 0,0;
+		var monitorInfo = ..sys.monitor.getInfoFromWindow(winform.hwnd);
+		var x,y,cx,cy = 0,0,maxCx,maxCy;
+		if( monitorInfo){
+			if(!cx) cx = monitorInfo.rcWork.right - monitorInfo.rcWork.left; 
+			if(!cy) cy = monitorInfo.rcWork.bottom - monitorInfo.rcWork.top;
+			x = monitorInfo.rcWork.left - monitorInfo.rcMonitor.left;
+			y = monitorInfo.rcWork.top - monitorInfo.rcMonitor.top; 
+		}
+		else{
+			if(!cx) cx = ::GetSystemMetrics(0x10/*_SM_CXFULLSCREEN*/); 
+			if(!cy) cy = ::GetSystemMetrics(0x11/*_SM_CYFULLSCREEN*/)   
+      				+ ::GetSystemMetrics(0x4/*_SM_CYCAPTION窗口标题的高度*/) ; 
+      	};
+      	
+      	var edgeY = ::GetSystemMetrics(46/*_SM_CYEDGE*/);
+      	var edgeX = ::GetSystemMetrics(46/*_SM_CYEDGE*/);
+      	var lb,tb,rb,bb =  ..win.appBar.getAutoHideBar();
+      	if( bb ){
+			cy -= edgeY;
+		}
+		if( rb ){
+			cx -= edgeX;
+		}
+		if( tb ){
+			y += edgeY;
+			cy -= edgeY;
+		}
+		if( lb ){
+			x += edgeX;
+			cx -= edgeX;
+		} 
+      	this.maxSize.x = cx;
+      	this.maxSize.y = cy;
+      	this.maxTrackSize.x = cx;
+      	this.maxTrackSize.y = cy;
+      	this.maxPosition.x = x;
+      	this.maxPosition.y = y;
+	}
+	struct reserved = ::POINT();
+	struct maxSize = ::POINT(maxCx,maxCy);
+	struct maxPosition = ::POINT();
+	struct minTrackSize = ::POINT(minCx,minCy);
+	struct maxTrackSize = ::POINT(maxCx,maxCy);
+} 
+
+/**intellisense()
+win.ui.minmax = 限制窗口拖动改变大小的范围
+win.ui.minmax(.(winform,最小宽度,最小高度,最大宽度,最大高度) = 除第一个参数以外,其他参数可选\n默认最小为当前窗口大小,最大为最大化大小
+win.ui.minmax() = !minmaxinfo.
+!minmaxinfo.updateMinMaxInfo() = 重新计算显示区域
+!minmaxinfo.maxSize = !point.
+!minmaxinfo.maxPosition = !point.
+!minmaxinfo.minTrackSize = !point.
+!minmaxinfo.maxTrackSize = !point.
+end intellisense**/

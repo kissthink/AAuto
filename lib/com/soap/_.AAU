@@ -1,0 +1,71 @@
+import com;
+import util.metaProperty; 
+
+namespace com.soap
+
+class client{
+	ctor(){
+		this._object = ..com.CreateObject( "MSSOAP.SoapClient30" )
+	}; 
+	@_metaProperty;
+}
+
+namespace client{  
+	_metaProperty = ..util.metaProperty(
+		get = function(k){
+			return owner._object[k]
+		}
+		
+		set = function(k,v){
+			owner._object[k] = v;
+		} 
+	)   
+}
+
+namespace client{
+ 
+	install = function(){
+		try {
+			..com.CreateObject("MSSOAP.SoapClient30") 
+		} 
+		catch(e){ 		
+			import fsys;
+			import process.admin;//最好在安装程序中做这个事
+			..process.admin.runas_wait("regsvr32","/s " + fsys.shortpath("~\lib\com\soap\.mssoap3.0\MSSOAP30.dll") )
+			..process.admin.runas_wait("regsvr32","/s " + fsys.shortpath("~\lib\com\soap\.mssoap3.0\MSSOAPR3.dll") )
+			..process.admin.runas_wait("regsvr32","/s " + fsys.shortpath("~\lib\com\soap\.mssoap3.0\WISC30.dll") )
+			
+			try {
+				..com.CreateObject("MSSOAP.SoapClient30")
+			} 
+			catch(e){ 
+				..process.admin.runas_wait("regsvr32","/s " + fsys.shortpath("~\lib\com\soap\.mssoap3.0\msxml4.dll") )
+				..process.admin.runas_wait("regsvr32","/s " + fsys.shortpath("~\lib\com\soap\.mssoap3.0\WINHTTP5.DLL") )
+			}
+			sleep(1000)
+		}}
+	
+	uninstall = function(){
+		try {
+			..com.CreateObject("MSSOAP.SoapClient30") 
+			import fsys;
+			import process.admin;//最好在安装程序中做这个事
+			..process.admin.runas_wait("regsvr32","/s /u " + fsys.shortpath("~\lib\com\soap\.mssoap3.0\MSSOAP30.dll") )
+			..process.admin.runas_wait("regsvr32","/s /u " + fsys.shortpath("~\lib\com\soap\.mssoap3.0\MSSOAPR3.dll") )
+			..process.admin.runas_wait("regsvr32","/s /u " + fsys.shortpath("~\lib\com\soap\.mssoap3.0\msxml4.dll") )
+			..process.admin.runas_wait("regsvr32","/s /u " + fsys.shortpath("~\lib\com\soap\.mssoap3.0\WINHTTP5.DLL") )
+			..process.admin.runas_wait("regsvr32","/s /u " + fsys.shortpath("~\lib\com\soap\.mssoap3.0\WISC30.dll") ) 		sleep(1000)
+		}
+	}
+	
+	install();
+}
+
+/**intellisense()
+com.soap = MSSOAP3.0支持库
+com.soap.client() = 创建SOAP客户端\n!mssoap_client.
+com.soap.client.install() = 安装SOAP3.0
+com.soap.client.uninstall() = 卸载SOAP3.0
+!mssoap_client.MsSoapInit("__/*WSDL网址*/") = 指定服务说明地址
+!mssoap_client.函数名(__/*参数*/) = 调用Web Service函数
+end intellisense**/

@@ -1,0 +1,44 @@
+//color 颜色对话框
+/************************************
+Author		: lujjjh
+Date		: 2010.9
+************************************/
+
+namespace win.dlg;
+ 
+color = class {
+	ctor(hParent,option){
+		var cc = CHOOSECOLOR(); 
+		cc.structSize = ..raw.sizeof(cc);
+		cc.hwndOwner = hParent[["hwnd"]] : hParent; 
+		cc.rgbResult = rgb;
+		..table.mixin(cc,option ); 
+		cc.lpCustColors = ..raw.malloc(36);  
+	} 
+	choose = function(){
+		var re = ChooseColor(cc);
+		return cc.rgbResult; 
+	} 
+}
+
+var dll = ..raw.loadDll("comdlg32.dll");
+namespace color{
+	ChooseColor = dll.api("ChooseColor", "INT(struct &lpcc)");
+	CHOOSECOLOR = class {
+		INT structSize;
+		int hwndOwner;
+		int hInstance;
+		INT rgbResult;
+		pointer lpCustColors;
+		INT flags;
+		int custData;
+		pointer lpfnHook;
+		string templateName;
+	} 
+} 
+
+/**intellisense()
+win.dlg.color = 通用颜色对话框
+win.dlg.color(winform__/*父窗体*/) = 创建通用颜色对话框
+win.dlg.color().choose() = 弹出选择颜色对话框
+end intellisense**/

@@ -1,0 +1,29 @@
+//py3扩展库 - md5示例
+
+/*
+必须在导入python库以前打开控制台,
+python中的print函数才能支持控制台.
+*/
+import console;
+console.open();
+
+//导入python支持库
+import py3; 
+
+//导入python模块
+var hashlib = py3.importModule("hashlib")
+
+//返回模块成员函数,并调用该函数创建python对象
+var md5 = hashlib.get("md5").callObject()
+
+//调用update成员函数
+md5.get("update").call("sdfq44er345234")
+
+//调服hexdigest成员函数
+var result = md5.get("hexdigest").call()
+
+//将返回值转换为字符串，并显示在控制台
+io.print( result.parseString() )
+
+//上面的代码也可以简单的写为一句
+io.print(  md5.hexdigest() )

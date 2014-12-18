@@ -1,0 +1,103 @@
+//environment 环境变量
+import win;
+import win.reg;
+
+namespace environment; 
+
+var environment = class {
+
+	ctor( path ){
+		var reg = ..win.reg(path);
+		if(!reg) return null,"可能需要管理员权限";
+	};
+	delete = function(k){ 
+		reg.delValue(k); 
+		return self;
+	};
+	set = function(k,v){ 
+		reg.setSzValue(k,v); 
+		..win.setenv(k,v)
+		return self;
+	};
+	get = function(k){
+		if( k ) { 
+			return reg.queryValue(k) ;
+		}
+		else {
+			var env = {}; 
+			for(name,value in reg.eachValue()) {
+    			env[name] = value;
+			} 
+			return env;
+		} 
+	};
+	each = function(){
+		return reg.eachValue();
+	};
+	addenv = function(k,nv,path){
+		if(path) nv = ..io.fullpath(nv);
+		var values = this.get(k);  
+		if( !#values ){
+			this.set(k,nv)
+			return nv;
+		}
+		
+		var tv = ..string.split(values,"<;>");
+		for(k,v in tv){
+			if( ..string.cmp(nv,v) == 0 ) return values; 
+		}
+		values = values + ";" + nv;
+		this.set(k,values)
+		return values;
+	} 
+	delenv = function(k,nv,path){
+		if(path) nv = ..io.fullpath(nv);
+		var values = this.get(k);  
+		if( !#values ){ return values; }
+		
+		var tv = ..string.split(values,"<;>");
+		for(i=#tv;1;-1){
+			if( ..string.cmp(nv,tv[i]) == 0 ) {
+				..table.remove(tv,i);
+			} 
+		} 
+		
+		values = ..string.join(tv,";")
+		this.set(k, values)
+		return values;
+	}
+	update = function(){
+		if( env ){ 
+			for(k,v in env){
+				..win.setenv(k,v);
+				reg.setSzValue(k,v); 
+			} 
+		} 
+		::SendMessageTimeout(0xFFFF/*_HWND_BROADCAST*/, 0x1A/*_WM_SETTINGCHANGE*/, null,"Environment" ,0x2/*_SMTO_ABORTIFHUNG*/,5000,0 ); 
+	};
+	close = function(){
+		reg.close();
+		reg = null;	
+	};
+}
+
+system = function(){
+	return environment("HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment");
+}
+
+user = function(){
+	return environment("HKCU\Environment");
+} 
+
+/**intellisense()
+environment.system() = 获取系统环境变量\n!environment_user.
+environment.user() = 获取用户环境变量\n!environment_user.
+!environment_user.get(.("键") = 读取指定的环境变量,\n省略参数读取所有环境变量返回表对象
+!environment_user.set(.("键","值") = 修改环境变量
+!environment_user.addenv(.("变量名","变量值",是否文件路径) = 如果此环境变量中未包含该值则添加变量值
+!environment_user.delenv(.("变量名","变量值",是否文件路径) = 移除变量值
+!environment_user.delete(.("键") = 删除环境变量
+!environment_user.update() = 更新环境变量\n可选传入一个包含环境变量键值对的表参数
+!environment_user.close() = 关闭
+!environment_user.each() = 用于for语句中作为迭代器遍历所有环境变量
+end intellisense**/

@@ -1,0 +1,70 @@
+
+一、复制中文出现乱码
+
+导致该问题的原因是输入法设置不当。
+由于使用英文美式键盘没有任何问题，所以大家在设置的时候，也就习惯性的把中文键盘删除，只保留英文键盘。
+就是因为这个原因才导致复制时出现乱码的问题。
+
+解决办法：删除英文的美式键盘模式，添加中文键盘模式并且设置为默认值。
+具体操作步骤是：在系统桌面任务栏上的语言栏单击鼠标右键，在弹出的菜单中选择“设置”命令，
+进入到“文字服务和输入语言”对话框，切换至“设置”选项卡，在“已安装的服务”列表中找到键盘模式为美国英语键盘布局的英语输入法，
+将其删除，然后将默认的输入语言设定为“中文（中国）－简体中文－美式键盘”，最后保存退出即可。
+若不能解决问题，建议您在剪切和粘贴时都启动中文输入法，这样也可以消除乱码现象
+
+
+二、为什么自定义的EXE图标在win7中无效
+
+EXE图标是由多个不同分辨率图标复合而成，以适应不同操作系统、不同显示用途。
+如果图标不能正常显示，请使用IconWorkshop等图标编辑软件打开图标，补全所有常用分辨率图标。
+
+ 
+三、无法定位程序输入点 _except_handler4_common 于动态链接库 msvcrt.dll 
+
+1.1 错误原因
+多种软件都出现了一个启动时的错误提示 “无法定位程序输入点_except_handler4_common于动态链接库msvcrt.dll上”。
+出现这个提示情况是：Windows Xp 系统； 软件包括：window live writer 2009, windows messenger 2009, firefox 3.5 等非常新的版本。
+这个提示出现后，点击确定，并不影响程序的使用。这个问题出现的原因，其实微软自己的问题。可谓是微软的Vista 后遗症吧。
+在 Vista 系统里，有个挺酷的功能，就是“程序缩略图”，有点3D效果，这个功能，调用了 dwmapi.dll 这个库，而 dwmapi.dll 又引用了 msvcrt.dll 中的 _except_handler4_common 功能。
+然而，在XP系统中，系统自带的 msvcrt.dll 和 Vista 中的 msvcrt.dll 版本不同， 并没有这个 _except_handler4_common ，结果就出现了启动程序时，遇到的 “无法定位程序输入点_except_handler4_common于动态链接库msvcrt.dll上”的错误提示。
+
+1.2 解决方法：
+将 c:\windows\system32 下的 dwmapi.dll 改名，例如：改为 dwmapi.dll.bak
+
+
+四、win7 vista环境下：快手正常运行是不需要UAC权限的。如果因为UAC出现问题，您可以尝试如下操作：
+
+在快手主程序(AAuto Studio.exe)上点击鼠标右键-->选择：属性-->选择：兼容性设置-->勾选：以管理员权限运行（打上勾）-->点击：确定 
+
+五、windows英文版显示乱码
+
+Window上中文软件乱码，需要把区域编码换成中国：
+
+6.1 Window7英文版设置方法:
+打开控制面板的区域和语言选项（Region and Location）
+1、设置Location，然后把Current location选成China
+2、设置Formats，选择Chinese(Simplified,PRC);
+3、设置Formats-Administrative标签，查看Current Language for....是不是Chinese(Simplified,PRC)，如果不是，你点击Change system location选择Chinese(Simplified,PRC)
+4、运行regedit.exe 打开win7的注册表，进入到如下目录[HKEY_CURRENT_USER\Control Panel\International]，将其中的"Locale"键值修改成"00000804" ，保存然后关闭注册表。这样我们就基本能解决乱码问题了
+
+6.2 XP英文版设置文法
+
+打开控制面板的区域和语言选项（Region and Location）
+在Advanced选项下 修改 Language for non-Unicode programs 为 Chinese(Simplified,PRC)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

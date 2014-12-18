@@ -1,0 +1,27 @@
+//多线程任务分派
+import thread.works;
+
+io.open()
+var works = thread.works( 20,
+	function(...) {
+		thread.lock("写控制台")
+		io.print("线程ID" + thread.getId(),",开始工作,接收到任务指令参数",...)
+		thread.unlock("写控制台")
+		
+		return "返回值,线程ID" + thread.getId();
+	} 
+);
+
+//分派任务
+works.push("一个任务") 
+works.push("两个任务")
+works.push("三个任务") 
+
+//等待任务完成 
+works.waitClose(
+	function(r){
+		io.print( "检查成果", r  )
+	} 
+) 
+   
+io.print("OK")

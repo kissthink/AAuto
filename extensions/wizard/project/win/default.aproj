@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="gb2312"?>
+<project ver="0.60" name="快手工程15" libEmbed="true" icon="..." ui="win" output="快手工程15.exe" CompanyName="单位名称" FileDescription="附加说明......" LegalCopyright="Copyright (C) 作者 2011" ProductName="快手工程15" InternalName="快手工程15" FileVersion="0.0.1.001" ProductVersion="0.0.1.001" publishDir="/Publish/">
+	<folder name="资源文件" path="res" embed="true"/>
+</project>

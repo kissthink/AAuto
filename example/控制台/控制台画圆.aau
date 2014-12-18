@@ -1,0 +1,35 @@
+ 
+io.open()
+  
+var R = 5;//R is Radius 
+var y;//y is y axis 
+var i;
+/*
+2*R is diameter
+*/
+
+for(y = 0 ;  2 * R ){
+
+	/*
+	 * get the left star 
+	 * Cursor too small, it multiplied by 2
+	 * For rounding, so add 0.5
+	 */  
+	var Lstar= (2*(R - math.sqrt(  (R**2)-  ( (R-y) **2) ) ) + 0.5);
+
+	for(i=0; Lstar) //Print the left star
+  		io.stdout.write(" ");
+	 
+	io.stdout.write("*");
+	
+	/* get the right star */
+	Rstar= (2*2*(math.sqrt( (R**2)- ( (R-y) **2) ) ) + 0.5);
+	/* Print the right star */ 
+	for(i=0; Rstar ) 
+  		io.stdout.write(" ");
+	 
+	io.stdout.write('*\n');
+}
+
+execute("pause") //按任意键继续
+io.close();//关闭控制台

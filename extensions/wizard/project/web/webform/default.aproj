@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="gb2312"?>
+<project ver="0.60" name="Web UI 向导" libEmbed="true" icon="..." CompanyName="单位名称" FileDescription="附加说明......" LegalCopyright="Copyright (C) 作者 2011" ProductName="Web UI" InternalName="Web UI" FileVersion="0.0.1.2" ProductVersion="0.0.1.2" publishDir="/Publish/" ui="win" output="Web UI.exe">
+	<file name="main.aau" path="main.aau"/>
+	<folder name="资源文件" path="res" comment="" embed="true"/>
+	<folder name="HTML视图" path="view" comment="" embed="true">
+		<file name="main.html" path="view\main.html" comment="view\main.html"/>
+		<folder name="image" path="view\image" comment="view\image">
+			<folder name="frame" path="view\image\frame" comment="view\image\frame">
+				<file name="website.png" path="view\image\frame\website.png" comment="view\image\frame\website.png"/>
+				<file name="sysmenu.png" path="view\image\frame\sysmenu.png" comment="view\image\frame\sysmenu.png"/>
+				<file name="sysmenu.ico" path="view\image\frame\sysmenu.ico" comment="view\image\frame\sysmenu.ico"/>
+				<file name="restore.png" path="view\image\frame\restore.png" comment="view\image\frame\restore.png"/>
+				<file name="min.png" path="view\image\frame\min.png" comment="view\image\frame\min.png"/>
+				<file name="max.png" path="view\image\frame\max.png" comment="view\image\frame\max.png"/>
+				<file name="close.png" path="view\image\frame\close.png" comment="view\image\frame\close.png"/>
+				<file name="caption.gif" path="view\image\frame\caption.gif" comment="view\image\frame\caption.gif"/>
+				<file name="caption.css" path="view\image\frame\caption.css" comment="view\image\frame\caption.css"/>
+				<file name="button.gif" path="view\image\frame\button.gif" comment="view\image\frame\button.gif"/>
+			</folder>
+		</folder>
+		<folder name="js" path="view\js" comment="view\js">
+			<file name="require.js" path="view\js\require.js" comment="view\js\require.js"/>
+			<file name="main.js" path="view\js\main.js" comment="view\js\main.js"/>
+			<file name="aauto.js" path="view\js\aauto.js" comment="view\js\aauto.js"/>
+			<folder name="jQuery" path="view\js\jQuery" comment="view\js\jQuery">
+				<file name="jQuery.min.js" path="view\js\jQuery\jQuery.min.js" comment="view\js\jQuery\jQuery.min.js"/>
+			</folder>
+		</folder>
+	</folder>
+</project>

@@ -1,0 +1,2 @@
+The PHP License, version 3.01 
+please see <http://www.php.net>.

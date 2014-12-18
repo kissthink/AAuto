@@ -1,0 +1,114 @@
+//shadow 阴影边框
+import gdip.graphics; 
+import gdip.path;
+import gdip.pathGradientBrush; 
+
+namespace win.ui;
+class shadow{ 
+	ctor( winform,shadowAlpha,shadowSize,roundRadius,innerRadius,shadowColor,interpolation,focusRatio) { 
+		if( shadowSize === null ) shadowSize = 3;
+		if( roundRadius === null ) roundRadius = shadowSize;
+		if( interpolation === null ) interpolation = 0.15;
+		if( shadowColor === null) shadowColor = 0xFF000000;
+		if( shadowAlpha === null ) shadowAlpha = 80; 
+		if( focusRatio === null ) focusRatio = 15;
+		
+		var x,y,cx,cy = winform.getPos(); 
+		var frmShadow = ..win.form(
+			cls="AAU_SHADOWEDGE";left=x-shadowSize;top=y-shadowSize;right=x+cx+shadowSize*2;bottom=y+cy+shadowSize*2;
+			border = "none";mode="popup";exmode="toolwindow";max=false;min=false;sysmenu=false;title=false;parent=winform.hwnd;
+		)
+		frmShadow.disabled = true;
+		this._form = frmShadow;
+		
+		this.onDrawShadow = function(hdc,hMemDc,hMemBitmap,width,height){   
+    
+			var graphics = ..gdip.graphics(hMemDc);
+			graphics.smoothingMode = 4/*_GdipSmoothingModeAntiAlias*/;
+			 
+			var rcShadow = ::RECT(0,0,width,height) 
+    		var path = ..gdip.path();
+    		if( roundRadius )
+    			path.addRoundRect(rcShadow,roundRadius);
+    		else 
+    			path.addRectangle( rcShadow.left,rcShadow.top,rcShadow.width(),rcShadow.height() );
+    		
+    		var shadowBrush = ..gdip.pathGradientBrush(path);  
+			shadowBrush.setInterpolationColors( {0; shadowColor;shadowColor},{0;interpolation;1} );
+		 	shadowBrush.setFocusScales((width-focusRatio*shadowSize)/width, (height-focusRatio*shadowSize)/height); 
+   
+   			rcShadow.inflate( -shadowSize ,-shadowSize  ); 
+   			rcShadow.offset(0,-1);
+   			if( innerRadius ){
+   				var pathClip = ..gdip.path();
+   				pathClip.addRoundRect(rcShadow,innerRadius); 
+   				graphics.setClipPath(pathClip, 4/*_GdipCombineModeExclude*/);
+   				pathClip.delete();
+   			}
+   			else{
+   				graphics.setClipRect( rcShadow.left, rcShadow.top,rcShadow.width(),rcShadow.height(), 4/*_GdipCombineModeExclude*/)
+   			}
+			graphics.fillPath(shadowBrush,path);
+			 
+			shadowBrush.delete(); 
+			path.delete();
+			graphics.delete(); 
+		}
+		 
+		this._onDrawShadow = function(){
+			..gdi.layeredBuffer( frmShadow.hwnd, 
+				function( hdc,hMemDc,hMemBitmap,width,height ){
+					this.onDrawShadow(hdc,hMemDc,hMemBitmap,width,height)
+					..gdi.updateLayeredWindow( frmShadow.hwnd,hMemDc,::SIZE(width,height) ,..gdi.blendFunction(shadowAlpha/*透明度*/)  );   
+				}
+			)
+		}
+		frmShadow._adjust = function( cx,cy ) {
+			var rc =  winform.getRect(); 
+			rc.inflate( shadowSize, shadowSize ); 
+			rc.offset(0,1);
+	 		frmShadow.setRect( rc );
+	 		this._onDrawShadow();
+		};
+		
+		frmShadow.transparent(true);
+		
+		winform.wndproc  = function(hwnd,message,wParam,lParam){
+			select(message) {
+				case 0x18/*_WM_SHOWWINDOW*/ { 
+					if(wParam) frmShadow._adjust(); 
+					frmShadow.show(wParam?(0x4/*_SW_SHOWNOACTIVATE*/):false);
+				}
+				case 0x5/*_WM_SIZE*/{
+					if( wParam == 0x1/*_SIZE_MINIMIZED*/ ) return;
+					if( wParam != 0x2/*_SIZE_MAXIMIZED*/  ){
+						frmShadow.show(0x4/*_SW_SHOWNOACTIVATE*/);
+						frmShadow._adjust();
+					}
+					else {
+						frmShadow.show(false);
+					} 
+				}
+				case 0x3/*_WM_MOVE*/{
+					var x,y = winform.getPos();
+					frmShadow.setPos( x - shadowSize,y - shadowSize + 1 );
+				}
+			} 
+		};
+		
+		if( ..win.isVisible( winform.hwnd ) ){
+			frmShadow._adjust();
+			frmShadow.show(0x4/*_SW_SHOWNOACTIVATE*/);
+		}
+	};
+	
+}
+
+/**intellisense()
+win.ui.shadow = 阴影边框
+win.ui.shadow( = 创建阴影边框
+win.ui.shadow(.(窗体对象,透明度,阴影大小,外圆角,内圆角,阻影颜色,插值位置,聚焦系数) = 除参数@1以外,其他所有参数可选\n透明度默认为80,255为不透明\n阴影大小默认为3像素\n外圆角默认为阴影大小\n内圆角默认为空\n阴影颜色默认为0xFF000000,FF为透明度\n插值位置默认为0.15\n聚焦系数默认为15
+win.ui.shadow() = !win_ui_shadow.
+!win_ui_shadow._form = !winform.
+!win_ui_shadow.onDrawShadow(hdc,hMemDc,hMemBitmap,width,height) = @.onDrawShadow = function(hdc,hMemDc,hMemBitmap,width,height){\n	var graphics = ..gdip.graphics(hMemDc);\n	graphics.smoothingMode = 4/*_GdipSmoothingModeAntiAlias*/;\n	__\n	graphics.delete();\n} 
+end intellisense**/

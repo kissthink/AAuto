@@ -1,0 +1,18 @@
+//嵌入外部程序窗口
+import win.ui;
+/*DSG{{*/
+var winform = ..win.form( bottom=249;parent=...;right=349;text="AAuto Form" )
+winform.add(  )
+/*}}*/
+
+import winex; 
+import process;
+
+process.execute_waitInput("notepad.exe");
+hwnd = winex.findActivate( ,,"Notepad","Edit" )
+
+win.setParent(hwnd,winform.hwnd)
+win.setPos(hwnd,0,0)
+
+winform.show(0x3/*_SW_MAXIMIZE*/) 
+win.loopMessage();

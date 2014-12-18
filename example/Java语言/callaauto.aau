@@ -1,0 +1,25 @@
+//Java调用AAuto
+import java;  
+var jvm = java(); 
+
+//为Java提供Native API
+//请先在Java类HelloworldApp中声明API: static native String aauto(String code);
+jvm.registerNative(
+	function(env,jobject,jstring){
+		code = owner.fromJavaString(jstring) 
+		var func = loadcode(code)
+		var ret = tostring( func() );
+		return jvm.toJavaString( ret )
+	},
+	"HelloworldApp","aauto","string(string)"
+)
+	 
+//创建java类实例,并调用其成员方法
+var helloworld = jvm.newJavaObject( "HelloworldApp" );
+test_aauto = helloworld.getMethod("test_aauto","string()")
+io.print( test_aauto() );	
+io.stdout.flush()
+ 
+execute("pause") //按任意键继续
+io.close();//关闭控制台
+

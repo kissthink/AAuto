@@ -1,0 +1,21 @@
+//检测键盘状态
+//仅在键盘上的键被按下时//getState或getStateX才会返回true;
+import  key;
+
+io.open();
+io.print("请按A键");
+
+while( ! key.getStateX("ESC")  ){
+
+    if( key.getStateX("A") ){
+        io.print("您按下了A键，请按ESC键退出");
+        key.waitUp("A")
+    }
+  
+    sleep(1)
+    
+} 
+
+io.close();
+
+ 

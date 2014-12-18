@@ -1,0 +1,28 @@
+ 
+//打开控制台
+io.open();
+io.print("请输入一行文本，然后回车") 
+var str = io.getText() 
+
+import crypt; 
+var csp = crypt();
+csp.setPassword("密码") //设置密码
+str = csp.encrypt(str) //加密 
+str = csp.decrypt(str) //解密 
+io.print( "使用crypt标准库加密,解密结果",str )
+csp.release()
+
+md32 = crypt.md5(str,true) ;
+io.print("md5" ,md32  ); 
+sha = crypt.sha1(str);
+io.print("sha1" ,sha  ); 
+crc = string.crc32(str ) ;
+io.print("crc32" , string.format("%x", crc:"" )  );
+
+import string.xxtea; 
+xx = string.xxtea.encrypt(str,"abcdfasdf" ) ;
+io.print("xxtea加密结果" ,xx  ); 
+xx = string.xxtea.decrypt(xx,"abcdfasdf" ) ;
+io.print("xxtea解密结果" ,xx  );
+
+ 

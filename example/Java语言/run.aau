@@ -1,0 +1,59 @@
+//调用Java虚拟机入门
+io.open() 
+
+/*
+默认自带绿色精简版的JRE,压缩后6.8MB,可根据需要继续精简,或替换JRE版本
+默认在EXE目录或工程目录下的JAVA/jre 子目录查找jre,删除自带jre将会使用系统安装的jre或jdk
+*/
+import java;  
+var jvm = java(); //创建Java虚拟机
+
+/*
+默认会添加 \java\以及其目录下的jar文件(不含子目录)为搜索Java类的位置
+用下面的函数可以动态添加类搜索位置(目录或jar文件)
+*/
+jvm.addClassLoaderUrl("~\example\Java语言\java"); 
+
+/*
+自内存或文件直接加载类,注意下面的$操作符指示AAuto在编译时将文件置入内存
+而路径前面的波浪线~表示EXE根目录(开发时指开发环境根目录)
+*/
+HelloworldApp = jvm.defineJavaClass("HelloworldApp",$"~\example\Java语言\java\HelloworldApp.class") 
+
+/*
+查找类对象的方法很简单
+*/
+HelloworldApp = jvm.findJavaClass("HelloworldApp")
+
+/*
+查找类的静态方法,注意函数原型一定要正确匹配Java中的函数定义,
+如果仅仅名字是对的,函数原型是错的一样会找不到
+*/
+var jmain = jvm.getStaticClassMethod(  
+	HelloworldApp, //这里可以是类名,也可以是已加载的类对象
+	"main", //函数名 
+	"string(string[])"//函数原型语法与API相同,不同的是可以使用[]表示数组参数
+);
+ 
+/*
+调用Java函数很简单,与普通函数一样使用
+*/
+var str = jmain( "测试","运行java") 
+io.print( str )
+
+//创建java对象
+var jstring = jvm.newJavaObject( 
+	"java.lang.String", //指定类名
+	"void(WORD[])", //指定构造函数
+	string.fromto("测试",0,65001) //传入构造参数
+	); 
+	
+ 
+//创建java对象,如果是默认构造函数,即原型为 void() 可省略其他参数
+var helloworld = jvm.newJavaObject( "HelloworldApp" );
+
+//获取Java对象的方法
+test = helloworld.getMethod("test","int(int)")
+io.print( test(3) );//调用Java对象的方法
+execute("pause")
+ 

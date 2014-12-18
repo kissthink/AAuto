@@ -1,0 +1,62 @@
+//滚动条、滑尺控件、微调按钮
+import win.ui;
+/*DSG{{*/
+var winform = ..win.form(text="滚动条、滑尺控件、微调按钮";right=438;bottom=203;max=false;parent=...)
+winform.add(
+editScrollbar={cls="edit";text="1";left=46;top=89;right=119;bottom=114;db=1;dl=1;edge=1;multiline=1;readonly=1;z=4};
+editSpin={cls="edit";text="1";left=67;top=138;right=100;bottom=161;db=1;dl=1;edge=1;multiline=1;z=6};
+editTrackbar={cls="edit";text="1";left=46;top=41;right=119;bottom=66;db=1;dl=1;edge=1;multiline=1;readonly=1;z=3};
+scrollbar={cls="scrollbar";left=141;top=88;right=375;bottom=118;db=1;dl=1;horz=1;z=2};
+spin={cls="spin";left=100;top=137;right=120;bottom=162;db=1;dl=1;z=5};
+trackbar={cls="trackbar";left=135;top=39;right=375;bottom=69;db=1;dl=1;max=0;min=0;z=1}
+)
+/*}}*/
+
+//指定跟踪条范围
+winform.trackbar.setRange(1,50)
+
+winform.trackbar.oncommand = function(id,event,pos){
+	//拖动滑块时触发此函数,注意这里多了一个表示刻度的pos参数
+	if( pos ){
+		//如果用户放开鼠标，pos可能为0
+		winform.editTrackbar.text = pos 
+	} 
+}
+ 
+winform.scrollbar.setRange(1,100)
+winform.scrollbar.oncommand = function(id,event,pos){
+
+	if( event == 0x0/*_SB_LINEUP*/ ){
+		winform.scrollbar.pos -= 1
+	}
+	elseif( event == 0x1/*_SB_LINEDOWN*/ ){
+		winform.scrollbar.pos += 1
+	}
+	elseif( event == 0x4/*_SB_THUMBPOSITION*/ ){  
+		winform.scrollbar.pos = pos; //滚动条要存储新刻度
+	} 
+	
+	winform.editScrollbar.text = winform.scrollbar.pos; 
+} 
+
+//指定 spin控件同步数值的文本框
+winform.spin.buddy = winform.editSpin; 
+winform.spin.setRange(1,100); //一定要设置数值的上下限
+winform.spin.pos = 1;//设置数值
+
+//处理spin事件
+winform.spin.oncommand = function(id,event,pos){ 
+	if( pos && event == 0x4/*_SB_THUMBPOSITION*/ ){
+		winform.text = "spin" + winform.editSpin.text
+	}
+}
+
+//spin绑定的文本框事件 
+winform.editSpin.oncommand = function(id,event){ 
+	if( event = 0x200/*_EN_KILLFOCUS*/ ){
+		winform.text = "spin" + winform.editSpin.text
+	}
+}
+
+winform.show() 
+win.loopMessage();

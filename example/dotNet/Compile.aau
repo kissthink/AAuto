@@ -1,0 +1,70 @@
+//运行时编译C# 
+import console;
+console.open()
+
+import dotNet; 
+var clr,err = dotNet.clr( "v2.0" ); 
+if( !clr ){
+    console.log("当前系统未安装.Net Framework 2.0", err )
+    return;
+}
+
+//创建应用程序域
+var appDomain = clr.createAppDomain();
+
+//创建C#语言编译器
+var compile = appDomain.createCompiler("C#");
+compile.Reference("System.dll")
+
+//设置待编译C#源码
+compile.Source = /****** 
+using System.Reflection; 
+
+namespace CSharpLibrary  
+{ 
+    public class AAutoTable  
+    { 
+    	private object tObject;
+    	public AAutoTable(object obj){
+    		tObject = obj;
+    	}
+    	public object GetProperty(string k){
+    		return  tObject.GetType().InvokeMember("属性名", BindingFlags.GetProperty, null, tObject, null);
+    	}
+    	public void SetProperty(string k,object v){
+    		tObject.GetType().InvokeMember(k, BindingFlags.SetProperty, null, tObject, new object[] { v });
+    	}
+    	public object InvokeMember(string k,params/*不定个数参数*/ object[] arg ){ 
+    		return  tObject.GetType().InvokeMember(k, BindingFlags.InvokeMethod, null, tObject, arg );
+    	}
+    } 
+    
+    public class CSharpObject  
+    { 
+        public object Hello( object comObject ){   
+        
+            AAutoTable tab = new AAutoTable( comObject );
+         
+        	tab.SetProperty( "属性名",456 ) ; 
+              
+            tab.InvokeMember( "执行AAuto",  " io.print('在C#中执行AAuto代码') "   );
+             
+            return tab.GetProperty("属性名"); 
+        }
+    }   
+} 
+******/
+ 
+//编译并返回程序集  
+var assembly = compile.Compile()  
+ 
+//调用程序集创建类对象
+var cSharpObject = assembly.createInstance("CSharpLibrary.CSharpObject")  
+
+//调用实时编译的C#函数
+var ret = cSharpObject.Hello( { 
+    属性名 = 123;
+    执行AAuto = function( code ){ 
+        loadcode(code)(); 
+    } 
+} );  

@@ -1,0 +1,96 @@
+//static 静态文本框
+import win.ui.ctrl.metaProperty;//导入控件属性元表支持
+namespace win.ui.ctrl;  
+
+class static{
+    ctor(parent,tParam){ 
+    	if(tParam){
+			if(tParam.edge) tParam.exstyle |= 0x20000/*_WS_EX_STATICEDGE*/;	
+			if(tParam.transparent)tParam.exstyle |= 0x20/*_WS_EX_TRANSPARENT*/;
+			if(tParam.notify)tParam.style |= 0x100/*_SS_NOTIFY*/ 
+			
+			if(tParam.nWrap) 
+				tParam.style |= 0xC/*_SS_LEFTNOWORDWRAP*/
+			else{
+				select(tParam.align) {
+					case  "center"  
+					tParam.style |= 0x1/*_SS_CENTER*/; 
+					case "right" 
+	   				tParam.style |= 0x2/*_SS_RIGHT*/; 
+					else  
+	   				tParam.style |= 0x0/*_SS_LEFT*/;
+				}
+			}
+			if(tParam.center)
+				tParam.style |= 0x200/*_SS_CENTERIMAGE*/ 
+		}
+    }
+	@_metaProperty;
+}
+static._metaProperty = metaProperty( )
+ 
+/***intellisense() 
+!static.cls = 设计时类名
+!static.color = 获取或修改字体颜色数值
+!static.bgcolor= 获取或修改景颜色数值
+!static.className = 运行时类名
+!static.hwnd = 控件句柄
+!static.id = 控件ID
+!static.text = 控件文本
+!static.getForm() = 如果是窗体返回自身\n如果是控件则返回_parentForm\n!winform.
+!static.isForm = 窗体返回true,控件返回false
+!static._parentForm = 控件所在的父窗口(指win.form对象)\n!winform.
+!static.getParent() = 返回父窗口\n!static.
+!static.setParent(__/*控件对象*/) = 改变父窗口 
+!static.addCtrl = @.addCtrl(\n	button={ cls="button";text="button";left=33;top=32;right=126;bottom=81;autoResize=false }  \n)
+!static.translateAccelerator = @.translateAccelerator = function(msg){ \n	__/*返回是否快捷键*/\n} 
+!static.adjust = @.adjust = function( cx,cy,wParam ) {	 \n	__ \n};  
+!static.adjust() = 调整窗口 - 自定义事件函数
+!static._embedObject = 嵌入OLE控件对象\n!embedObject.
+!static.createEmbed(.("类名",容器对象) = 嵌入OLE控件,\n容器对象哦可选参数,返回容器对象,
+!static.createEmbed() = !embedObject.
+!static.hide = 控件是否隐藏
+!static.disabled = 是否禁用
+!static.left = 左侧坐标
+!static.right = 右侧坐标
+!static.top = 顶部坐标
+!static.bottom = 底部坐标
+!static.width = 宽度
+!static.height = 高度
+!static.redraw() = 刷新
+!static.setRedraw(false) = 禁止重绘
+!static.setRedraw(true) = 恢复重绘
+!static.redrawTransparent() = 刷新\n透明背景时请使用此函数替代redraw()
+!static.show(true__) = 显示控件
+!static.getRect() = 控件区块位置(::RECT结构体)
+!static.getRect(true) = 控件屏幕区块位置(::RECT结构体)  
+!static.setRect(rc) = 设置控件区块位置(::RECT结构体)  
+!static.setRect(rc,true) = 设置控件屏幕区块位置(::RECT结构体)
+!static.getClientRect() =  控件客户区块位置(::RECT结构体)\n!rect.
+!static.getFont() = 控件字体(::LOGFONT结构体)\n!logfont.
+!static.setFont(__/*指定字体*/) = 指定LOGFONT字体对象,或逻辑字体句柄 
+!static.setFont(混入字体属性) = @.setFont(point=10;name="宋体");
+!static.theme = 外观主题,例如\nwinform.button.theme = "Explorer"\nwinform.button.theme = false
+!static.modifyStyle(.(remove,add) = 如果指定第三个参数，则使用此参数调用::SetWidnowPos 
+!static.modifyStyleEx(.(remove,add) = 如果指定第三个参数，则使用此参数调用::SetWidnowPos
+!static.capture = 是否捕获全局鼠标消息
+!static.close() = 关闭控件窗口
+!static.invalidate(__/*可选使用::RECT()对象指定客户区*/) = 使窗口绘图区无效
+!static.invalidate(__/*可选使用::RECT()对象指定客户区*/,0) = 使窗口绘图区无效\n不刷新背景
+!static.update() = 重绘invalidate函数指定的区块
+!static.setFocus() = 设置焦点 
+!static.setPos(.(x坐标,y坐标,宽,高,插入位置,参数) = 调整窗口位置或排序,所有参数可选\n同时指定x,y坐标则移动位置\n同时指定宽高则改变大小\n指定插入位置(句柄或_HWND前缀常量)则调整Z序
+!static.getPos() = 返回相对坐标,宽,高\nx,y,cx,cy=win.getPos(hwnd)
+!static.messageOnly() = 将窗口转换为message-only window\n该窗口不可见,仅用于消息分发
+!static.addtimer(.(间隔时间,回调函数) = 创建定时器\n间隔时间以毫秒为单位
+!static.settimer(.(定时器ID,间隔时间,回调函数) = 重新设置间隔时间或回调函数
+!static.killtimer(__/*定时器ID*/) = 删除定时器
+!static.msgbox("__") = 弹出对话框,可选用参数@2指定标题
+!static.msgboxErr("__") = 弹出错误对话框,可选用参数@2指定标题
+!static.msgboxTest("__") = 弹出询问对话框,可选用参数@2指定标题
+!static.orphanWindow() = 使控件脱离原来的窗口,可以显示在父窗口外面，\n但仍然显示在原来的位置，继续如影随形的跟随父窗口移动或改变大小,\n控件原来的固定边距等参数仍然有效
+?win.ui.ctrl.static  =!static.
+win.ui.ctrl.static() = 静态文本控件\n!static.
+win.ui.ctrl.static = 静态文本控件支持库
+end intellisense***/
+ 

@@ -1,0 +1,132 @@
+
+import win.ui;
+import win.ui.menu;
+import com.picture;
+/*DSG{{*/
+var winform = win.form(parent=...; min=1;bottom=249;max=1;right=349;text="AAuto Form" )
+winform.add( 
+button={ bottom=227;text="button";left=173;right=293;top=189;z=0;cls="button" }
+)
+/*}}*/
+
+winform.button.oncommand = function(id,event){
+	//win.msgbox( winform.button.text );
+	
+	
+}//endproc
+
+
+import win;
+import wsock;
+import wsock.err;
+
+// 初始化 Winsock.	
+if(! wsock.open() ){
+	io.print("打开wsock错误", wsock.err.lasterr() );
+	return;
+}
+ 
+
+//建立 socket 
+var hSocket= wsock.socket(0x2/*_AF_INET*/,0x1/*_SOCK_STREAM 建立流式套接口*/,0x6/*_IPPROTO_TCP*/ )
+if( hSocket= _INVALID_SOCKET ){
+	io.print("客户端创建套接字错误");
+	wsock.close() //关闭wsock
+	return;
+}
+
+
+UM_SOCK = 0x400/*_WM_USER*/ + 1971;
+
+async_select = function (  hwnd, lEvent)
+{
+	if (wsock.WSAAsyncSelect(hSocket, hwnd,  UM_SOCK, lEvent) == -1/*_SOCKET_ERROR*/)
+	{
+		win.msgbox(  "WSAAsyncSelect Failure.0");
+		return false;
+	}
+	return true;
+}
+
+if (!async_select(winform.hwnd, 0x10/*_FD_CONNECT*/))
+	return false;
+	
+ 
+var service = wsock.sockaddr_in();
+service.sin_family = 0x2/*_AF_INET*/
+service.sin_addr.S_un.S_addr = wsock.inet_addr( "127.0.0.1" )
+service.sin_port = wsock.htons(7510)
+
+//之后服务端就调用accept( )来接收连接.客户端在建立套接口后就可调用connect()和服务器建立连接
+wsock.connect( hSocket,service,raw.sizeof(service))  //因为是异步套接字，这里不需要检查返回值
+
+file = io.open("/test.rar","w+b");//注意io.open默认是文本方式写入的,b指定二进制模式
+reads_count = 0;
+receivePacket = function(nSocket){
+	var reads,recvbuf = wsock.recv(	nSocket,1024,1024,0) 
+	if ( reads=-1 ){
+		io.print( "客户端接收错误");
+		io.print( wsock.err.lasterr() );
+		 return false; 
+	}
+	else if( reads>0 ) { 
+		pos =	string.find( recvbuf,"<end_sock>") ;
+		if( pos ){
+		 	recvbuf = string.left(recvbuf,pos);
+		 	io.print("共接收" + (reads_count + pos))
+		 	file.write( recvbuf ); 
+		 	file.close();
+		 	io.print("客户端接收文件完成");
+		 		return true;
+		};
+		io.print("接收" + reads)
+		reads_count += reads;
+		file.write( recvbuf );	
+		 return true; 
+	}  
+	
+}
+
+
+winform.wndproc = function(hwnd,message,wParam,lParam){
+	select(message) {//判断消息类型
+		case UM_SOCK  { 
+			select(lParam) {
+			case 0x10/*_FD_CONNECT*/{
+				//连接成功
+				if (!async_select(hwnd, 0x1/*_FD_READ*/))
+					wsock.closesocket(s);
+			}	
+			case 0x1/*_FD_READ*/{
+				if ( !receivePacket(topointer(wParam)))
+				{
+					win.msgbox(  "Receive Packet Failed.888");
+					wsock.closesocket(hSocket); 
+				}
+				/**	if (!async_select(hwnd, 0x1/*_FD_READ*/ ) )
+					wsock.closesocket(hSocket);
+				**/
+			}
+			case 0x2/*_FD_WRITE*/{
+				//在这里写数据
+				}
+			case 0x20/*_FD_CLOSE*/
+				if (wsock.WSAAsyncSelect(s, hwnd, 0, 0) == SOCKET_ERROR)
+					win.msgbox( "WSAAsyncSelect Failed.n");
+				
+			else{
+				if (::HIWORD/*WSAGETSELECTERROR*/(lParam) != 0)
+				{
+					win.msgbox( "Socket Report Failure.");
+					wsock.closesocket(hSocket); 
+				}
+			}
+			
+		}    
+	}
+}
+}
+
+winform.show(true) 
+win.loopMessage();
+return winform;

@@ -1,0 +1,11 @@
+import ide;
+import fsys;
+
+var publisDir = ide.getPublisDir();
+if(!#publisDir)return; 
+
+var tccPubDir =  fsys.joinpath(publisDir,"\lib\tcc" ); 
+if( ! io.exist(tccPubDir) ){ 
+	var libPath,libDir = io.libpath("tcc")
+	..fsys.copy( fsys.joinpath(libDir,"\.res") ,tccPubDir,0x10/*_FOF_NOCONFIRMATION*/  | 0x200/*_FOF_NOCONFIRMMKDIR*/); 
+}

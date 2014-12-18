@@ -1,0 +1,151 @@
+//maker 制作压缩包
+import fsys; 
+import process.popen;
+namespace fsys.cab.maker;
+
+folder = function(path,targetPath,CompressionType="LZX"){
+	path = ..fsys.longpath(  ..io.fullpath(path) );
+	if(!targetPath){
+		targetPath = ..string.trimright( path,"\/" ) + ".cab" 
+	}
+	else {
+		targetPath = ..io.fullpath(targetPath)
+	}
+	
+	if( ..io.exist(targetPath) ){
+		return null,'cab文件已存在:\r\n' + targetPath
+	}
+	var tTarget = ..io.splitpath(targetPath)	
+  
+	var tFiles = {"
+.OPTION EXPLICIT
+.Set CabinetNameTemplate=""" + tTarget.file + """
+.set DiskDirectoryTemplate=CDROM ;All cabinets go in a single directory
+.Set CompressionType="+CompressionType+";All files are compressed in cabinet files
+.Set UniqueFiles=""OFF""
+.Set Cabinet=on
+.Set DiskDirectory1="""+..fsys.shortpath(tTarget.dir) +"""
+	"};
+			
+	..fsys.enum(  path, "*.*", 
+		function(dir,file,fullpath,findData){ 
+			if(file){ 
+				..table.push(tFiles,'"'  + fullpath + '"'); 
+			}  
+		},false/*禁止处理子目录*/ 
+	); 
+	
+	var ddfPath =  ..io.tmpname(true) + ".ddf" ;
+	..string.save(ddfPath,  ..string.join(tFiles,'\r\n') );
+	var parameter = "/V0 /F " + ..fsys.shortpath(ddfPath) + " /D MaxDiskSize=CDROM /D CompressionType="+CompressionType+" /D CompressionMemory=21 /D Cabinet=ON /D Compress=ON /L " +  ..fsys.shortpath(tTarget.dir) +''
+	
+	if( showConsole ){
+		var prcs = ..process("makecab.exe",parameter )
+		if(!prcs){
+			return null,'压缩目录时出错:\r\n' + path;
+		} 
+		..thread.wait(prcs.handle)
+	}
+	else {
+		var prcs = ..process.popen("makecab.exe",parameter )
+		if(!prcs){
+			return null,'压缩目录时出错:\r\n' + path;
+		}
+		var str  = prcs.read(-1) 
+		prcs.close();
+	}
+
+	..io.remove(ddfPath);
+	return true,targetPath	 	
+}
+
+file = function( path,targetPath,CompressionType="LZX" ){
+	path = ..fsys.longpath(  ..io.fullpath(path) )  
+	if(!targetPath){
+		targetPath = ..string.trimright( path,"\/" ) + ".cab" 
+	}
+	else {
+		targetPath = ..io.fullpath(targetPath)
+	} 
+	var tTarget = ..io.splitpath(targetPath) 
+	var parameter = '/V0 /D MaxDiskSize=CDROM /D CompressionType='+CompressionType+' /D CompressionMemory=21 /D Cabinet=ON /D Compress=ON "' + ..fsys.longpath(path) + '" /L ' +  ..fsys.shortpath(tTarget.dir) + '  "' + tTarget.file + '"'
+
+	if( showConsole ){
+		var prcs = ..process("makecab.exe",parameter )
+		if(!prcs){
+			return null,'压缩文件时出错:\r\n' + path;
+		} 
+		..thread.wait(prcs.handle)
+	}
+	else {
+		var prcs = ..process.popen("makecab.exe",parameter )
+		if(!prcs){
+			return null,'压缩文件时出错:\r\n' + path;
+		}
+		var str  = prcs.read(-1) 
+		prcs.close();
+	}   
+	return true,targetPath	
+}
+
+compress = function(path,targetPath,CompressionType="LZX"){
+	path = ..io.fullpath(path)  
+	if(!targetPath){
+		targetPath = ..string.trimright( path,"\/" ) + ".cab" 
+	}
+	else {
+		targetPath = ..io.fullpath(targetPath)
+	}
+	if(! ..string.endWith( targetPath,".cab",true) ){
+		return "cab文件存储路径错误"; 
+	}
+	..fsys.delete(targetPath)
+	
+	if( ! ..fsys.isDir( path ) ){  	
+		return file(path,targetPath,CompressionType)
+	}
+	else{
+		//取出所有目录
+		var tDirs = {}
+		..fsys.enum( path, "*", 
+			function(dir,file,fullpath,findData){ 
+				if(!file) {
+					..table.push(tDirs,fullpath  ); 
+				} 
+			} 
+		);
+		//按下层目录到上层目录排序  
+		..table.sort(tDirs, function(b){
+			return #owner > #b
+		} )
+		
+		var ret,err;
+		for(i=1;#tDirs;1){
+			ret,err = folder(tDirs[i]) 
+			if(!ret){
+				return ret,err;
+			} 
+			if( onProgress ){
+				onProgress(tDirs[i],#tDirs,i)
+			}
+		} 
+		ret,err = folder( path, targetPath );
+		if(!ret){
+			return ret,err;
+		}  
+		
+		for(i=1;#tDirs;1){ 
+			..fsys.delete( ..string.trimright( tDirs[i],"\/" ) + ".cab"  )
+		}
+		return true,targetPath;
+	} 
+}
+
+/**intellisense(fsys.cab.maker)
+onProgress = @.onProgress = function(folder,total,progress){
+	..io.print("压缩完成:",folder)
+	..io.print("子目录总数:" + total,"已处理:" + progress)
+}
+showConsole = 是否显示控制台窗口
+compress(.(待压缩目录或文件,输出目录,"MSZIP") = 压缩文件名目录,生成cab文件,\n支持嵌套子目录( 解压使用 fsys.cab.extract()函数 可支持子目录 )\n参数二,参数三可省略,默认使用LZX算法(压缩率较高).\n成功返回true,失败返回 null,错误信息
+end intellisense**/

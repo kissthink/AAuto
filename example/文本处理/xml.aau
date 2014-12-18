@@ -1,0 +1,79 @@
+//简单xml解析
+
+import string.xml;
+import console;
+
+//example
+xmlstr =  /* 
+<?xml version="1.0" encoding="gb2312"?>
+<project ver="0.60" name="快手工程3" libEmbed="true" icon="...">
+<file name="main.aau" path="main.aau" > 
+</file>
+<folder name="资源文件" path="res" embed="true">
+<![CDATA[ 
+<folder name="资源文件" path="res" embed="true">
+]]>
+</folder>
+<folder name="库" path="lib">
+</folder>
+<abc />
+</project> 
+*/
+
+xmlDoc = string.xml( xmlstr )
+ 
+/*
+上面的xmlDoc表示根节点,
+xmlDoc包含一个所有子节点的数组，
+例如 xmlDoc[1] 表录第一个子节点.
+
+xmlDoc还包含所有以XML标记归类的子节点数组;
+例如: xmlDoc.project[1] 表示第一个project子节点
+
+而所有的子节点又可以按上述规则再包含其他的子节点.
+请牢记一个简单规则，任何时候访问节点对象一定有一个下标里面写上数值( 至于迭代器或函数返回值里返回的单个节点对象不是数组的除外 )，
+例如 xmlDoc.project[1]，因为节点全部是以数组形式存在。
+*/
+
+var project = xmlDoc.queryEles( tagName = "project"); 
+for(index,tagName,childCount,xNode in project[1].eachChild() ){
+	console.log( index,tagName,childCount,xNode.outerXml() ) 
+}
+
+/*
+普通节点使用 tagName 属性表示XML标签名,
+"tagName"属于保留字,其他属性使用此名字会被自动忽略
+
+根节点无tagName,注意这里的根节点指的是文档里的XML根节点的父节点，也就是总是虚拟出一个空的根节点。
+
+文本节点使用 text 属性表示文本,无tagName,无其他属性
+
+CDATA节点使用 cdata 属性表示数据, 无tagName,无其他属性
+
+注释节点被自动忽略不会存为节点对象
+
+xml声明节点的tagName为"?xml"
+*/
+  
+console.log("
+---------------分析百度RSS----------------
+")
+
+import inet.http
+str = inet.http().get("http://news.baidu.com/n?cmd=1&class=civilnews&tn=rss")
+
+xmlDoc = string.xml(str)  
+console.log( xmlDoc.innerText() )
+
+for(i,item in xmlDoc.rss[1].channel[1].item ){
+	console.log( item.title[1][1].cdata )
+}
+
+/*
+string.xml 也可以用来解析HTML，
+对于XML，HTML中的笔误等努力尝试修正为正确的结构(例如属性值为空或没放在引号中，标记忘记关闭，
+忘记写开始标识不配对，或大小写首尾不匹配 - 关于大小写会首先尝试严格配对，配对不成功会检测是否笔误并进行修正 ) 
+
+注意此支持库的作用是简单解析，校验XML错误等不是此支持库的目标，
+所以只会尽可能的解析出能解析的结果，尽可能宽容错误写法并试图自动修正。如果需要比较严谨的XML解析器 - 请使用标准库中的 web.msxml 
+*/

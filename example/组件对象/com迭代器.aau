@@ -1,0 +1,45 @@
+//com迭代器
+//演示com迭代器
+
+/**
+com.each 
+
+com集合对象迭代器，其内部实现如下： 
+
+import com
+
+namespace com{
+
+    function each(comx_obj) begin
+        assert(comx_obj) 
+        var enumerator = GetEnumerator(comx_obj) 
+        assert(enumerator,"Could not get an enumerator")
+
+        var function iterator( index ) {
+        	var value = owner.Next() 
+        	return ( value ? index+1 : null ) , value ;
+        }
+
+        return iterator, enumerator, 0
+    end
+
+}
+**/
+
+
+ 
+import com;
+io.open();
+
+try{
+    word = com.GetObject("Word.Application")
+    for index, doc in com.each(word.Documents) {
+        io.print(doc.Name)
+    }
+}
+catch(e){
+    io.print( e )
+    io.print( "请先打开word" )
+}
+
+

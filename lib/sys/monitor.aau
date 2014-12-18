@@ -1,0 +1,43 @@
+//monitor 显示器
+namespace sys.monitor;
+
+GetMonitorInfo = ::User32.api( "GetMonitorInfo", "bool(pointer hMonitor,struct & lpmi)");
+MonitorFromWindow = ::User32.api( "MonitorFromWindow", "pointer(addr hwnd,INT dwFlags)");
+ 
+class MONITORINFO  {         
+    int cbSize = 40; 
+    struct rcMonitor = {
+    	int left;
+		int top;
+		int right;
+		int bottom;
+	} ;       
+    struct rcWork = {
+    	int left;
+		int top;
+		int right;
+		int bottom;
+	}
+
+    int dwFlags;
+}
+
+getInfoFromWindow = function(hwnd=0,flag = 2/*_MONITOR_DEFAULTTONEAREST*/){
+	var hPmi = MonitorFromWindow( hwnd ,flag )
+	if( hPmi ){
+		var info = MONITORINFO();
+		if( GetMonitorInfo( hPmi,info ) ){
+			return info;
+		}
+	}
+}
+
+ /**intellisense()
+sys.monitor.getInfoFromWindow(.(窗口句柄,_MONITOR_DEFAULTTONEAREST) = 获取窗口所在显示器信息,\所有参数可选
+sys.monitor.getInfoFromWindow() = !MONITORINFO.
+!MONITORINFO.rcMonitor = 显示器的在屏幕坐标系中的矩形\n!rect.
+!MONITORINFO.rcWork = 显示器的工作区域\n!rect.
+_MONITOR_DEFAULTTONULL=@0/*_MONITOR_DEFAULTTONULL*/
+_MONITOR_DEFAULTTOPRIMARY=@1/*_MONITOR_DEFAULTTOPRIMARY*/
+_MONITOR_DEFAULTTONEAREST=@2/*_MONITOR_DEFAULTTONEAREST*/
+end intellisense**/

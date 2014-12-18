@@ -1,0 +1,39 @@
+//提取中文字符串
+
+str = /**
+abcddddddddddddd这是一个中文字符串adfasdfasdf这又是一个中文字符串<a href="">这是超链接标题</a>
+ **/
+
+io.open(  );
+ 
+//取出所有的中文字符 方法一
+for str in string.gmatch(str,'<\xA1-\xF7\xA1-\xFE>+') { 
+   io.print(str) 
+}
+
+//取出所有的中文字符 方法二
+for str in string.gmatch(str,':+') { 
+   io.print(str) 
+}
+
+//一个中文为两个字节,一个英文为一个字节
+//在模式匹配中,圆点'.'表示任意单字节字符,而冒号':'表示任意双字节字符(例如中文)
+
+//导入字符串扩展函数库
+import string.gbk
+
+//将中文字符串转换为数组
+tab = string.gbk("12在2a有bc中 文233" )
+for(i=1;#tab;1){
+	//显示第i个字符
+	io.print( tab[i] ) 
+}
+
+//string.split()函数不指定分隔符时,也可以自动拆分中文
+tab = string.split( "12在2a有bc中 文233" )
+for(k,v in tab){
+	io.print( v )
+}
+
+//转换为拼音
+io.print( string.gbk.toPinyin("新年好") )

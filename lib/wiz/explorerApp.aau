@@ -1,0 +1,73 @@
+import com;
+import util.metaProperty; 
+namespace wiz;
+
+class explorerApp{
+	ctor(){
+		this._objApp = ..com.CreateObject("Wiz.WizExplorerApp.1")
+	}; 
+	@_metaProperty;
+}
+
+namespace explorerApp {  
+
+  _metaProperty = ..util.metaProperty( 
+	  
+		get = function(k){
+			return owner._objApp[k]
+		};
+		set = function(k,v){
+			owner._objApp[k] = v;
+		};
+	)
+}
+
+/**intellisense()
+wiz.explorerApp() = 创建Wiz应用程序对象\n!wizExplorerApp.
+!wizExplorerApp.Database = 获得当前打开的数据库。类型是：WizDatabase\n!WizDatabase.
+!wizExplorerApp.Window = 获得当前窗口对象\n!wizExplorerWindow.
+!wizExplorerApp.AppPath = 获得Wiz安装路径，路径名后面包含反斜杠
+!wizExplorerApp.DataStore = 获得当前使用的数据库存储文件夹，例如：D:\My Documents\My Knowledge\
+!wizExplorerApp.SettingsFileName = 获得当前使用的设置文件，通常给WizSettings对象使用，例如：D:\My Documents\My Knowledge\WizKM.xml
+!wizExplorerApp.LogFileName =获得当前使用的log文件名，例如：D:\My Documents\My Knowledge\WizKM.log
+!wizExplorerApp.LoadPluginString(.(strPluginAppGUID,strStringName) = 获得一个本地化的插件的字符串。需要传入的参数：\nstrPluginAppGUID：在plugin.ini文件里面定义的插件\nappguid； strStringName：字符串名称；返回：本地化的字符串
+!wizExplorerApp.LoadPluginString2(.(pHtmlDocumentDisp,strStringName) = 获得一个本地化的插件的字符串
+!wizExplorerApp.TranslateString(.(str) = 翻译字符串，使用Wiz内部的本地化功能，从英文翻译到本地语言
+!wizExplorerApp.PluginLocalizeHtmlDialog(.(pHtmlDocumentDisp) = 本地化当前html文件，仅用于插件类型为HtmlDialog类型的插件html文件，可以参考高级选项插件
+!wizExplorerApp.GetPluginAppGUID(.(pHtmlDocumentDisp) = 获得当前插件的app guid，仅用于插件类型为HtmlDialog类型的插件html文件
+!wizExplorerApp.GetPluginAppPath(.(pHtmlDocumentDisp) = 获得当前插件的路径，仅用于插件类型为HtmlDialog类型的插件html文件
+!wizExplorerApp.CreateWizObject(.("strObjectName") = 创建Wiz对象。绿色版本无法直接创建COM对象，因此需要使用该方法来创建Wiz内部对象
+!wizExplorerApp.CreateActiveXObject(.("strObjectName") = 创建对象。因为HTML里面创建COM对象的时候，可能会有安全提示，因此可以使用这个方法来替换
+!wizExplorerApp.RunScriptCode(.("strScriptCod","strScriptLanguage") = 执行js代码，一般用于引用外部js文件并且执行
+!wizExplorerApp.RunScriptFile(.("strScriptFileName,","strScriptLanguage") = 从文件执行js脚本，一般用于引用外部js文件并且执行
+!wizExplorerApp.LoadStringFromFile(.("strFileName","strStringName") = 从ini文件本地化一个字符串，需要指定ini文件
+!wizExplorerApp.LocalizeHtmlDocument(.("strLanguageFileName",pHtmlDocumentDisp) = 本地化一个html文件，需要指定语言ini文件
+!wizExplorerApp.GetHtmlDocumentPath(.(pHtmlDocumentDisp) = 通过传入一个html的document对象，获得该html对应得文件路径
+!wizExplorerApp.GetPluginPathByScriptFileName(.("strScriptFileName") = 通过一个js文件名，获得插件所在的路径。该js文件名不需要包含路径
+!wizExplorerApp.AddGlobalScript(.("strScriptFileName") = 添加全局脚本。该脚本在Wiz运行期间，一直有效
+!wizExplorerApp.ExecutePlugin(.("strPluginGUID") = 添加全局脚本。该脚本在Wiz运行期间，一直有效 
+end intellisense**/
+
+/**intellisense(!wizExplorerWindow)
+FoldersCtrl = 获得文件夹树控件对象。类型为：WizFolderTreeCtrl\n!WizFolderTreeCtrl.
+TagsCtrl = 获得标签树控件对象。类型为：WizTagTreeCtrl\n!WizTagTreeCtrl.
+StylesCtrl = 获得样式列表控件对象。类型为：WizStyleListBox\n!WizStyleListBox.
+DocumentsCtrl = 获得文档列表控件对象。类型为：WizDocumentListCtrl\n!WizDocumentListCtrl.
+HWND = 获得主窗口的句柄
+CurrentDocument = 得当前Wiz正在显示的Wiz文档对象，可能为null。类型为：WizDocument\n!WizDocument.
+CurrentDocumentHtmlDocument = 获得当前Wiz正在显示的html的document对象,可能为null\ndocument.
+CurrentDocumentAttachmentCtrl = 获得当前Wiz正在显示的文档对应得附件列表对象。可能为null。类型为：WizDocumentAttachmentListCtrl\nWizDocumentAttachmentListCtrl.
+ShowHtmlDialog(.(标题,url,宽度,高度,扩展参数) = 显示一个html对话框,扩展参数必须为""
+CloseHtmlDialog(.(pHtmlDocumentDisp,nCloseCommand) = 关闭当前Html对话框
+ViewDocument(.(pDocumentDisp,bOpenInNewTab) = 在wiz内部显示一个文档
+ViewHtml(.(strUrl,bOpenInNewTab) = 在wiz内部显示一个html文件
+GetHtmlDialogHWND(.(pHtmlDocumentDisp) = 获得html对话框的窗口句柄
+ShowMessage(.(strText,strTitle,nType) = 显示一个消息框。参数和win api的MessageBox参数相同;
+ShowSelectorWindow(strUrl,left,top,width,height,strExtOption) = 显示一个下拉窗口
+CloseSelectorWindow(.(pdispSelectorHtmlDocument) = 关闭下拉窗
+AddToolButton(.(strType,strButtonID,strButtonText,strIconFileName,strClickEventFunction) =  添加一个工具栏按钮，\n目前仅能添加到文档阅读/编辑窗口上面，在阅读/附件按钮后面。\nstrType必须是”document”；\nstrButtonID：按钮ID；\nstrButtonText：按钮文字；\nstrIconFileName：按钮上面图标的文件，可以指定一个ico文件（包含路径）；\nstrClickEventFunction：按钮点击后执行的回掉函数。
+RemoveToolButton(.(strType,strButtonID) = 删除工具栏按钮
+SetToolButtonState(.(strType,strButtonID,strState) = 设置按钮状态。strState：可以是checked或者disabled
+GetToolButtonRect(.((strType,strButtonID) = 获得按钮所在的屏幕位置\n返回坐标字符串，用英文逗号分割，分别是："left,top,right,bottom"
+end intellisense**/
+      

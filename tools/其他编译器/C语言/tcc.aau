@@ -1,0 +1,106 @@
+//TCC编译器
+import tcc;
+import fsys.dlg;
+import process;
+import win.ui;
+/*DSG{{*/
+var winform = win.form(parent=...; text="C语言编译器(TCC)";right=577;bottom=520 )
+winform.add( 
+btnOutput={ bottom=479;right=533;left=453;top=449;z=5;text="生成文件";cls="button" };
+txtBuild={ bottom=441;right=438;left=97;top=416;z=7;text='vm.addLib("user32","kernel32","gdi32")';edge=1;cls="edit" };
+static={ bottom=474;align="right";right=90;left=11;top=456;transparent=1;text="启动参数：";z=4;cls="static" };
+btnRun={ bottom=479;right=438;left=358;top=449;z=2;text="运行代码";cls="button" };
+static2={ right=477;bottom=512;text="生成的obj文件可在AAuto中使用vm.addFile()  函数加载. 并不再需要任何头文件";left=66;top=491;z=6;transparent=1;cls="static" };
+lbLib={ bottom=438;align="right";right=89;left=11;top=420;transparent=1;text="链接库：";z=8;cls="static" };
+btnLibExplorer={ bottom=442;text="打开库目录";left=452;top=412;z=9;right=533;cls="button" };
+txtArg={ bottom=476;right=349;left=97;top=451;z=3;text="参数,参数2";edge=1;cls="edit" };
+txtCode={ bottom=402;right=552;left=15;multiline=1;top=19;z=1;text="//请在这里输入C语言代码";edge=1;cls="richedit" }
+)
+/*}}*/
+
+winform.txtCode.text = /**
+#include <stdio.h> 
+
+int main ( int argc, char *argv[] ) 
+{   
+    int i = 0; 
+    io_reopen();
+    
+    for( i=1;i<argc;i++){
+        printf( "%s \n" , argv[i] );
+    
+    }
+     
+    return 0; 
+}
+**/
+
+//运行C语言代码
+winform.btnRun.oncommand = function(id,event){
+
+    //创建TCC编译器
+    vm = tcc(); 
+    vm.onerr = function(msg){
+    	win.msgbox( msg,"C语言错误",0x30/*_MB_ICONEXCLAMATION*/ ) 
+    }
+   
+   	var f =assert( loadcode( winform.txtBuild.text ),"链接指令语法错误"  ) 
+   	f();
+    
+    if( vm.compile(winform.txtCode.text) ){ 
+        //直接运行 main函数
+        vm.run( 
+            table.unpack(  
+                string.split(winform.txtArg.text,",") 
+            )
+        );
+    }
+     
+    vm.close(); 
+}
+
+//输出文件
+winform.btnOutput.oncommand = function(id,event){
+
+	var path = fsys.dlg.save('
+目标文件|*.o|
+执行程序|*.exe|
+动态链接库|*.dll||' ) 
+
+	if(!path)
+		return;
+
+	//创建TCC编译器
+    vm = tcc(); 
+    vm.onerr = function(msg){
+    	win.msgbox( msg,"C语言 错误",0x30/*_MB_ICONEXCLAMATION*/ ) 
+    }
+    var f =assert( loadcode( winform.txtBuild.text ),"链接指令语法错误"  ) 
+   	f();
+   	
+    //生成文件 
+    try{
+    
+    	//生成文件时,不应调用AAuto提供的函数
+    	vm.define("io_reopen()",'(void)0');
+    	
+        vm.output( path
+        	, winform.txtCode.text )
+         
+        vm.close(); 
+    }
+    catch(e){ 
+        win.msgbox( e,"C语言 错误",0x30/*_MB_ICONEXCLAMATION*/ ) 
+    } 
+	
+}
+
+//打开库目录
+winform.btnLibExplorer.oncommand = function(id,event){
+	process.explore_select( tcc._libdir + "\msvcrt.def")
+	
+}
+
+
+winform.show() 
+win.loopMessage();

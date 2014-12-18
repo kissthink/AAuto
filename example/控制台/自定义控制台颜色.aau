@@ -1,0 +1,13 @@
+//自定义控制台颜色
+
+import console;
+console.open();
+console.setTitle("自定义控制台颜色") 
+
+for(i=0;0xF;1){
+	//console.setTextAttribute( ((0xF-i)<<4) | i ) //只改字体背景
+	execute("color " + string.format("%x%x",0xF-i, i)) 
+    console.stdout.write(" 哈哈") 
+    sleep(100) 
+} 
+ 

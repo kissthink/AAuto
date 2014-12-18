@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="gb2312"?>
+<project ver="5" name="webkit窗口示例" libEmbed="true" icon="..." ui="win" output="webkit-winform.exe" CompanyName="aau.cn" FileDescription="webkit窗口示例" LegalCopyright="aau.cn" ProductName="webkit示例" InternalName="webkit示例" FileVersion="0.0.0.150" ProductVersion="0.0.0.150" publishDir="/Publish/">
+	<file name="main.aau" path="winform.main.aau" comment="default.main.aau"/>
+	<folder name="资源文件" path="res" embed="true"/>
+</project>

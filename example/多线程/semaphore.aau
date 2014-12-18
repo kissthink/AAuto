@@ -1,0 +1,33 @@
+//计数信号量同步演示
+import thread.semaphore 
+semaphore = thread.semaphore("事件对象名称",2);
+
+func_t = function(){
+	import thread.semaphore 
+	semaphore = thread.semaphore("事件对象名称",2);	 
+	
+	io.print('我在等待机会') sleep(1)
+	semaphore.wait();
+	io.print("机会来了,我正在占用资源......")
+	sleep(2000)
+	semaphore.release()
+	
+	io.print("已释放资源......") sleep(1)
+}
+
+io.open()
+io.print("机会只有两个,但是你们都想要.......")
+io.print("---------------")
+
+import thread.manage
+manage = thread.manage()
+
+for(i=1;10;1){
+	manage.create( func_t )
+	sleep(100)
+}
+ 
+manage.waitClose();
+io.print("---------------")
+io.print("万里长征终于走完了.......")
+

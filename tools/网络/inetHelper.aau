@@ -1,0 +1,177 @@
+//网站提交代码生成向导
+import win.ui;
+/*DSG{{*/
+var winform = ..win.form( bottom=482;parent=...;text="AAuto inet 库示例";left=0;exmode="";style=0;right=600;frame=1;edge=1;top=0 )
+winform.add( 
+editUrl={ dr=1;dl=1;bgcolor=16777215;color=0;right=576;left=131;dt=1;cls="edit";bottom=42;text="http://test.aau.cn/aauto/test/post/";multiline=1;top=18;acceptfiles=1;tabstop=1;edge=1;z=2 };
+btnCpy={ dr=1;bgcolor=15790320;bottom=218;align="";text="复制代码";left=312;dt=1;top=188;acceptfiles=1;z=17;color=0;right=399;tabstop=1;cls="button" };
+buttonGetTime={ dl=1;bgcolor=15790320;bottom=177;color=0;right=551;left=445;dt=1;top=147;acceptfiles=1;tabstop=1;align="";text="获取更新时间";z=7;cls="button" };
+editProxy={ dr=1;dl=1;bgcolor=16777215;color=0;right=576;left=132;dt=1;cls="edit";bottom=139;multiline=1;top=115;acceptfiles=1;z=8;edge=1;tabstop=1 };
+static3={ dl=1;bgcolor=15790320;color=0;right=125;left=29;dt=1;cls="static";transparent=1;bottom=77;align="right";text="请输入POST数据";top=53;acceptfiles=1;tabstop=1;z=9 };
+groupbox={ dr=1;dl=1;bgcolor=15790320;color=0;right=592;left=2;dt=1;cls="groupbox";tabstop=1;bottom=186;text="inet库测试工具";top=2;acceptfiles=1;transparent=1;edge=1;z=1 };
+editCode={ dr=1;dl=1;bgcolor=16777215;vscroll=1;color=0;right=595;left=5;dt=1;db=1;cls="edit";bottom=476;multiline=1;top=222;acceptfiles=1;tabstop=1;edge=1;z=11 };
+buttonClearCookies={ dl=1;bgcolor=15790320;color=0;right=432;left=345;dt=1;cls="button";transparent=1;bottom=177;align="";text="清空cookie";top=147;acceptfiles=1;z=3;tabstop=1 };
+buttonHttpdown={ dl=1;bgcolor=15790320;bottom=177;color=0;right=332;left=245;dt=1;top=147;acceptfiles=1;tabstop=1;align="";text="下载网页";z=4;cls="button" };
+radioHttp={ dl=1;bottom=210;text="使用inet.http";left=47;dt=1;top=197;z=13;right=143;cls="radiobutton" };
+editAgent={ dr=1;dl=1;bgcolor=16777215;color=0;right=575;left=131;dt=1;cls="edit";bottom=103;multiline=1;top=79;acceptfiles=1;z=15;edge=1;tabstop=1 };
+static={ dl=1;bgcolor=15790320;color=0;right=123;left=11;dt=1;cls="static";transparent=1;bottom=105;align="right";text="自定义User Agent";top=83;acceptfiles=1;tabstop=1;z=16 };
+static2={ dl=1;bgcolor=15790320;color=0;right=125;left=13;dt=1;cls="static";transparent=1;bottom=141;align="right";text="代理服务器";top=119;acceptfiles=1;tabstop=1;z=6 };
+btnTest={ dr=1;bgcolor=15790320;bottom=218;align="";text="测试运行";left=411;dt=1;top=188;acceptfiles=1;z=18;color=0;right=498;tabstop=1;cls="button" };
+buttonPOST={ dl=1;bgcolor=15790320;color=0;right=231;left=144;dt=1;cls="button";transparent=1;bottom=177;align="";text="POST测试";top=147;acceptfiles=1;z=10;tabstop=1 };
+buttonGetHeader={ dl=1;bgcolor=15790320;bottom=177;color=0;right=131;left=32;dt=1;top=147;acceptfiles=1;tabstop=1;align="";text="获取HTTP头";z=5;cls="button" };
+radioWhttp={ dl=1;checked=1;bottom=210;text="使用inet.whttp";left=154;dt=1;top=197;z=14;right=255;cls="radiobutton" };
+editPostdata={ dr=1;dl=1;bgcolor=16777215;color=0;right=576;left=132;dt=1;cls="edit";bottom=72;text="username=test&password=test";multiline=1;top=48;acceptfiles=1;tabstop=1;edge=1;z=12 }
+)
+/*}}*/
+
+import inet.http
+import inet.whttp;  
+import win.clip;
+
+var template = {
+
+post = 	/*
+import console;
+import process;
+import ${HTTP};
+
+var http = ${HTTP}(${CREATEARGS});
+var html,err,errCode = http.post("${URL}"
+    ,"${POSTDATA}" );
+http.close();
+
+if( html ){
+    string.save("/test.html",html )
+    process.execute( "/test.html" );
+}
+else {
+	if( http.statusCode ){
+		//服务端返回错误信息
+		console.log( http.lastResponse(), "HTTP错误代码:" + http.statusCode )
+	}
+	else{
+		//本地内部错误
+		console.log( err,errCode );
+	}
+}
+
+*/;
+
+get = 	/*
+import console;
+import process;
+import ${HTTP};
+
+var http = ${HTTP}(${CREATEARGS});
+var html,err,errCode = http.get( "${URL}?${POSTDATA}" );
+http.close();
+
+if( html ){
+    string.save("/test.html",html )
+    process.execute( "/test.html" );
+}
+else {
+	if( http.statusCode ){
+		//服务端返回错误信息
+		console.log( http.lastResponse(), "HTTP错误代码:" + http.statusCode )
+	}
+	else{
+		//本地内部错误
+		console.log( err,errCode );
+	}
+}
+*/;
+
+getTime = 	/*
+import console;
+import inet.http;
+
+http = inet.http();
+http.beginRequest( "${URL}");
+http.send();
+
+//静态网页才能读取时间
+var tm = http.getTime() 
+http.endRequest();
+
+console.log( tm );
+*/;
+
+readHeader = 	/*
+import console;
+import ${HTTP};
+
+var http = ${HTTP}(${CREATEARGS});
+if(  http.head("${URL}") )
+    console.log( http.responseHeaders );
+else {
+	if( http.statusCode ){
+		//服务端返回错误信息
+		console.log( http.lastResponse(), "HTTP错误代码:" + http.statusCode )
+	}
+	else{
+		//本地内部错误
+		console.log( ..lasterr() );
+	}
+}
+*/;
+
+clearCookie = 	/*
+import win;
+import inet; 
+inet.clearCookie();
+win.msgbox("Cookies 已清空")
+*/;
+}
+
+import string.template;
+getCode = function(code){ 
+    var proxy = winform.editProxy.text;
+    var agent = winform.editAgent.text; 
+    var args = ""
+    if(#proxy || #agent ){ 
+        args = string.concat('"',agent,'","',proxy,'"'); 
+        args = string.replace(ctorArg,'@""',"");
+    }
+    
+    var template = string.template(	code ); 
+    return template.format( {
+        HTTP = ( winform.radioWhttp.checked?"inet.whttp": "inet.http" );
+        CREATEARGS = args;
+        URL = winform.editUrl.text;
+        POSTDATA = winform.editPostdata.text;
+    } ) 
+}
+
+winform.buttonGetHeader.oncommand = function(id,event){
+     winform.editCode.text = getCode(template.readHeader)
+}
+
+winform.buttonGetTime.oncommand = function(id,event){
+     winform.editCode.text = getCode(template.getTime)
+}
+
+winform.buttonClearCookies.oncommand = function(id,event){ 
+     winform.editCode.text = getCode(template.clearCookie)
+}
+
+winform.buttonPOST.oncommand = function(id,event){
+     winform.editCode.text = getCode(template.post)
+}
+
+winform.buttonHttpdown.oncommand = function(id,event){
+     winform.editCode.text = getCode(template.get)
+}
+
+winform.btnCpy.oncommand = function(id,event){
+    win.clip.write(winform.editCode.text)
+}
+
+winform.btnTest.oncommand = function(id,event){
+    var func,err = loadcode( winform.editCode.text )
+    assert(func,err );
+    func();	
+}
+ 
+winform.show( true ) 
+win.loopMessage( winform );

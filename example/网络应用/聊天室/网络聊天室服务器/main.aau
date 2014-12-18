@@ -1,0 +1,548 @@
+//网络聊天室服务器
+/************************************
+Author                : dasan
+Time                  : 7,28, 2010
+Version               : V 1.0
+Description           : 网络聊天室服务器
+QQ                    : 195304939
+************************************/
+
+import win;
+import win.ui;
+import win.ui.menu;
+import com.picture;
+import wsock;
+import wsock.err;
+/*DSG{{*/
+var winform = win.form(parent=...; text="网络聊天室服务器";right=734;bottom=601 )
+winform.add( 
+tab1={ bottom=516;color=0;right=158;left=7;top=101;font=LOGFONT( name='宋体' );z=15;text="tab1";edge=1;cls="tab" };
+groupbox1={ bottom=94;color=0;text="服务器设置";left=9;top=33;z=1;right=724;edge=1;cls="groupbox" };
+button1={ bottom=80;color=0;right=467;left=370;top=56;font=LOGFONT( name='宋体';h=-14 );z=6;text="开启服务器";cls="button" };
+static6={ bottom=115;align="center";right=499;left=395;top=100;z=14;color=0;text="聊 天 信 息";transparent=1;cls="static" };
+static5={ bottom=86;color=0;right=703;left=621;transparent=1;top=68;z=8;align="center";text="在线人数";border=1;cls="static" };
+static7={ bottom=598;color=0;text="制作人：dasan  QQ:195304839  制作软件：AAuto Quicker 0.5.3.8 版(快手)制作。";left=22;top=580;z=16;right=712;transparent=1;cls="static" };
+checkbox1={ checked=1;bottom=79;color=0;right=608;left=484;top=60;z=11;text="开启用户注册";cls="checkbox" };
+static2={ bottom=73;color=0;text="网络地址：";left=16;top=58;z=3;right=94;transparent=1;cls="static" };
+button5={ bottom=575;color=0;right=146;left=11;top=551;font=LOGFONT( name='宋体';h=-14 );z=10;text="屏蔽选中用户接收";cls="button" };
+edit1={ bottom=78;color=0;right=240;left=91;top=57;z=12;text="127.0.0.1";border=1;edge=1;cls="edit" };
+static1={ bottom=27;color=0;text="网络聊天室服务器";left=293;top=8;font=LOGFONT( name='宋体';h=-21 );z=2;right=463;transparent=1;cls="static" };
+edit3={ readonly=1;bottom=572;vscroll=1;color=0;text="";border=1;multiline=1;top=121;right=724;z=13;left=164;hscroll=1;edge=1;cls="edit" };
+static3={ bottom=73;color=0;text="端口：";left=264;top=58;z=4;right=329;transparent=1;cls="static" };
+static4={ bottom=62;align="center";right=706;left=620;top=47;z=7;color=0;text="在线人数";transparent=1;cls="static" };
+button4={ bottom=544;color=0;right=146;left=11;top=520;font=LOGFONT( name='宋体';h=-14 );z=9;text="屏蔽选中用户发言";cls="button" };
+edit2={ bottom=76;color=0;right=355;left=306;top=56;z=5;text="5188";border=1;edge=1;cls="edit" }
+)
+/*}}*/
+
+//io.open();
+var zctabyonghu = {};     //已注册用户列表数组－－－----－用于注册管理--------------格式   zctabyonghu["用户名"] = "密码"
+var zxtabyonghu = {};     //在线用户网络套接字列表数组，格式tabyonghu["用户名"] ＝ 套接字 －－用户在线管理
+var tabyonghuls ={};      //临时在线用户网络套接字列表，接收用户名后转入tabyonghu中去
+var tabyonghu ={};        //在线用户数组------------------用户在线管理--------------格式     tabyonghu["用户名"]
+var tabyonghujzfy = {};   //禁止发言用户列表－－－－－－－消息接收和分发管理--------格式 tabyonghujzfy["用户名"] = 0;1(在线)
+var tabyonghujzjs = {};   //禁止信息接收的用户列表－－－－消息发送时检查------------格式 tabyonghujzjs["用户名"] = 0;1(在线)
+var tabyonghuhmd  = {};   //服务器用户黑名单列表－－－－－禁止登陆------------------格式  tabyonghuhmd["用户名"] = 0;1(在线)
+var tabyonghunum = 0;   //在线用户总数
+var sSocketsrv ;           //服务器网络套接字
+dsstrend = '\r\n[[@end*&]]' ; //字符串结束标记
+
+UM_SOCK = 0x400/*_WM_USER*/ + 1970; //自定义sock消息值
+//设置wock事件消息监听函数
+async_select = function (nSocket,hwnd, lEvent) begin
+	if (wsock.WSAAsyncSelect(nSocket, hwnd, UM_SOCK, lEvent) == -1/*_SOCKET_ERROR*/) {
+		win.msgbox(  "WSAAsyncSelect Failure.");
+		return false;
+	}
+	return true;
+end;
+
+page1 = winform.tab1.loadcode($"\客户端tab用户列表.aau");
+page2 = winform.tab1.loadcode($"\客户端tab黑名单.aau");
+page3 = winform.tab1.loadcode($"\服务器tab屏蔽发言.aau");
+page4 = winform.tab1.loadcode($"\服务器tab屏蔽接收.aau");
+
+//在线列表用户>>黑名单
+page1.button1.oncommand = function(id,event){
+	str2 = page1.listbox.text ;
+	if(str2 == "" ){return false; };
+	for(k,v in tabyonghu){
+		if(v == str2){
+			table.remove(tabyonghu,k) ;
+		}
+	}
+	::SendMessage(page1.listbox.hwnd , 0x182/*_LB_DELETESTRING*/, topointer( page1.listbox.findEx(str2) ),null);
+	tabyonghuhmd[str2] = 1 ;
+	page2.listbox.add(str2);
+}
+
+//黑名单用户>>在线列表
+page2.button1.oncommand = function(id,event){
+	str2 = page2.listbox.text ;
+	if(str2 == "" ){return false; };
+	tabyonghuhmd[str2] = null;
+	::SendMessage(page2.listbox.hwnd , 0x182/*_LB_DELETESTRING*/, topointer( page2.listbox.findEx(str2) ),null);
+	table.insert(tabyonghu,str2);
+	page1.listbox.add(str2);
+}
+
+//屏蔽发言用户>>在线列表
+page3.button1.oncommand = function(id,event){
+	str2 = page3.listbox.text ;
+	if(str2 == "" ){return false; };
+	tabyonghujzfy[str2] = null;
+	::SendMessage(page3.listbox.hwnd , 0x182/*_LB_DELETESTRING*/, topointer( page3.listbox.findEx(str2) ),null);
+	table.insert(tabyonghu,str2);
+	page1.listbox.add(str2);
+}
+
+//屏蔽接收用户>>在线列表
+page4.button1.oncommand = function(id,event){
+	str2 = page4.listbox.text ;
+	if(str2 == "" ){return false; };
+	tabyonghujzjs[str2] = null;
+	::SendMessage(page4.listbox.hwnd , 0x182/*_LB_DELETESTRING*/, topointer( page4.listbox.findEx(str2) ),null);
+	table.insert(tabyonghu,str2);
+	page1.listbox.add(str2);
+}
+
+//在线列表用户>>屏蔽接收
+winform.button5.oncommand = function(id,event){
+	str2 = page1.listbox.text ;
+	if(str2 == "" ){return false; };
+	tabyonghujzjs[str2] = 1 ;
+	for(k,v in tabyonghu){
+		if(v == str2){
+			table.remove(tabyonghu,k) ;
+		}
+	}
+	::SendMessage(page1.listbox.hwnd , 0x182/*_LB_DELETESTRING*/, topointer( page1.listbox.findEx(str2) ),null);
+	page4.listbox.add(str2);
+}//endproc
+
+//在线列表用户>>屏蔽发言
+winform.button4.oncommand = function(id,event){
+	str2 = page1.listbox.text ;
+	if(str2 == "" ){return false; };
+	tabyonghujzfy[str2] = 1 ;
+	for(k,v in tabyonghu){
+		if(v == str2){
+			table.remove(tabyonghu,k) ;
+		}
+	}
+	::SendMessage(page1.listbox.hwnd , 0x182/*_LB_DELETESTRING*/, topointer( page1.listbox.findEx(str2) ),null);
+	page3.listbox.add(str2);
+}//endproc
+
+//开启和关闭服务器
+winform.button1.oncommand = function(id,event) {
+	if(winform.button1.text == "开启服务器") { 
+		winform.button1.text = "关闭服务器" ;
+		winform.edit1.disabled = 1 ;
+		winform.edit2.disabled = 1 ;
+		
+		// 初始化 Winsock.	
+		if(! wsock.open() ){
+			winform.edit3.text = winform.edit3.text + '初始化 Winsock 失败，请重新打开服务器程序。\r\n' ;
+			//win.msgbox(wsock.err.lasterr(),"AAuto") ;
+			return;
+		}
+	
+		//一、服务器首先启动,通过调用socket()建立一个套接口
+		sSocketsrv= wsock.socket(0x2/*_AF_INET*/,0x1/*_SOCK_STREAM 建立流式套接口*/,0x6/*_IPPROTO_TCP*/ )
+		if( sSocketsrv = _INVALID_SOCKET ){
+			winform.edit3.text = winform.edit3.text + '服务端创建套接字错误，请重新打开服务器程序。\r\n' ;
+			//win.msgbox("服务端创建套接字错误","AAuto");
+			wsock.close() ;
+			return;
+		}
+		
+		//二、后调用bind()将该套接口和本地网络地址联系在一起
+		var service = wsock.sockaddr_in();
+		service.sin_family = 0x2/*_AF_INET*/
+		service.sin_addr.S_un.S_addr = wsock.inet_addr( winform.edit1.text );
+		service.sin_port = wsock.htons(tonumber(winform.edit2.text));
+		if (wsock.bind( sSocketsrv,service,raw.sizeof(service)) == -1/*_SOCKET_ERROR*/) {
+			//win.msgbox("服务器端口无效绑定","AAuto");
+			winform.edit3.text = winform.edit3.text + '服务器端口无效绑定，请重新打开服务器程序。\r\n' ;
+			wsock.closesocket(sSocketsrv)
+			wsock.close() //关闭wsock
+			return;
+		}
+		
+		if (!async_select(sSocketsrv, winform.hwnd, 0x8 /*_FD_ACCEPT*/ | 0x20 /*_FD_CLOSE*/ )) { return false; } ;
+		
+		//三、再调用listen()使套接口做好侦听的准备,并规定它的请求队列的长度
+		if( wsock.listen(sSocketsrv,10000) == -1 ){
+			winform.edit3.text = winform.edit3.text + '服务器监听套接字出错，请重新打开服务器程序。\r\n' ;
+			//io.print("服务端监听套接字出错");
+			wsock.close();
+			return;
+		}
+		winform.edit3.text = '聊天室服务器 开启成功。\r\n' ;	
+	}else{
+		winform.button1.text = "开启服务器" ;
+		winform.edit1.disabled = 0 ;
+		winform.edit2.disabled = 0 ;
+		for(k,v in tabyonghu){
+			if( v != _INVALID_SOCKET ){
+				wsock.closesocket(v);
+			}
+		}
+		if (wsock.WSAAsyncSelect(sSocketsrv, winform.hwnd, 0, 0) == -1/*_SOCKET_ERROR*/ ) { win.msgbox( "WSAAsyncSelect Failed.0" ); };
+		wsock.closesocket(sSocketsrv)
+		wsock.close();
+		winform.edit3.text = winform.edit3.text + '聊天室服务器 关闭。\r\n' ;	
+	}
+	zxtabyonghu = {};
+	tabyonghu ={};
+	//下面部分要增加ini配置文件读取。
+	tabyonghuhmd  = {};	
+	tabyonghujzfy = {};
+	tabyonghujzjs = {};
+	page1.listbox.clear();
+	page2.listbox.clear();
+	page3.listbox.clear();
+	page4.listbox.clear();
+}
+
+//响应accept消息建立用户连接
+netsockaccept = function( hSocket) begin
+	var hSockConnect //这个套接字用来建立用户连接
+	//四、之后就调用accept( )来接收连接.客户端在建立套接口后就可调用connect()和服务器建立连接
+	//accept()阻塞(缺省)等待请求队列中的请求,一旦有连接请求来,该函数就建立一个和s有相同属性的新的套接 
+	var addrInfo = wsock.acceptAddr(sSocketsrv); 
+	hSockConnect = addrInfo.sock
+	if( hSockConnect ==	_INVALID_SOCKET ) {
+		win.msgbox( "建立用户连接套接字失败！" ); 
+		return false; 
+	}  
+	..io.print( "客户端IP地址:" + wsock.inet_ntoa( addrInfo.sad.sin_addr ) + ":" + addrInfo.sad.sin_port );
+	async_select(hSockConnect,winform.hwnd, 0x20 /*_FD_CLOSE*/ | 0x1 /*_FD_READ*/ ); //对每个用户建立消息监听
+	//table.push(tabyonghuls,hSockConnect);
+	return true; 
+end;
+
+//响应wsock.recv消息，读取网络数据
+netsockread =function(hSocket) begin
+	var reads,recvbuf = wsock.recv(	hSocket,2048,2048,0);
+	if ( reads=-1 ){
+		 //io.print( "客户端接收错误");
+		 //io.print( wsock.err.lasterr() );
+		 return false; 
+	}
+	kkk = string.split(recvbuf,'<[[@end*&]]>')
+	for(k,v in kkk){
+		netreadstrculi(hSocket,v);
+	}
+	end;	
+
+//接收网络数据处理函数
+netreadstrculi =function(hSocket,recvbuf) begin
+	str1 = string.left(recvbuf,14);
+	str = string.right(recvbuf,#recvbuf-14);
+	select(str1) {
+		case "[[@公聊信息$]]" {
+			str2 = string.left(str,string.indexAny(str,':')-1); //取发言的用户名
+			//黑名单处理
+			if(tabyonghuhmd[str2] != null){ return false; };
+			//屏蔽发言用户处理
+			if(tabyonghujzfy[str2] != null){ return false;};
+			winform.edit3.text = winform.edit3.text + str ;	
+			recvbuf = recvbuf + '[[@end*&]]' ;
+			netsocksend(6,recvbuf,hSocket);
+		}
+		case "[[@私聊信息$]]" {
+			str2 = string.right(str,#str - string.indexAny(str,' '));
+			str2 = string.left(str2,string.indexAny(str2,' ') - 1);//取发言的用户名
+			//黑名单处理
+			if(tabyonghuhmd[str2] != null){ return false; };
+			//屏蔽发言用户处理
+			if(tabyonghujzfy[str2] != null){ return false;};
+			winform.edit3.text = winform.edit3.text + str ;
+			recvbuf = recvbuf + '[[@end*&]]' ;
+			netsocksend(7,recvbuf,hSocket);
+		}
+		case "[[@系统信息$]]" { /*预计增加用户是否掉线的定时检查信息*/ }
+		case "[[@用户列表$]]" { }
+		case "[[@登陆信息$]]" {
+			str2 = string.left(str,string.indexAny(str,' ')-1); //取用户名
+			str3 = string.right(str, #str - #str2 - 1);         //取用户密码
+			if(zctabyonghu[str2] != null){
+				if(zctabyonghu[str2] == str3){
+					//用户名和密码正确。。。。。。差检查是否已经在线的判断
+					if(zxtabyonghu[str2] != null){
+						//如果用户已经在线>>将原登陆点关闭,并处理在线用户列表
+						winform.edit3.text = winform.edit3.text + str2 + '用户在新的地方登陆。\r\n' ;
+						recvbuf = '[[@系统信息$]]4用户在新的地方登陆。'+dsstrend ;
+						netsocksend(9,recvbuf,zxtabyonghu[str2]);
+						zxyhtuicu(str2);
+					}
+					recvbuf = '[[@系统信息$]]1欢迎进入聊天室。[登陆成功]' + dsstrend ; //发給用户登陆成功和目前在线用户列表
+					netsocksend(9,recvbuf,hSocket);
+					netsocksend(4, ,hSocket);
+					recvbuf = "[[@登陆信息$]]" + str2 + ' ' + '进入聊天室。' + dsstrend ;    //发给当前所有用户，此时自己不在服务器当前用户列表中
+					netsocksend(1,recvbuf);
+					//用户名和套接字加入在线用户列表数组
+					zcyhdenglu(str2,hSocket);
+					winform.edit3.text = winform.edit3.text + str2 + ' ' + '进入聊天室\r\n' ;
+					return true; 
+				}
+				//用户名或密码不正确
+				recvbuf = "[[@系统信息$]]3用户名和密码错误。"  + dsstrend  ; //发給登陆的用户
+				winform.edit3.text = winform.edit3.text + str2 + ' ' + '登陆用户名或密码错误\r\n' ;
+				netsocksend(9,recvbuf,hSocket);
+				return true; 
+			}
+			recvbuf = "[[@系统信息$]]7你是非注册用户，请先注册。" + dsstrend  ; //发給登陆的用户
+			winform.edit3.text = winform.edit3.text + str2 + ' ' + '非注册用户，试图登陆。\r\n' ;
+			netsocksend(9,recvbuf,hSocket);
+			 
+		}
+		case "[[@退出信息$]]" {
+			winform.edit3.text = winform.edit3.text + str ;
+			str2 = string.left(str,string.indexAny(str,' ')-1);  //取用户名
+			zxyhtuicu(str2);
+			recvbuf = recvbuf + '[[@end*&]]' ;
+			netsocksend(2,recvbuf);
+			 
+		}
+		case "[[@注册信息$]]" {
+			if(winform.checkbox1.checked == false){ 
+				//服务器关闭新用户注册功能
+				recvbuf = '[[@系统信息$]]5服务器已关闭新用户注册功能。' + dsstrend ;
+				netsocksend(9,recvbuf,hSocket);
+				wsock.closesocket(hSocket);
+				winform.edit3.text = winform.edit3.text + '有新用户申请注册，但服务器已关闭新用户注册功能。\r\n' ;
+				return true; 
+			}
+			str2 = string.left(str,string.indexAny(str,' ')-1); //取用户名
+			str3 = string.right(str, #str - #str2 - 1);         //取用户密码
+			if(zctabyonghu[str2] == null){ //如果用户名可以注册
+				//用户名和套接字加入在线用户列表数组
+				zctabyonghu[str2] = str3 ;
+				recvbuf = "[[@登陆信息$]]" + str2 + ' ' + '进入聊天室。' + dsstrend ;
+				netsocksend(1,recvbuf);
+				recvbuf = "[[@系统信息$]]2欢迎进入聊天室。[注册成功]" + dsstrend ;
+				netsocksend(9,recvbuf,hSocket);
+				netsocksend(4, ,hSocket);
+				zcyhdenglu(str2,hSocket);
+				winform.edit3.text = winform.edit3.text + str2 + '[注册成功]进入聊天室。\r\n' ;
+			}else{
+				recvbuf = "[[@系统信息$]]6用户名已经被注册,请重新选择用户名。" + dsstrend ;
+				netsocksend(9,recvbuf,hSocket);
+			}
+		}
+		else {
+			return false; 
+		}
+	}
+end;
+
+//发送网络数据函数
+netsocksend =function(sendtype,sendstring,hSocket) begin
+	::SendMessageInt(winform.edit3.hwnd, 0x115/*_WM_VSCROLL*/,  0x7/*_SB_BOTTOM*/,0 );
+	select(sendtype) {
+		case 1 /*[[@登陆信息$]]*/ {
+			for(k,v in zxtabyonghu){
+				wsock.send(v ,sendstring ,#sendstring ,0 );
+			}
+		}
+		case 2 /*[[@退出信息$]]*/ {
+			for(k,v in zxtabyonghu){
+				wsock.send(v ,sendstring ,#sendstring ,0 );
+			}
+		}
+		case 3 /*[[@注册信息$]]“用户名”“密码”*/ { }
+		case 4 /*[[@用户列表$]]用户1，用户2，用户3，用户4*/ {
+			sendstring = "[[@用户列表$]]"
+			for(k,v in zxtabyonghu){
+				sendstring = sendstring + k + ' ' 
+			}
+			sendstring = string.left(sendstring, #sendstring - 1) + '[[@end*&]]' ;
+			wsock.send(hSocket ,sendstring ,#sendstring ,0 );
+		}
+		case 5 /*[[@系统信息$]]用户名 登陆 退出*/ {	}
+		case 9 /*[[@系统信息$]]*/ {
+			wsock.send(hSocket ,sendstring ,#sendstring ,0 );
+		}
+		case 6 /*[[@公聊信息$]]用户名：*/ {
+			for(k,v in tabyonghu){
+				if(hSocket != zxtabyonghu[v]){ wsock.send(zxtabyonghu[v] ,sendstring ,#sendstring ,0 ); } ;
+			}
+			for(k,v in tabyonghujzfy){
+				if(v == 1){   
+					if(hSocket != zxtabyonghu[k]){ wsock.send(zxtabyonghu[k] ,sendstring ,#sendstring ,0 ); } ;
+				}
+			}
+			//禁止接收用户不予发送信息
+		}
+		case 7 /*[[@私聊信息$]]用户名？ 用户名对你说：*/ {
+			//正常用户发送到禁止接收用户的消息可用正常发送
+			str = string.sub(sendstring,15,string.indexAny(sendstring,' ') - 1 ) ;
+			wsock.send(zxtabyonghu[str] ,sendstring ,#sendstring ,0 );
+		}
+		else {
+			return false; 
+		}
+	}
+	//wsock.send(hSocket ,sendstring ,#sendstring ,0 );
+	return true; 
+end;
+
+//服务器消息接收函数
+winform.wndproc = function(hwnd,message,wParam,lParam){
+	select(message) {
+		case 0x201/*_WM_LBUTTONDOWN 鼠标按下*/
+		{   }
+		case 0x202/*_WM_LBUTTONUP*/ //鼠标弹起
+		{   }
+		case 0x3/*_WM_MOVE 鼠标移动*/ 
+		{   }
+		case 0x10/*_WM_CLOSE窗口关闭消息*/ 
+		{   }
+		case 0x205/*_WM_RBUTTONUP 鼠标右键弹起，弹出菜单*/ 
+		begin
+		//winform.popmenu.popup(::LOWORD(lParam), ::HIWORD(lParam));//弹出菜单
+		end;
+		case UM_SOCK {
+			//io.print("服务器端收到 UM_SOCK 消息",lParam ) ;
+			select(lParam) {
+				case  0x8 /*_FD_ACCEPT*/ {
+					//有网络连接请求
+					//io.print("服务器端 FD-ACCEPT 请求连接消息" ) ;
+					netsockaccept(topointer(wParam));
+				}
+				case 0x1 /*_FD_READ*/ {
+					//读取网络数据
+					//io.print("服务器端 FD-READ消息" ) ;
+					netsockread(topointer(wParam));
+				}
+				case 0x2 /*_FD_WRITE*/ {
+					//发送数据
+				}
+				case 0x20 /*_FD_CLOSE*/ {
+					//有连接申请关闭
+					//io.print("服务器端FD-CLOSE消息" ) ;
+					if (wsock.WSAAsyncSelect(topointer(wParam), hwnd, 0, 0) == -1/*_SOCKET_ERROR*/ ) { win.msgbox( "WSAAsyncSelect Failed.0"); };
+					wsock.closesocket(topointer(wParam));
+					 
+				}
+				else { 	};
+			};
+		};
+		else { 	};
+	}
+	//无返回值则继续调用默认回调函数
+}//endproc
+
+//用户退出处理，包含在线用户、在线列表、黑名单、屏蔽发言、屏蔽接收的用户
+zxyhtuicu = function(str2) begin
+	wsock.closesocket( zxtabyonghu[str2] ); //关闭原套接字
+	zxtabyonghu[str2] = null ;
+	winform.static5.text = page1.listbox.count + page2.listbox.count + page3.listbox.count + page4.listbox.count - 1 ;
+	for(k,v in tabyonghu){
+		if(v == str2){
+			table.remove(tabyonghu,k);
+			::SendMessage(page1.listbox.hwnd , 0x182/*_LB_DELETESTRING*/, topointer( page1.listbox.findEx(str2) ),null);
+			return true; 
+		}	
+	}
+	for(k,v in tabyonghuhmd){
+		if(k == str2){
+			tabyonghuhmd[k] = 0 ;
+			::SendMessage(page2.listbox.hwnd , 0x182/*_LB_DELETESTRING*/, topointer( page2.listbox.findEx(str2) ),null);
+			return true; 
+		}	
+	}
+	for(k,v in tabyonghujzfy){
+		if(k == str2){
+			tabyonghujzfy[k] = 0 ;
+			::SendMessage(page3.listbox.hwnd , 0x182/*_LB_DELETESTRING*/, topointer( page3.listbox.findEx(str2) ),null);
+			return true; 
+		}	
+	}
+	for(k,v in tabyonghujzjs){
+		if(k == str2){
+			tabyonghujzjs[k] = 0 ;
+			::SendMessage(page4.listbox.hwnd , 0x182/*_LB_DELETESTRING*/, topointer( page4.listbox.findEx(str2) ),null);
+			return true; 
+		}	
+	}
+end;
+
+//用户登陆处理
+zcyhdenglu = function(str2,hSocket) begin
+	zxtabyonghu[str2] = hSocket ;
+	winform.static5.text = page1.listbox.count + page2.listbox.count + page3.listbox.count + page4.listbox.count + 1 ;
+	for(k,v in tabyonghuhmd){
+		if(k = str2){
+			tabyonghuhmd[str2] = 1 ;
+			page2.listbox.add(str2);
+			return true; 
+		}	
+	}
+	for(k,v in tabyonghujzfy){
+		if(k = str2){
+			tabyonghujzfy[str2] = 1 ;
+			page3.listbox.add(str2);
+			return true; 
+		}	
+	}
+	for(k,v in tabyonghujzjs){
+		if(k = str2){
+			tabyonghujzjs[str2] = 1 ;
+			page4.listbox.add(str2);
+			return true; 
+		}	
+	}
+	table.insert(tabyonghu,str2);
+	page1.listbox.add(str2);
+	return true; 
+end;
+
+winform.show(true) 
+win.loopMessage();
+return winform;
+
+/*传送数据格式
+	1	[[@登陆信息$]]用户名_密码                            客户端 > 服务器
+		[[@登陆信息$]]用户名_进入聊天室\r\n                  服务器 > 客户端
+	2	[[@退出信息$]]用户民_退出聊天室\r\n                  客户端 < 服务器
+	3	[[@注册信息$]]用户名_密码                            客户端 < 服务器
+	4	[[@用户列表$]]用户1，用户2，用户3，用户4             服务器 > 客户端
+	5	[[@系统信息$]]用户名 登陆 退出                       服务器 > 针对非当前用户客户端
+	9	[[@系统信息$]]用户名 登陆成功、失败、退出 \r\n       服务器 > 针对当前用户客户端
+		[[@系统信息$]]1欢迎进入聊天室。[登陆成功]_\r\n       服务器 >
+		[[@系统信息$]]2欢迎进入聊天室。[注册成功]_\r\n       服务器 >
+		[[@系统信息$]]3用户名和密码错误。_\r\n               服务器 >
+		[[@系统信息$]]4用户在新的地方登陆。_用户名_\r\n      服务器 >
+		[[@系统信息$]]5服务器已关闭新用户注册功能。\r\n      服务器 >
+		[[@系统信息$]]6用户名已经被注册。\r\n                服务器 >
+		[[@系统信息$]]7非注册用户，请先注册。                服务器 >
+	6	[[@公聊信息$]]用户名:聊天内容\r\n                   客户端 > 服务器 > n客户端
+	7	[[@私聊信息$]]用户名_用户名对你说:聊天内容\r\n      客户端 > 服务器 > 客户端
+*/
+//如_FD_ READ,_FD_WRITE,_FD_CONNECT,_FD_ACCEPT等等代表的网络事件
+
+/**
+	socksrv = function(arg){
+    	import win; //线程函数内部要添加自已的import语句
+    	import wsock;
+		import wsock.err;
+    	do {
+			sleep(10);
+			var hSockConnect //这个套接字用来建立用户连接
+			//四、之后就调用accept( )来接收连接.客户端在建立套接口后就可调用connect()和服务器建立连接
+			//accept()阻塞(缺省)等待请求队列中的请求,一旦有连接请求来,该函数就建立一个和s有相同属性的新的套接 
+			hSockConnect = wsock.accept(sSocket )
+			if( hSockConnect!=	_INVALID_SOCKET ){
+				//io.print( hSockConnect );
+				tabyonghunum = tabyonghunum + 1 ;
+				tabyonghu[tabyonghunum] = hSockConnect;
+			}
+			hSockConnect = null ;
+		}while(true) 
+	}
+	hander1,id1 = thread.create(socksrv,{"1"} );
+**/

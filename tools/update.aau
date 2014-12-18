@@ -1,0 +1,102 @@
+//检测更新/修复文件
+import ide;
+import inet.downBox;
+import process.file;
+import zlib;
+import fsys;
+import win;
+
+if( process.file.test("~/download/update/u.exe")  ){
+	win.msgboxErr("更新工具正在运行无法更新!","快手(AAuto Quicker)",ide.getMainHwnd());
+	return;
+}
+	
+var downBox = inet.downBox(ide.getMainHwnd(),"正在下载更新工具...",true )
+var ok =  downBox.test( "http://update.aau.cn/aauto/update/u.exe2.lzma" ,  "~/download/update/u.exe.lzma" );
+
+if(  ok === false ? downBox.download( "http://update.aau.cn/aauto/update/u.exe2.lzma" ,  "~/download/update/u.exe.lzma" ) ){ 
+	if( io.exist("~/download/update/u.exe") && !io.exist("~/download/update/u.exe",6) ){
+		win.msgboxErr("更新工具正在运行无法更新!","快手(AAuto Quicker)",ide.getMainHwnd());
+		return;
+	}
+	sevenZip.lzma.decodeFile("~/download/update/u.exe.lzma","~/download/update/u.exe");  
+} 
+elseif( ok === null )  {
+	if( ! ..io.exist("~/download/update/u.exe") ){
+		win.msgboxErr("下载更新工具遇到错误,请到官网下载最新版","快手(AAuto Quicker)",ide.getMainHwnd());
+		process.execute("http://bbs.aau.cn/portal.php?mod=view&aid=2");
+		return;
+	}
+} 
+	
+import process;
+process.execute( "~/download/update/u.exe",..io._exepath );
+
+import process.mutex; 
+var mutex = process.mutex("{C18816C2-E77F-439A-95FC-9416DAF1144F}.AAuto.Quiker.Update")
+if( mutex.conflict ){  
+	mutex.close();
+	return; 
+}
+else {
+	import process.command;  
+	//加入进程群组,使用GUID名字区分不同的进程群组
+	process.command.join("{C18816C2-E77F-439A-95FC-9416DAF1144F}.AAuto.Quiker.Update") 
+	var listener = process.command();
+	
+	listener.finish = function(){
+		//创建多线程，防止更新工具挂起
+		var handle = thread.create( 
+			function(){
+				import ide;  
+				import thread.command;
+				
+				try{
+					import ide;
+					import win;
+					import string.list;
+					var syscfg = string.list();
+					syscfg.load("~\config\SYS.CFG")
+					if( syscfg["version"] ){  ide.updateVersion(syscfg["version"] ) }
+				}
+				
+				ide.refreshStdLib();
+				..fsys.delete("~\example\其他扩展库");
+				..fsys.delete("~\tools\repaireIde.aau")
+				..fsys.delete("~\tools\开发环境\.config")
+				..fsys.delete("~\example\多线程\manage.table.aau") 
+				..fsys.delete("~\lib\mysql\_.aau");
+				..fsys.delete("~\lib\com\interface\IApplicationAssocReg.aau")
+				..fsys.delete("~\extensions\wizard\project\win\main.aau")
+				
+				var listLib = ide.requestLibInfo("all"); 
+				if( listLib ){ 
+					var installedLibs = ide.getExtLibs(); 
+					for (libName,libInfo in installedLibs){ 
+							var lib = listLib[libName] 
+							if(lib ? lib.version != installedLibs[libName][["version"]]  ){
+								ide.importFile( libName,installedLibs[libName][["version"]] , "" )
+							} 
+					} 
+				} 
+				ide.refreshStdLib();
+				thread.command.post("AAutoQuickerUpdateFinish"); 
+			}
+		)
+		raw.closehandle(handle)
+			 
+	}
+	listener.closeIde = function(){
+		try{
+			import ide;
+			import win;
+			import string.list;
+			var syscfg = string.list();
+			syscfg.load("~\config\SYS.CFG")
+			if( syscfg["version"] ){  ide.updateVersion(syscfg["version"] ) }
+		}
+		win.quitMessage(); 
+	}
+	win.loopMessage(); 
+	mutex.close();
+}

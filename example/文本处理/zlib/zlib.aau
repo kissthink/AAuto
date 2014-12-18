@@ -1,0 +1,17 @@
+
+import fsys;
+import zlib;
+import console;
+
+var data = string.load( fsys.searchFile("calc.exe") ); 
+
+var result = zlib.compress(data);  
+console.log("源数据大小：", #data);
+console.log("压缩后大小：", #result, "压缩比：", string.format("%d%%", (#result / #data) * 100), '\n');
+ 
+var data2 = zlib.uncompress(result); 
+console.log("源数据大小：", #result);
+console.log("解压缩后大小：", #data2, '\n');
+
+console.log(data == data2); 
+ 

@@ -1,0 +1,669 @@
+/*
+本程序引用的DLL组件是mariadb提供的mysql、mariadb兼容客户端
+该DLL组件基于LGPL协议在开源接口代码（本扩展库已开源符合该条件）的基础上可免费自由使用
+DLL源码出处：https://code.launchpad.net/mariadb-native-client
+*/
+import util.metaProperty;
+namespace mysql;
+	
+class client{
+	ctor ( tParam ) { 
+	
+		tParam = ..table.mixin( {
+			server = "localhost";
+			uid = "root"; 
+			flags = 0;
+		},tParam)
+		
+		if( tParam.port === null ){
+			var s,p = ..string.match( tParam.server,"(.+)\:(\d+)$" );
+			if( s && p ) {
+				tParam.server = s;
+				tParam.port = p;
+			}
+			else {
+				tParam.port = 3306;
+			}
+		}
+		
+		var mysqlDb = mysql_init();
+		this.mysqlDb = mysqlDb;
+		if (!mysqlDb) return;
+		
+		_dll.mysql_options(mysqlDb,7/*_MYSQL_SET_CHARSET_NAME*/,tParam.charset or "gbk" );
+		tParam.charset = null;
+		
+		var conn;
+		this.open = function(tParam){
+			//this.connection === mysqlDb
+			conn = mysql_real_connect(mysqlDb,tParam.server,tParam.uid, tParam.pwd
+		 		,tParam.database,tParam.port,tParam.socket,tParam.flags); 
+		 		
+			if (!conn) return null, mysql_error(mysqlDb);
+			this.connection = conn;
+			
+			if( tParam.database ){
+				if( 0 != mysql_select_db(conn, tParam.database) ){
+					mysql_close(conn);
+					return null, mysql_error(mysqlDb);;
+				} 
+			} 
+			return true;
+		}
+		
+		if( tParam  ){
+			var h,e,c = this.open(tParam);
+			if(!h) return null,e,c;
+		};
+		..table.add_gc(this, "close");
+	};
+	lasterr = function () {
+		return mysql_error(mysqlDb),mysql_errno(mysqlDb);
+	};
+	setOption = function (k, v) {
+		var t = type(v);
+		if( t == "string" ){
+			return 0 == mysql_options(mysqlDb,k,{BYTE v[] = v } );
+		}
+		elseif( t == "number" ){
+			return 0 == mysql_options(mysqlDb,k,{int v = v } );
+		}
+		elseif( t == "boolean" ){
+			return 0 == mysql_options(mysqlDb,k,{byte v = v});
+		}
+		elseif( t[["_struct"]] ){
+			return 0 == mysql_options(mysqlDb,k,v);
+		} 
+		error("参数类型错误",2)
+	}
+	close = function () {
+		if (this[["connection"]]) {
+			mysql_close(conn);
+			conn = null;
+			this[["connection"]] = null;
+		}
+	};
+	shutdown = function( lev ){
+		mysql_shutdown( conn,lev : 0 )
+	};
+	refresh = function(opt){
+		mysql_refresh( conn,opt : 1/*REFRESH_GRANT*/ )
+	};  
+	getThreadId = function () {
+		return mysql_thread_id(conn);
+	};
+	kill = function (tid) {
+		if(!tid) tid = this.getThreadId();
+		return mysql_kill(conn,tid);
+	};
+	ping = function () {
+		return mysql_ping(conn);
+	};
+	changeUser = function (user,password,database) {
+		return mysql_change_user(conn, user, password, database);
+	};
+	createDb = function(db) {
+ 		var sql = ..string.format("CREATE DATABASE IF NOT EXISTS `%s`",db )
+ 		if ( 0 == mysql_real_query( conn, sql,#sql) ){
+ 			return  0 == mysql_select_db(conn,db);
+ 		}
+	};
+	dropDb = function(db) {
+ 		var sql = ..string.format("DROP DATABASE IF EXISTS `%s`",db )
+ 		return ( 0 == mysql_real_query( conn, sql,#sql) );
+	};
+	selectDb = function ( db ) {
+		return mysql_select_db(conn,db) == 0;
+	};
+	listDbs = function (wild) {
+		var sql = !wild ? "SHOW DATABASES" : 
+			..string.format("SHOW DATABASES LIKE '%s'",this.escapeString(wild) );
+			
+		return this.query(sql); 
+	};
+	listTables = function (wild) {
+		var sql = !wild ? "SHOW TABLES" : 
+			..string.format("SHOW TABLES LIKE '%s'",this.escapeString(wild) );
+		return this.query(sql); 
+	};
+	listFields = function (tbl,wild) {
+		if(!tbl) error("表名不能为空",2)
+		var sql = ..string.concat("SHOW COLUMNS FROM `",this.escapeString(tbl),"`");
+		if(wild) sql = sql +  " LIKE '" + this.escapeString(wild) + "'";
+		return this.query(sql); 
+	};
+	listProcesses = function () { 
+		return this.query( "SHOW PROCESSLIST" ); 
+	};
+	exec = function(sql,...){
+		if(...)sql = this.formatSqlParameters(sql,...);
+		if( mysql_real_query(conn, sql,#sql) == 0 ){
+			return true;
+		}
+		return null,mysql_error(mysqlDb);
+	};
+	getAffectedRows = function(){
+		return mysql_affected_rows(owner.mysqlDb);//EXEC影响的行数
+	}; 
+	lastInsertId = function () {
+		return mysql_insert_id(conn);
+	} 
+	useResult = function () {
+		var result = mysql_use_result(conn)
+		return result ? recordSet(result);
+	};
+	storeResult = function () {
+		var result = mysql_store_result(conn)
+		return result ? recordSet(result);
+	};
+	moreResults = function () {
+		return mysql_more_results(conn)
+	};
+	nextResult = function () {
+		return 0 == mysql_next_result(conn);
+	};
+	useNextResult = function () {
+		if( 0 != mysql_next_result(conn) ) return;
+		var result = mysql_use_result(conn)
+		return result ? recordSet(result);
+	};
+	storeNextResult = function () {
+		if( 0 != mysql_next_result(conn) ) return;
+		var result = mysql_store_result(conn)
+		return result ? recordSet(result);
+	};
+	query = function (sql,...) {
+		if(...)sql = this.formatSqlParameters(sql,...);
+		if (mysql_real_query(conn, sql,#sql) == 0) {
+			var res =  mysql_store_result(conn);
+			if( !res ){
+				if(mysql_field_count(conn) == 0){
+					return; //EXEC
+				}
+				return null,mysql_error(mysqlDb);
+			}
+			return recordSet(res);
+		} 
+		else {
+			return null,mysql_error(mysqlDb);
+		}
+	};
+	stepQuery = function(sql,...){
+		if(...)sql = this.formatSqlParameters(sql,...);
+		if (mysql_real_query(conn, sql,#sql) == 0) { 
+			var res =  mysql_use_result(conn);
+			if( !res ){ 
+				if(mysql_field_count(conn) == 0){
+					return; //EXEC
+				}
+				return null,mysql_error(mysqlDb);
+			}
+			res = recordSet( res );
+			var row = res.fetchObject();
+			res.free();
+			return row;
+		}
+	};
+	each = function(sql,...){
+		if(...)sql = this.formatSqlParameters(sql,...);
+		if (mysql_real_query(conn, sql,#sql) == 0) { 
+			var res =  mysql_use_result(conn);
+			if( !res ){ 
+				if(mysql_field_count(conn) == 0){
+					return; //EXEC
+				}
+				return null,mysql_error(mysqlDb);
+			}
+			res = recordSet( res );
+			return res.each,res.free;
+		}
+	};
+	escapeString = function (str) {
+		if(!conn) error("必须连接到MYSQL服务端才能调用escapeString()函数",2)
+		if(!#str) return str;
+		var re, str = mysql_real_escape_string(conn, #str*2 + 1, str, #str);
+		if( re > 0 )return str;
+	}; 
+	formatSqlParameters = function(sql,...) { 
+		if( type( ... ) == "table" ){
+			var param = ...;
+			return ..string.replace(sql,"\@(<:+>|<\w+>)",
+				function(name){
+					var v =  param[name];
+					var t  = type(v);	
+					if( t = "string" ){
+						return ..string.concat("'", this.escapeString(v), "'");
+					} 
+					elseif( t = "number" ){
+						return tostring(v);
+					}
+					elseif( ( t = "table" ) && ..time.istime(v) ) {
+						var f = v.format;
+						v.format = "%Y-%m-%d %H:%M:%S";
+						var ret  = "'" +  tostring(v) + "'";
+						v.format = f;
+						return ret;
+					} 
+					return ..string.replace(tostring(v),"\p","");
+				} 
+			); 
+		}
+		return ..string.format(sql,...);
+	}
+	beginTrans = function(){
+		return !mysql_autocommit(conn, false);//SQL("START TRANSACTION")
+	};
+	commitTrans = function(){
+		if( mysql_commit(conn) ){
+			return null, mysql_error(mysqlDb);;
+		}
+		return !mysql_autocommit(conn, true);
+	};
+	rollbackTrans = function () {
+		return !mysql_rollback(conn);
+	};
+	getInfo = function () {
+		return mysql_info(conn);
+	};
+	getClientVersion = function () {
+		return mysql_get_client_version();
+	}; 
+	getServerVersion = function () {
+		return mysql_get_server_version(mysqlDb);
+	};
+	stat = function () {
+		return mysql_stat(conn);
+	};
+	debug = function (message) {
+		mysql_debug(message);
+	};
+	dumpDebugInfo = function () {
+		return 0 == mysql_dump_debug_info(mysqlDb);
+	};
+	getSqlstate = function () {
+		return 0 == mysql_sqlstate(mysqlDb);
+	}; 
+	sslSet = function (key,cert,ca,capath,cipher) {
+		return 0 == mysql_ssl_set(mysqlDb,key,cert,ca,capath,cipher);//任何未使用的SSL参数，可为其给定NULL
+	};
+	@_metaProperty;
+}
+
+var dll  = ..raw.loadDll($"~/lib/mysql/client/.res/libmariadb.dll","mysql.client.libmariadb.dll");
+namespace client { 
+	_dll = dll;
+	
+	begin
+		import ..thread.shareHandle;
+		
+		var mysql_thread_init = dll.api("mysql_thread_init", "int()"); 
+		var mysql_server_init = dll.api("mysql_server_init", "int(INT argc,pointer argv,pointer groups)"); 
+		
+		..thread.shareHandle.create("mysql_embed_server{BB6E2DA3-9EC2-495F-978C-4C91151897E4}",mysql_server_init,0);
+		mysql_thread_init();
+		
+		..table.add_gc(self,function(){
+		
+			var mysql_thread_end = dll.api("mysql_thread_end", "void()");  
+			var mysql_server_end = dll.api("mysql_server_end", "void()"); 
+			 
+			mysql_thread_end();
+			..thread.shareHandle.delete("mysql_embed_server{BB6E2DA3-9EC2-495F-978C-4C91151897E4}",mysql_server_end);
+		});
+	end;
+	 
+	_metaProperty = ..util.metaProperty(
+	
+		charset = {
+			_set = function(value){ 
+				if( 0 != mysql_set_character_set(owner.connection,value) )
+					error( owner.lasterr() ,2)
+			}
+			_get = function(){
+				return mysql_character_set_name(owner.connection));
+			} 	
+		}; 
+		
+		errno = {
+			_get = function () {
+				return mysql_errno(owner.mysqlDb);
+			}; 
+		};
+		
+		warningCount = {
+			_get = function () {
+				return mysql_warning_count(owner.mysqlDb);
+			}; 
+		}; 
+	)
+	
+	mysql_init = dll.api("mysql_init", "pointer(pointer m)");
+	mysql_close = dll.api("mysql_close", "void(POINTER m)");
+	mysql_shutdown = dll.api("mysql_shutdown", "int(POINTER m,int lev)");
+	mysql_refresh = dll.api("mysql_refresh", "int(POINTER m,INT opt)");
+	mysql_thread_id = dll.api("mysql_thread_id", "INT(POINTER m)");
+	mysql_kill = dll.api("mysql_kill", "int(POINTER m, INT pid)");
+	mysql_ping = dll.api("mysql_ping", "int(POINTER m)");
+	mysql_options = dll.api("mysql_options", "int(POINTER m,int name,struct v)");
+	mysql_character_set_name = dll.api("mysql_character_set_name", "str(POINTER m)");
+	mysql_set_character_set = dll.api("mysql_set_character_set", "int(POINTER m,STRING charset)");
+	mysql_ssl_set = dll.api("mysql_ssl_set", "int(POINTER m, STRING key, STRING cert, STRING ca, STRING capath, STRING cipher)"); 
+	mysql_change_user = dll.api("mysql_change_user", "int(POINTER m,str uid,str pwd,str db)");
+	mysql_real_connect = dll.api("mysql_real_connect", "pointer(POINTER m,str host, string uid,str pwd,string db, INT port,string socket,INT client_flag)");
+	mysql_select_db = dll.api("mysql_select_db", "int(POINTER m,str db)"); 
+	mysql_real_escape_string = dll.api("mysql_real_escape_string", "INT(POINTER m,str&to,string from,INT len)");
+	mysql_real_query = dll.api("mysql_real_query", "int(POINTER m,STRING sql,INT len)");
+	mysql_field_count = dll.api("mysql_field_count", "INT(POINTER m)");
+	mysql_affected_rows = dll.api("mysql_affected_rows", "INT(POINTER m)");
+	mysql_insert_id = dll.api("mysql_insert_id", "INT(POINTER m)");
+	mysql_store_result = dll.api("mysql_store_result", "pointer(POINTER m)");
+	mysql_use_result = dll.api("mysql_use_result", "pointer(POINTER m)");
+	mysql_more_results = dll.api("mysql_more_results", "bool(POINTER m)");
+	mysql_next_result = dll.api("mysql_next_result", "int(POINTER m)");
+	mysql_autocommit = dll.api("mysql_autocommit", "bool(POINTER m,bool mode)");
+	mysql_commit = dll.api("mysql_commit", "int(POINTER m)");
+	mysql_rollback = dll.api("mysql_rollback", "int(POINTER m)"); 
+	mysql_errno = dll.api("mysql_errno", "INT(POINTER m)");
+	mysql_error = dll.api("mysql_error", "string(POINTER m)");
+	mysql_sqlstate = dll.api("mysql_sqlstate", "string(POINTER m)");
+	mysql_warning_count = dll.api("mysql_warning_count", "INT(POINTER m)");
+	mysql_info = dll.api("mysql_info", "string(POINTER m)");
+	mysql_get_client_version = dll.api("mysql_get_client_version", "INT()"); 
+	mysql_get_server_version = dll.api("mysql_get_server_version", "INT(POINTER m)");
+	mysql_stat = dll.api("mysql_stat", "string(POINTER m)");
+	mysql_debug = dll.api("mysql_debug", "void(string debug)");
+	mysql_dump_debug_info = dll.api("mysql_dump_debug_info", "int(POINTER m)");
+} 
+
+class client.recordSet {
+
+	ctor (res) {
+		this.result = res;
+		if (!this[["result"]]) {
+			return false;
+		}
+		
+		var raw_tostring = ..raw.tostring;
+		var raw_convert = ..raw.convert;
+		var raw_toarray = ..raw.toarray;
+		
+		this.fetchFieldTypes = function () { 
+			if( this.fields ) return this.fields;
+			
+			var p = mysql_fetch_fields(res);
+			if (p) {
+				var ft;
+				var ret = {};
+				for (i = 1; this.fieldCount ) { 
+					ret[i] = raw_convert(p, MYSQL_FIELD() ); 
+					ft  = ret[i].field_type;
+					if( ft <= 5/*MYSQL_TYPE_DOUBLE*/  || t = 9/*MYSQL_TYPE_INT24*/ 
+						|| t = 8/*MYSQL_TYPE_LONGLONG*/ || vt = 16 /*MYSQL_TYPE_BIT*/){
+						ret[i].getValue = tonumber;
+					}
+					
+					p = topointer(p,84/* ..raw.sizeof(MYSQL_FIELD() )*/ );
+				}
+				this.fields = ret;
+				return ret;
+			} 
+		}
+		this.fieldCount = mysql_num_fields( res );  
+		var fieldTypes = this.fetchFieldTypes();
+		
+		..table.add_gc(this,"free"); 
+	};
+	free = function () {
+		if (this[["result"]]) {
+			mysql_free_result(res);
+			this[["result"]] = null;
+			res = null;
+		}
+	};
+	numFields = function () {
+		return mysql_num_fields(res)
+	} 
+	numRows = function () {
+       return  mysql_num_rows(res);
+    }
+    rowTell = function (offset) {
+		return mysql_row_tell(res,offset);
+	};
+	rowSeek = function (offset) {
+		return mysql_row_seek(res,offset);
+	};
+	dataSeek = function (offset) {
+		return mysql_data_seek(res, offset);
+	};
+	fetchObject = function () {
+		var p =  mysql_fetch_row(res);
+		var pl = mysql_fetch_lengths(res);
+		var fieldCount = this.fieldCount;
+		
+		if ( p  && pl ) {
+			var data =  raw_convert(p, raw_toarray( fieldCount,"pointer","fields" ) ).fields; 
+			var dataSize = raw_convert(pl,  raw_toarray( fieldCount,"INT","fields" ) ).fields; 
+			var namedData = {};
+			for(i=1;fieldCount;1){
+				if( !data[i] ) continue;
+				if( dataSize[i]==0 ) { namedData[fieldTypes[i].name] = ""; continue ;}
+				data[i] = raw_tostring( data[i],1,dataSize[i] ); 
+				getValue = fieldTypes[i].getValue
+				if( getValue ) data[i] = getValue( data[i] );
+				namedData[fieldTypes[i].name] = data[i];
+			}
+			return namedData;
+		}	
+	};
+	fetchRow = function () {
+		var p =  mysql_fetch_row(res);
+		var pl = mysql_fetch_lengths(res);
+		var fieldCount = this.fieldCount;
+		
+		if ( p  && pl ) {
+			var data =  raw_convert(p, raw_toarray( fieldCount,"pointer","fields" ) ).fields; 
+			var dataSize = raw_convert(pl,  raw_toarray( fieldCount,"INT","fields" ) ).fields; 
+			for(i=1;fieldCount;1){
+				if( !data[i] ) continue;
+				if( dataSize[i]==0 ) { data[i] = ""; continue ;}
+				data[i] = raw_tostring( data[i],1,dataSize[i] ); 
+				getValue = fieldTypes[i].getValue
+				if( getValue ) data[i] = getValue( data[i] );
+			}
+			return data;
+		}	
+	};
+	each = function(){
+		var data_c = raw_toarray( this.fieldCount,"pointer","fields" );
+		var dataSize_c = raw_toarray( this.fieldCount,"INT","fields" );
+		var data,dataSize; 
+		 
+		var unpack = ..table.unpack; 
+		var fieldCount = this.fieldCount;
+		var getValue;
+		
+		
+		return function(){
+			var p =  mysql_fetch_row(res);  
+			var pl = mysql_fetch_lengths(res)
+			if (p && pl ) { 
+				data = raw_convert(p, data_c ).fields;
+				dataSize = raw_convert(pl, dataSize_c ).fields; 
+
+				for(i=1;fieldCount;1){
+					if(!data[i]) continue;
+					if( dataSize[i]==0 ) { data[i] = ""; continue ;}
+					data[i] = raw_tostring( data[i],1,dataSize[i] ); 
+					getValue = fieldTypes[i].getValue
+					if( getValue ) data[i] = getValue( data[i] ); 
+				}
+				return unpack( data,1, fieldCount); 
+			}	
+		} 
+	};
+	fetchFieldLengths = function(){
+		var dataSize_c = raw_toarray( this.fieldCount,"INT","fields" );
+		var pl = mysql_fetch_lengths(res);
+		if( pl ) return raw_convert(pl, dataSize_c ).fields; 
+	};
+	eof = function(){
+		return mysql_eof(res);
+	};
+} 
+
+namespace client.recordSet {
+
+	mysql_num_fields = dll.api("mysql_num_fields", "INT(POINTER res)");
+	mysql_fetch_fields = dll.api("mysql_fetch_fields", "pointer(POINTER res)"); 
+	mysql_row_tell = dll.api("mysql_row_tell", "INT(POINTER res)"); 
+	mysql_num_rows = dll.api("mysql_num_rows", "INT(POINTER res)");
+	mysql_data_seek = dll.api("mysql_data_seek", "void(POINTER result,INT offset)");
+	mysql_row_seek = dll.api("mysql_row_seek", "INT(POINTER result,INT offset)"); 
+	mysql_fetch_row = dll.api("mysql_fetch_row", "pointer(POINTER res)");
+	mysql_fetch_lengths = dll.api("mysql_fetch_lengths", "pointer(POINTER res)"); 
+	mysql_eof = dll.api("mysql_eof", "int(POINTER res)"); 
+	mysql_free_result = dll.api("mysql_free_result", "void(POINTER res)");
+
+	class MYSQL_FIELD {
+		string name;
+		string org_name;
+		string table;
+		string org_table;
+		string db;
+		string catalog;
+		string def_value;
+		INT length;
+		INT max_length;
+		INT name_length;
+		INT org_name_length;
+		INT table_length;
+		INT org_table_length;
+		INT db_length;
+		INT catalog_length;
+		INT def_length;
+		INT flag;
+		INT decimals;
+		INT charsetnr;
+		int field_type;
+		pointer extension;
+	}
+}
+
+/**intellisense(mysql)
+client = mysql客户端
+client( 连接参数表 ） = @.client(\n	server = "localhost";\n	database = "数据库名";\n	uid = "用户名";\n	pwd = "密码";\n);
+client() = !mysql_client.
+_dll = !dllModule.
+end intellisense**/
+
+/**intellisense(!mysql_client)
+connection = 数据库连接句柄\n不要修改该属性
+mysqlDb = 数据库对象句柄\n不要修改该属性
+warningCount = 返回执行前一个SQL语句期间生成的告警数目
+errno = 返回错误代码
+lasterr() = 返回错误信息,错误代码
+charset = 连接的默认字符集
+setOption(.(选项,值) = 可用于设置额外的连接选项，并影响连接的行为,\n值可以是字符串,整数,布尔值或结构体
+sslSet(.(key文件路径名,证书文件路径,授权文件路径,包含受信任CA证书目录,允许密码的列表) = 该函数必须在调用open函数打开连接前调用
+open( 连接参数表 ） = @.open(\n	server = ".";\n	database = "数据库名";\n	uid = "用户名";\n	pwd = "密码";\n);
+close() = 关闭服务器连接
+kill(__) = 杀死线程,参数指定线程ID
+ping() = 检查与服务器的连接是否工作，如有必要重新连接
+refresh() = 刷新表或高速缓冲或复位复制服务器信息,\n用户必须具有RELOAD权限
+shutdown() = 关闭SQL服务器
+dropDb(.("数据库名") = 如果存在该数据库则删除
+createDb(.("数据库名") = 如果数据库不存在则创建数据库,\n如果成功创建数据库则调用selectDb函数选择数据库\n所有操作成功返回true
+selectDb(.("数据库名") = 设置当前默认数据库,成功返回true,\n类似sql中的 use 数据库名
+listDbs(.("查找数据库名") = 查找数据库并返回记录集\n数据库名允许使用SQL通配符%或下划线\n不指定数据库名则返回所有数据库
+listTables(.("查找表名") = 查找表名并返回记录集\n表名允许使用SQL通配符%或下划线\n不指定表名则返回所有表
+listFields(.("表名","查找字段") = 查找字段并返回记录集\n字段名允许使用SQL通配符%或下划线\n不指定字段名则返回全部字段
+listDbs() = !mysql_recordset.
+listTables() = !mysql_recordset.
+listFields() = !mysql_recordset.
+listProcesses() = 返回描述当前服务器线程的结果集\n!mysql_recordset.
+changeUser(.("用户名","密码","数据库名") = 修改登录用户
+exec(.("sql",格式化参数) = 执行sql语句\n格式化参数与string.format用法兼容,\n格式化参数也可以是一个表参数,用于替换sql中的命名参数,\nsql中用@前缀标明命名参数,命名参数自动过滤所有转义符
+getAffectedRows() = sql语句执行后影响的记录行数
+lastInsertId() = 最后插入记录的ID
+useResult() = 获取返回值,在SQL服务器上缓存记录集\n!mysql_recordset.
+storeResult() = 获取返回值,在客户端缓存记录集\n!mysql_recordset.
+moreResults() = 是否有其他返回值,\n使用useNextResult或storeNextResult返回下一个返回值
+useNextResult() = 如果有其他返回值,获取下一个返回值\n在SQL服务器上缓存记录集\n!mysql_recordset.
+storeNextResult() = 如果有其他返回值,获取下一个返回值\n在客户端缓存记录集\n!mysql_recordset.
+nextResult() = 如果还有下一个返回值,返回真
+query(.("SELECT * FROM `表名`") = 执行SQL并调用storeResult函数返回值,\n如果无返回值的sql返回空,\n如果SQL查询出错返回空值以及错误信息
+query() = !mysql_recordset.
+stepQuery(.("SELECT * FROM `表名`") = 用法与query函数类似,\n但直接返回首行数据库并关闭结果集
+each() = @for 字段名,,__/*注意首字段必须为非空值*/字段名2 in ??.each("SELECT * FROM 'MYTABLE'"){\n\n	\n}
+escapeString() = 将字符串编码为合法的转义SQL字符串,\n格式化命名参数时,字符串会自动调用该函数转义为安全的字符串
+beginTrans() = 开始事务
+commitTrans() = 提交事务
+rollbackTrans() = 回滚事务
+getInfo（) = 返回最近执行查询信息的文本描述
+getClientVersion() = 客户端版本 
+getServerVersion() = 服务端版本
+stat() = 以字符串形式返回服务器状态
+getProtoInfo() = 返回当前连接所使用的协议版本
+characterSetName() = 当前连接的默认字符集
+getThreadId() = 返回连接的线程ID，可传入kill函数以杀死线程
+debug(.(调试信息) = 用给定的字符串执行DBUG_PUSH
+dumpDebugInfo() = 让服务器将调试信息写入日志 
+getSqlstate() = 返回关于上一个错误的SQLSTATE错误代码
+end intellisense**/
+
+/**intellisense(!mysql_recordset)
+free() = 释放记录集,\n释放后不能再调用其他使用该记录集的函数
+dataSeek(.(行号) = 在查询结果集中寻找任意行。偏移值为行号，范围从0到numRows-1
+rowSeek(.(行偏移量) = 将行光标置于查询结果集中的任意行,并返回当前行号\n偏移值相对于rowTellb函数返回的当前行号\n该函数要求在客户端包含全部结果,即使用storeResult创建结果集
+rowTell() = 返回当前行号\n该函数要求在客户端包含全部结果,即使用storeResult创建结果集
+numRows() = 返回行数\n使用useResult创建的结果集必须在调用fetchRow获取所有行后才能调用该函数
+fetchFieldTypes() = 返回所有字段类型描述
+numFields() = 返回字段总数
+eof() = 是否已到结果集尾部
+fetchFieldLengths() = 返回当前行所有数据列的的长度数组\n仅对当前行有效
+fetchObject() = stepQuery 函数的别名,\n返回下一行记录的以字段名为键的关联数组
+stepQuery() = fetchObject 函数的别名,\n返回下一行记录的以字段名为键的关联数组
+fetchRow() = 返回下一行记录列数组
+each() = @for 字段名,__/*注意首字段必须为非空值*/字段名2 in ??.each(){\n\n	\n}
+end intellisense**/ 
+
+ /**intellisense()
+_MYSQL_OPT_CONNECT_TIMEOUT=@0/*_MYSQL_OPT_CONNECT_TIMEOUT*/
+_MYSQL_OPT_COMPRESS=@1/*_MYSQL_OPT_COMPRESS*/
+_MYSQL_INIT_COMMAND=@2/*_MYSQL_INIT_COMMAND*/
+_MYSQL_READ_DEFAULT_FILE=@3/*_MYSQL_READ_DEFAULT_FILE*/
+_MYSQL_READ_DEFAULT_GROUP=@4/*_MYSQL_READ_DEFAULT_GROUP*/
+_MYSQL_SET_CHARSET_DIR=@5/*_MYSQL_SET_CHARSET_DIR*/
+_MYSQL_OPT_NAMED_PIPE=@6/*_MYSQL_OPT_NAMED_PIPE*/
+_MYSQL_SET_CHARSET_NAME=@7/*_MYSQL_SET_CHARSET_NAME*/
+_MYSQL_OPT_LOCAL_INFILE=@8/*_MYSQL_OPT_LOCAL_INFILE*/
+_MYSQL_OPT_PROTOCOL=@9/*_MYSQL_OPT_PROTOCOL*/
+_MYSQL_SHARED_MEMORY_BASE_NAME=@0xA/*_MYSQL_SHARED_MEMORY_BASE_NAME*/
+_MYSQL_OPT_READ_TIMEOUT=@0xB/*_MYSQL_OPT_READ_TIMEOUT*/
+_MYSQL_OPT_WRITE_TIMEOUT=@0xC/*_MYSQL_OPT_WRITE_TIMEOUT*/
+_MYSQL_OPT_USE_RESULT=@0xD/*_MYSQL_OPT_USE_RESULT*/
+_MYSQL_OPT_USE_REMOTE_CONNECTION=@0xE/*_MYSQL_OPT_USE_REMOTE_CONNECTION*/
+_MYSQL_OPT_USE_EMBEDDED_CONNECTION=@0xF/*_MYSQL_OPT_USE_EMBEDDED_CONNECTION*/
+_MYSQL_OPT_GUESS_CONNECTION=@0x10/*_MYSQL_OPT_GUESS_CONNECTION*/
+_MYSQL_SET_CLIENT_IP=@0x11/*_MYSQL_SET_CLIENT_IP*/
+_MYSQL_SECURE_AUTH=@0x12/*_MYSQL_SECURE_AUTH*/
+_MYSQL_REPORT_DATA_TRUNCATION=@0x13/*_MYSQL_REPORT_DATA_TRUNCATION*/
+_MYSQL_OPT_RECONNECT=@0x14/*_MYSQL_OPT_RECONNECT*/
+_MYSQL_OPT_SSL_VERIFY_SERVER_CERT=@0x15/*_MYSQL_OPT_SSL_VERIFY_SERVER_CERT*/
+_MYSQL_PLUGIN_DIR=@0x16/*_MYSQL_PLUGIN_DIR*/
+_MYSQL_DEFAULT_AUTH=@0x17/*_MYSQL_DEFAULT_AUTH*/
+_MYSQL_OPT_BIND=@0x18/*_MYSQL_OPT_BIND*/
+_MYSQL_OPT_SSL_KEY=@0x19/*_MYSQL_OPT_SSL_KEY*/
+_MYSQL_OPT_SSL_CERT=@0x1A/*_MYSQL_OPT_SSL_CERT*/
+_MYSQL_OPT_SSL_CA=@0x1B/*_MYSQL_OPT_SSL_CA*/
+_MYSQL_OPT_SSL_CAPATH=@0x1C/*_MYSQL_OPT_SSL_CAPATH*/
+_MYSQL_OPT_SSL_CIPHER=@0x1D/*_MYSQL_OPT_SSL_CIPHER*/
+_MYSQL_OPT_SSL_CRL=@0x1E/*_MYSQL_OPT_SSL_CRL*/
+_MYSQL_OPT_SSL_CRLPATH=@0x1F/*_MYSQL_OPT_SSL_CRLPATH*/
+_MYSQL_OPT_CONNECT_ATTR_RESET=@0x20/*_MYSQL_OPT_CONNECT_ATTR_RESET*/
+_MYSQL_OPT_CONNECT_ATTR_ADD=@0x21/*_MYSQL_OPT_CONNECT_ATTR_ADD*/
+_MYSQL_OPT_CONNECT_ATTR_DELETE=@0x22/*_MYSQL_OPT_CONNECT_ATTR_DELETE*/
+_MYSQL_PROGRESS_CALLBACK=@0x176F/*_MYSQL_PROGRESS_CALLBACK*/
+_MYSQL_OPT_NONBLOCK=@0x1770/*_MYSQL_OPT_NONBLOCK*/
+_MYSQL_DATABASE_DRIVER=@0x1B58/*_MYSQL_DATABASE_DRIVER*/
+end intellisense**/

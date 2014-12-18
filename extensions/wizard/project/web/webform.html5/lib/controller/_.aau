@@ -1,0 +1,79 @@
+ 
+import console;
+import web.form.menu;
+import web.util;
+import config;
+/*
+controller 名字空间里的库要在下面导入一遍,否则发布时会丢弃这些在JS中动态加载的库
+*/
+import controller.main;
+
+namespace controller;
+
+bind = function(wb){
+
+	if( ! _STUDIO_INVOKED ){
+		wb.noScriptErr=true; 
+	};
+
+	wb.external = {   
+		config = ..config;
+		log = function(...){
+			if( _STUDIO_INVOKED ){
+				..console.log(...) 
+			};
+		}; 
+		loadController = function (option) { 
+			//将 /view/some.html 映射到 /lib/controller/some.aau 用户库中定义的类 
+			var url = ..string.lower(option.document.location.href);  
+			var path = "controller." + ..string.replace(
+				assert( ..string.match(url, "[\/\\]view[\/\\](\w[\w\/\\]+)\.html" ) ) 
+				, "[/\\]", ".") ; 
+
+			global.import(path);  
+			return ..table.getByNamespace(path)( wb, option.document ).external;
+		}; 	
+	} 
+	
+	/*自定义网页右键菜单{{*/  
+	var webmenu = ..web.form.menu( wb, {
+		[2/*_CONTEXT_MENU_CONTROL*/] = {  
+			{ "撤消";"Undo" }; 
+			{ /*-----*/};  
+			{ "剪切";"Cut"}; 
+			{ "复制";"Copy"}; 
+			{ "粘贴";"Paste"};
+			{ "删除";"Delete"}; 
+			{ /*-----*/};
+			{ "全选";"SelectAll"};  
+		};
+		[4/*_CONTEXT_MENU_TEXTSELECT */] = {  
+			{ "剪切";"Cut" }; 
+			{ "复制";"Copy" }; 
+			{ "粘贴";"Paste" };
+			{ "删除";"Delete" };
+		};  
+	} );
+	wb.showMenu = function( x,y,id,ele ) {
+		return webmenu.popup( x,y,id,ele ) 
+	}
+	/*}}*/ 
+	
+	wb.attachAll(  
+		/* html节点ID = 事件触发函数表 */
+		caption_button_website = {
+			onclick = function(event){ 
+				..web.util.ieBrowser("http://www.aau.cn")
+			} 
+			onmouseup = function(event){
+				event.srcElement.blur();
+			}
+		}
+	) 
+}
+
+/**intellisense()
+controller = 控制器
+controller.bind(.(wb) = 初始化控制器
+end intellisense**/
+

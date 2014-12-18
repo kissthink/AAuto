@@ -1,0 +1,16 @@
+//解压zip文件
+import fsys.dlg; 
+import zlib.unzip;
+
+io.open()
+var ok,err = zlib.unzip.extract( fsys.dlg.open("*.zip|*.zip","请选择需要解压的zip文件"),"/my",
+	function(fileName,extractPath,fileInfo,size,unitSize,unitName){
+		if( size !== null )
+			..io.print( "正在解压文件",fileName,size++ unitName );
+		else {
+			..io.print( "正在解压目录",fileName );
+		}
+		
+		return true;
+	}
+)

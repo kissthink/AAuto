@@ -1,0 +1,64 @@
+//findReplace 查找替换对话框
+import win;
+namespace win.dlg
+
+class findReplace{
+	ctor( winform ){
+	 	var finder = FINDREPLACE();
+		finder.cbSize = ..raw.sizeof(finder);
+		finder.hwndOwner = winform[["hwnd"]] ; 
+		if(!winform[["hwnd"]])
+			error("参数错误,不是有效窗体对象",2)
+			
+		var onSearch;
+		winform.wndproc = function(hwnd,message,wParam,lParam){
+			if (message == findReplaceMsg ){ 
+				var lpfr = ..raw.convert(topointer(lParam),finder); 
+    			if (finder.flags & 0x40/*_FR_DIALOGTERM*/)  {  
+        			return 0; 
+    			}  
+    			
+    			if (finder.flags & 0x8/*_FR_FINDNEXT*/)  {
+        			this.onSearch(finder.strFindWhat,!!(finder.flags  & 0x1/*_FR_DOWN*/) ,!!(finder.flags  & 0x4/*_FR_MATCHCASE*/) ); 
+    			} 
+    			return 0;
+    		}
+		}
+	}; 
+	find = function(str,flags=0){ 
+		finder.flags = flags; 
+		finder.strFindWhat = str;
+		finder.findWhatLen = #str + 1;	
+		FindText(finder)
+	} 
+} 
+
+var dll = ..raw.loadDll("comdlg32.dll");
+namespace findReplace{ 
+	FindText = dll.api("FindTextA", "INT(struct &LPFINDREPLACEA)");
+	FINDREPLACE = class {
+ 		INT cbSize; // size of this struct 0x20
+ 		int hwndOwner; // handle to owner's window
+ 		int hInstance; // instance handle of.EXE that
+ 		// contains cust. dlg. template
+ 		INT flags; // one or more of the FR_??
+ 		string strFindWhat; // ptr. to search string
+ 		string strReplaceWith; // ptr. to replace string
+ 		WORD findWhatLen; // size of find buffer
+ 		WORD replaceWithLen; // size of replace buffer
+ 		int custData; // data passed to hook fn.
+ 		pointer fnHook; // ptr. to hook fn. or NULL
+ 		string templateName; // custom template name
+	}
+	findReplaceMsg = ::RegisterWindowMessage( "commdlg_FindReplace") 
+} 
+
+/**intellisense()
+_FINDMSGSTRING = 文件查找替换对话框消息
+win.dlg.findReplace = 查找替换对话框
+win.dlg.findReplace(winform__) = 创建查找替换对话框
+win.dlg.findReplace().find("__") = 查找文本
+win.dlg.findReplace().onSearch = @.onSearch = function(str,down,matchCase){
+	
+} 
+end intellisense**/

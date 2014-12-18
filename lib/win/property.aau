@@ -1,0 +1,22 @@
+//property 窗口属性表
+import win;
+namespace win.property;
+
+get = ::User32.api("GetPropA","int(int hWnd,string lpString)") 
+set = ::User32.api("SetPropA","int(int hWnd,string lpString,int hData)") 
+
+var getWindow = ..win.GetWindow; 
+find = function(k,v){ 
+    for hwnd in ..win.eachChild( ..win.getDesktop() ) {
+        p = get(hwnd, k );
+        if( p && ( (!v) || (v==p) ) ){  
+			return hwnd;
+		}
+    }	
+}
+ 
+/**intellisense(win.property)
+get(hwnd,"属性名__") = 获取窗体属性
+set(.(hwnd,属性名,数字值) = 设置窗体属性
+find(.(属性名,属性值) = 第二个参数是可选参数\n返回包含指定属性,并匹配指定属性值的窗体句柄
+end intellisense**/

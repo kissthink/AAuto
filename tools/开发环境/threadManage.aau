@@ -1,0 +1,158 @@
+//调试线程管理器
+import win.ui;
+import win.ui.menu;
+/*DSG{{*/
+var winform = ..win.form(text="快手(AAuto Quicker) - 线程管理器";left=-100;top=50;right=450;bottom=420;parent=...;topmost=1)
+winform.add(
+btnPause={cls="button";text="暂停线程";left=332;top=335;right=429;bottom=361;db=1;dr=1;z=5};
+btnRefresh={cls="button";text="刷新列表";left=120;top=335;right=217;bottom=361;db=1;dr=1;z=6};
+btnResume={cls="button";text="运行线程";left=226;top=335;right=323;bottom=361;db=1;dr=1;z=4};
+btnStop={cls="button";text="终止线程";left=438;top=335;right=535;bottom=361;db=1;dr=1;z=3};
+chkRefresh={cls="checkbox";text="自动刷新";left=13;top=339;right=110;bottom=359;z=7};
+listview={cls="listview";left=8;top=25;right=537;bottom=332;bgcolor=16777215;db=1;dl=1;dr=1;dt=1;edge=1;font=LOGFONT( name='SimSun' );fullRow=1;gridLines=1;msel=false;z=1};
+static={cls="static";text="所有IDE创建的主线程:";left=13;top=8;right=286;bottom=24;transparent=1;z=2}
+)
+/*}}*/
+
+//初始化 列表框控件
+winform.listview.insertColumn("线程ID",100 ) 
+winform.listview.insertColumn("源文件",-1 )
+winform.listview.adjust = function(cx,cy){
+    winform.listview.fillParent(2);
+}  
+  
+import ide;
+import process; 
+var prcsExe = process();
+
+listThreads = function(){ 
+	var selIndex = winform.listview.selIndex;
+	winform.listview.clear();
+	
+	var id,title;
+	var currentId = thread.getId() ;
+	
+	for threadEntry in  prcsExe.eachThread() {  
+ 		id = threadEntry.th32ThreadID;
+ 		if( id = currentId ) continue ;
+ 		
+ 		title = ide.getThreadTitle(id); 
+ 		if( title ){
+ 			winform.listview.addItem({ tostring(id);title} )
+ 		}
+	}
+	 
+	winform.listview.selIndex = selIndex;
+}
+listThreads();
+
+winform.btnRefresh.oncommand = function(id,event){
+	listThreads();  
+}
+
+import fsys.config;
+var config = fsys.config("/.config/")
+winform.bindConfig( config.threadManage,{ 
+	checkbox = "checked"; 
+} );
+
+var tmId;
+winform.chkRefresh.oncommand = function(id,event){
+	winform.killtimer(tmId);
+	if( winform.chkRefresh.checked ){
+		tmId = winform.addtimer( 
+			2000,
+			function(hwnd,msg,id,tick){
+				listThreads();
+			} 
+		)
+	}
+}
+if( config.threadManage.chkRefresh ){
+	winform.chkRefresh.oncommand()
+}
+  
+
+getSelectThreadHandle = function(){
+	var id = winform.listview.getItemText( winform.listview.selIndex )
+	if(#id){
+		id = tonumber(id);
+		return thread.open(id);
+	}
+	else {
+		winform.msgboxErr("请选中目标线程","快手(AAuto Quicker) - 线程管理器")
+	}
+	
+} 
+
+killThread = function(){
+	var handle = getSelectThreadHandle()
+	if( handle ){
+		thread.terminate( handle )
+		raw.closehandle(handle)
+		winform.listview.delItem( winform.listview.selIndex )
+		winform.listview.selIndex = -1;
+	}
+}
+
+suspendThread = function(){
+	var handle = getSelectThreadHandle()
+	if( handle ){
+		thread.suspend( handle )
+		raw.closehandle(handle)
+	}
+}
+
+resumeThread = function(){
+	var handle = getSelectThreadHandle()
+	if( handle ){
+		thread.resume( handle )
+		raw.closehandle(handle)
+	}
+} 
+
+winform.popmenu = win.ui.popmenu(winform);//创建弹出菜单
+winform.popmenu.add('终止线程',function(id){ 
+	killThread();
+});
+winform.popmenu.add('暂停线程',function(id){ 
+	suspendThread();
+});
+winform.popmenu.add('继续线程',function(id){ 
+	resumeThread();
+});
+
+winform.btnStop.oncommand = function(id,event){
+	killThread();
+}
+
+
+winform.btnPause.oncommand = function(id,event){
+	suspendThread();
+}
+
+
+winform.btnResume.oncommand = function(id,event){
+	resumeThread();
+}
+
+  
+import mouse;
+winform.listview.onnotify = function(id,code,ptr){ 
+    
+    select(code) { 
+    	case 0xFFFFFFFB/*_NM_RCLICK*/  {
+    		var x,y = mouse.getPos()
+    		winform.popmenu.popup(x,y,true);//弹出菜单
+    	}
+    }
+    
+}
+
+//自适应列宽度 
+
+
+winform.show() 
+win.loopMessage();
+
+ 

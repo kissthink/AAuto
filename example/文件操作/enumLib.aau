@@ -1,0 +1,23 @@
+//±éÀú±ê×¼¿â
+
+import fsys;
+var libDir = io.fullpath("~/lib") 
+ 
+io.open()
+
+fsys.enum( libDir, "*.aau",
+	function(dirname,filename,fullpath,findData){ 
+		if(filename){ 
+			if( ..string.endWith(filename,"#Src.aau",true) )
+				return;
+				 
+            var libPath = fsys.path.relative(fullpath,libDir);
+            libPath = ..string.replace(libPath,"\\",".");
+            libPath = ..string.replace(libPath,"_",""); 
+            libPath = ..string.replace(libPath,"@..",".");
+            libPath = ..string.left(libPath,-5);
+            libPath = ..string.trim(libPath,"."); 
+            io.print( libPath,fullpath )
+		} 
+	}  
+);

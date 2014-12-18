@@ -1,0 +1,79 @@
+//COM对象常量导出工具
+
+import win.ui;
+import win.ui.menu;
+import com.picture;
+/*DSG{{*/
+var winform = ..win.form( bottom=447;parent=...;right=547;text="com常量导出工具" )
+winform.add( 
+tab={ dr=1;dl=1;bottom=441;right=539;left=9;dt=1;top=37;z=4;db=1;edge=1;cls="tab" };
+static={ dl=1;bottom=31;align="right";text="com.CreateObject";left=8;dt=1;top=11;z=3;right=112;transparent=1;cls="static" };
+txtProgID={ dr=1;dl=1;bottom=34;right=375;left=124;dt=1;top=9;z=2;text="CDO.Message";edge=1;cls="edit" };
+btnExport={ dr=1;bottom=34;text="导出常量定义";left=387;dt=1;top=6;z=1;right=506;cls="button" }
+)
+/*}}*/
+
+//定义第一个选项卡页
+var formConst = winform.tab.add(  text="常量";right=535;bottom=442 )
+formConst.add(
+txtResult={ vscroll=1;left=1;multiline=1;top=1;right=532;bottom=419;hscroll=1;dl=1;dt=1;dr=1;db=1;edge=1;cls="edit" }
+) 
+formConst.txtResult.text = /**
+
+
+//在AAuto中使用COM对象的成员常量必须加上对象前缀,例如:
+
+import com;
+var cdoMessage = com.CreateObject("CDO.Message")
+io.print( cdoMessage.cdoWestCentralAfrica )
+**/
+
+//定义第二个选项卡页
+var formEnum = winform.tab.add(  text="枚举";right=535;bottom=442 )
+formEnum.add(
+txtResult={ vscroll=1;left=1;multiline=1;top=1;right=532;bottom=419;hscroll=1;dl=1;dt=1;dr=1;db=1;edge=1;cls="edit" }
+)  
+
+getString = function( tab ){
+	var strResult = ..table.tostring(tab);
+	//让所有成员垂直换行排列，方便添加智能提示标记
+	strResult = string.replace(strResult,";",';\r\n');
+	strResult = string.replace(strResult,"{ ",'{\r\n');
+	strResult = string.replace(strResult,"}",'\r\n}');
+	
+	strResult = string.trim(strResult,"{}");//去掉首尾的构造符
+	return strResult;
+}
+
+
+winform.btnExport.oncommand = function(id,event){
+	 
+	var obj = com.CreateObject(winform.txtProgID.text );
+	assert(obj,"创建com对象失败");
+	
+	var typeinfo = com.GetTypeInfo(obj)
+	var typelib = typeinfo.GetTypeLib()
+	var enums = typelib.ExportEnumerations() 
+	formEnum.txtResult.text = "//枚举定义开始 " 
+		+ winform.txtProgID.text +';' 
+		+ getString(enums) 
+		+ "//枚举定义结束 " 
+		+ winform.txtProgID.text 
+		+';' 
+
+	
+	var const = {}
+	typelib.ExportConstants(const) 
+	formConst.txtResult.text = "//常量定义开始 " 
+		+ winform.txtProgID.text +';' 
+		+ getString(const) 
+		+ "//常量定义结束 " 
+		+ winform.txtProgID.text 
+		+';' 
+	 
+}//endproc
+
+
+winform.show(true) 
+win.loopMessage();
+return winform;

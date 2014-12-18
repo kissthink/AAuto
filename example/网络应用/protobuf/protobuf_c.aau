@@ -1,0 +1,5 @@
+import ide;
+import fsys;
+
+var path = fsys.joinpath(io._exedir,"Tools\ÆäËû±àÒëÆ÷\Protobuf\main.aau")
+ide.createThread( path );

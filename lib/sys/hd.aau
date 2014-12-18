@@ -1,0 +1,191 @@
+//hd ”≤≈ÃŒÔ¿Ì–Ú¡–∫≈
+
+namespace sys.hd  {
+    
+    CreateFile = ::Kernel32.api("CreateFileA","pointer(string lpFileName,int dwDesiredAccess,int dwShareMode,int lpSecurityAttributes,int dwCreationDisposition,int dwFlagsAndAttributes,int hTemplateFile)") 
+    DeviceIoControl = ::Kernel32.api("DeviceIoControl","int(pointer hDevice,int dwIoControlCode,struct& lpInBuffer,
+		int nInBufferSize,struct& lpOutBuffer,
+		int nOutBufferSize,int& lpBytesReturned,
+		int lpOverlapped)"
+	)
+                                                                                
+    
+    var IDEREGS = class { 
+    BYTE bFeaturesReg; // Used for specifying SMART "commands". 
+    BYTE bSectorCountReg; // IDE sector count register 
+    BYTE bSectorNumberReg; // IDE sector number register 
+    BYTE bCylLowReg; // IDE low order cylinder value 
+    BYTE bCylHighReg; // IDE high order cylinder value 
+    BYTE bDriveHeadReg; // IDE drive/head register 
+    BYTE bCommandReg; // Actual IDE command. 
+    BYTE bReserved; // reserved for future use. Must be zero. 
+    }
+    var GETVERSIONOUTPARAMS = class { 
+    BYTE bVersion; // Binary driver version. 
+    BYTE bRevision; // Binary driver revision. 
+    BYTE bReserved; // Not used. 
+    BYTE bIDEDeviceMap; // Bit map of IDE devices. 
+    INT fCapabilities; // Bit mask of driver capabilities. 
+    INT dwReserved[4]; // For future use. 
+    }
+    var SENDCMDINPARAMS = class { 
+    INT cBufferSize; // Buffer size in bytes 
+    struct irDriveRegs=IDEREGS(); // Structure with drive register values. 
+    BYTE bDriveNumber; // Physical drive number to send  
+    BYTE bReserved[3]; // Reserved for future expansion. 
+    INT dwReserved[4]; // For future use. 
+    BYTE bBuffer[1]; // Input buffer. 
+    }
+    
+    var DRIVERSTATUS = class { 
+    BYTE bDriverError; // Error code from driver, or 0 if no error. 
+    BYTE bIDEStatus; // Contents of IDE Error register. 
+    // Only valid when bDriverError is SMART_IDE_ERROR. 
+    BYTE bReserved[2]; // Reserved for future expansion. 
+    int dwReserved[2]; // Reserved for future expansion. 
+    }
+    
+    var SENDCMDOUTPARAMS = class { 
+    INT cBufferSize; // Size of bBuffer in bytes 
+    struct DriverStatus=DRIVERSTATUS(); // Driver status structure. 
+    BYTE bBuffer[1]; // Buffer of arbitrary length in which to store the data read from the // drive. 
+    }
+    
+    
+    var IDSECTOR = class { 
+    WORD wGenConfig; 
+    WORD wNumCyls; 
+    WORD wReserved; 
+    WORD wNumHeads; 
+    WORD wBytesPerTrack; 
+    WORD wBytesPerSector; 
+    WORD wSectorsPerTrack; 
+    WORD wVendorUnique[3]; 
+    BYTE sSerialNumber[20]; 
+    WORD wBufferType; 
+    WORD wBufferSize; 
+    WORD wECCSize; 
+    BYTE sFirmwareRev[8]; 
+    BYTE sModelNumber[40]; 
+    WORD wMoreVendorUnique; 
+    WORD wDoubleWordIO; 
+    WORD wCapabilities; 
+    WORD wReserved1; 
+    WORD wPIOTiming; 
+    WORD wDMATiming; 
+    WORD wBS; 
+    WORD wNumCurrentCyls; 
+    WORD wNumCurrentHeads; 
+    WORD wNumCurrentSectorsPerTrack; 
+    INT ulCurrentSectorCapacity; 
+    WORD wMultSectorStuff; 
+    INT ulTotalAddressableSectors; 
+    WORD wSingleWordDMA; 
+    WORD wMultiWordDMA; 
+    BYTE bReserved[128]; 
+    }
+    
+    var SENDCMDOUTPARAMS_IDSECTOR  = class { 
+    INT cBufferSize; // Size of bBuffer in bytes 
+    struct DriverStatus=DRIVERSTATUS(); // Driver status structure.  
+    struct hdinfo = IDSECTOR();
+    BYTE bReserved[256]; 
+    }
+    //  Max number of drives assuming primary/secondary, master/slave topology    
+    MAX_IDE_DRIVES = 4    
+    IDENTIFY_BUFFER_SIZE = 512    
+    
+    
+    //  IOCTL commands    
+    DFP_GET_VERSION        =  0x00074080    
+    DFP_SEND_DRIVE_COMMAND  = 0x0007c084    
+    DFP_RECEIVE_DRIVE_DATA  =  0x0007c088    
+    
+    function changeByteOrder(s ){ 
+   		var t = {};
+   		for(i=1;#s;2){
+   				t[i+1] = s[i]
+   				t[i] = s[i+1] 
+   		} 
+   		return ..string.pack(t);
+	} 
+    
+    function getInfo() { 
+            var vers = GETVERSIONOUTPARAMS(); 
+            var sin = SENDCMDINPARAMS();
+            var out = SENDCMDOUTPARAMS_IDSECTOR();
+            var cbBytesReturned = 0;  
+        
+            for(j=0;4;1){ 
+                    
+                    h = CreateFile( ..string.format( "\\.\PhysicalDrive%d",j),0x80000000/*_GENERIC_READ*/|0x40000000/*_GENERIC_WRITE*/, 
+                            0x1/*_FILE_SHARE_READ*/|0x2/*_FILE_SHARE_WRITE*/,0,0x3/*_OPEN_EXISTING*/,0,0);
+                
+                    //..io.print(h,..lasterr() );
+                    if  (!h)  
+                            continue;  
+                        
+                    var re,lpInBuffer,lpOutBuffer,cbBytesReturned = DeviceIoControl (h, 0x00074080/*_DFP_GET_VERSION*/,sin,0,vers,..raw.sizeof(vers),cbBytesReturned,0)
+                    if  (!re)  {
+                            ..raw.closehandle( h); 
+                            continue; 
+                    } 
+                    
+                    //If  IDE  identify  command  not  supported,  fails 
+                    if  (!(vers.fCapabilities&1))  {
+                            //..io.print("Error:  IDE  identify  command  not  supported. "); 
+                            ..raw.closehandle(h); 
+                            return  "0000 "; 
+                    } 
+                    
+                    //Identify  the  IDE  drives  
+                    if  (j&1) 
+                            sin.irDriveRegs.bDriveHeadReg=0xb0; 
+                    else 
+                            sin.irDriveRegs.bDriveHeadReg=0xa0;
+                            
+                    if  (vers.fCapabilities&(16 >> j)) { 
+                            //We  don 't  detect  a  ATAPI  device. 
+                            //..io.print( "Drive  " ,(j+1) ,"  is  a  ATAPI  device,  we  don 't  detect  it "); 
+                            continue; 
+                    } 
+                    else { 
+                            sin.irDriveRegs.bCommandReg=0xec; 
+                    } 
+                    
+                    sin.bDriveNumber=j; 
+                    sin.irDriveRegs.bSectorCountReg=1; 
+                    sin.irDriveRegs.bSectorNumberReg=1; 
+                    sin.cBufferSize=512; 
+                    
+                    if  (!DeviceIoControl(h,DFP_RECEIVE_DRIVE_DATA,sin,..raw.sizeof(sin),out,..raw.sizeof(out),cbBytesReturned,0))  { 
+                            //..io.print( "DeviceIoControl  failed:DFP_RECEIVE_DRIVE_DATA " ,cbBytesReturned,..lasterr() ); 
+                            ..raw.closehandle(h); 
+                            return  "0000 "; 
+                    } 
+                    //io.print( cbBytesReturned,..lasterr() )
+                    var phdinfo= out.hdinfo ;
+    
+                    
+                    phdinfo.sModelNumber = changeByteOrder(phdinfo.sModelNumber ); ; 
+                    phdinfo.sFirmwareRev = changeByteOrder(  phdinfo.sFirmwareRev ); ; 
+                    phdinfo.sSerialNumber= changeByteOrder(  phdinfo.sSerialNumber ); ; 
+                    phdinfo.ulTotalAddressableSectors=..string.pack(phdinfo.ulTotalAddressableSectors/2/1024); 
+        
+                    ..raw.closehandle(h); 
+                    break;
+            } 
+        
+            return  out.hdinfo; 
+    } 
+
+}
+
+/*intellisense()
+!hdinfo.sSerialNumber = ”≤≈Ã…˙≤˙–Ú∫≈
+!hdinfo.sModelNumber = ”≤≈Ã–Õ∫≈
+!hdinfo.sFirmwareRev = ”≤≈Ã”≤º˛∞Ê±æ
+!hdinfo.ulTotalAddressableSectors = ulTotalAddressableSectors
+?sys.hd.getInfo = !hdinfo.
+sys.hd.getInfo() = @hdinfo=..sys.hd.getInfo(); 
+end intellisense*/

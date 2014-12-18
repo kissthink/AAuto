@@ -1,0 +1,52 @@
+//.. 对称式协程
+namespace coroutine;
+ 
+//主函数
+main = function(){} 
+current = main
+
+//启动协程
+run = function(func,...){
+	main = func
+	current = main
+	main(...);
+}
+
+//创建协程
+create = function(f){
+	var task = ..fiber.create(
+		function(...){
+			return null,f(...)
+		}
+	)
+	return function(...){
+		return rget(2,assert(..fiber.resume (task,...) )  ) 
+	} 
+} 
+  
+var tright = ..table.right;
+//把控制权及与参数传递给纤程work
+transfer = function(work,...){ 
+	if( current != main ) { 
+		return ..fiber.yield(work,...)
+	}
+	else{
+		//控制权分派
+		var arg = {work;...}
+		while(work){
+			current = work
+			if work == main { 
+				return tright(arg,-2) 
+			} 
+			arg = { work( tright(arg,-2) ) } 
+			work = arg[1];
+		} 
+		error("全部协程已结束、分派控制权失败",2)
+	}
+}
+ 
+/**intellisense(coroutine)
+coroutine.(__/*函数*/) = 创建协程
+transfer(__/*协程对象*/,) = 把控制权及附加的不定个参数分派给协程对象
+run(__/*主函数*/, ) = 将函数设为协程主函数,并启动协同程序.\n可在此传入不定个参数给主函数
+end intellisense**/

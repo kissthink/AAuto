@@ -1,0 +1,455 @@
+//view 视图对象
+if( _STUDIO_INVOKED && _STUDIO_INVOKED != "process" ){
+	if( _AAUTO_VERSION < 6 ) error("快手开发环境版本太旧，请先更新!",2);
+	error("web.kit不能在IDE嵌入线程模式下启动!",2);
+}
+
+if(! web[["kit"]] ){
+	error("web.kit.view 不能单独导入",2)
+}
+
+import fsys;
+import util.metaProperty;
+import inet.url;
+
+namespace web.kit;
+var wke = _dll;
+
+class view{
+	ctor(){
+		this.hWebView = wke.wkeCreateWebView();
+		_cache_views__[this.hWebView] = this;
+	};
+	getForm = function(){};
+	@_metaProperty
+}
+ 
+namespace view {
+
+	wkeSetMediaVolume = wke.api("wkeSetMediaVolume","void(POINTER hView,float volume)")
+	wkeMediaVolume = wke.api("wkeMediaVolume","float(POINTER hView)")
+	wkeSetZoomFactor = wke.api("wkeSetZoomFactor","void(POINTER hView,float volume)")
+	wkeZoomFactor = wke.api("wkeZoomFactor","float(POINTER hView)")
+	
+ 	_cache_views__ = { /*@{_weak="kv"}*/ }
+ 	fromJsExecState = function(jsExecState){
+ 		if(!jsExecState) error("参数错误",2)
+ 		var hWebView = wke.jsGetWebView(jsExecState);
+ 		if( _cache_views__[hWebView] ) {
+ 			return  _cache_views__[hWebView]
+ 		}
+ 		var view = { @_metaProperty;hWebView = hWebView };
+ 	}
+ 	
+	_metaProperty = ..util.metaProperty(
+		jsExecState = {
+			_get = function(){
+				if(owner.hWebView) return topointer( wke.wkeGlobalExec(owner.hWebView) )
+			} 
+		};
+		mediaVolume = {
+			_get = function(){
+				if(owner.hWebView) return wkeMediaVolume(owner.hWebView);
+			}
+			_set = function( value ){
+				if(owner.hWebView) wkeSetMediaVolume(owner.hWebView,alue);
+			} 	
+		};
+		zoomFactor = {
+			_get = function(){
+				if(owner.hWebView) return wkeSetZoomFactor(owner.hWebView);
+			}
+			_set = function( value ){
+				if(owner.hWebView) wkeZoomFactor(owner.hWebView,value);
+			} 	
+		};
+		transparent = {
+			_get = function(){
+				if(owner.hWebView) return !!wke.wkeIsTransparent(owner.hWebView);
+			}
+			_set = function( value ){
+				if(owner.hWebView) wke.wkeSetTransparent(owner.hWebView,!!value);
+			} 	
+		}; 
+		cookieEnabled = {
+			_get = function(){
+				if(owner.hWebView) return !!wke.wkeCookieEnabled(owner.hWebView);
+			}
+			_set = function( value ){
+				if(owner.hWebView) wke.wkeSetCookieEnabled(owner.hWebView,!!value);
+			} 	
+		};
+		go = function(url){
+			if( type(url) != type.string ) error("URL参数错误",2);
+			
+			if( owner.hWebView ){
+				if( ..io.exist(url) ){
+					url = "file:///" + ..inet.url.encodeMbcs(..io.fullpath(url),false)  
+				}
+				elseif( ..io.localpath(url) ){
+					url = "file:///" + ..inet.url.encodeMbcs(url,false)  
+				}
+				wke.wkeLoadURLW(owner.hWebView,..string.toUnicode(url) );
+			}
+		};
+		canGoBack = function(){
+			if( owner.hWebView ){
+				return !!wke.wkeCanGoBack(owner.hWebView);
+			}
+		};
+		canGoForward = function(){
+			if( owner.hWebView ){
+				return !!wke.wkeCanGoForward(owner.hWebView);
+			}
+		};
+		goBack = function(){
+			if( owner.hWebView ){
+				wke.wkeGoBack(owner.hWebView);
+			}
+		};
+		goForward = function(){
+			if( owner.hWebView ){
+				wke.wkeGoForward(owner.hWebView);
+			}
+		};
+		write = function(html){
+			if( type(html) != type.string ) error("html参数错误",2);
+			
+			if( owner.hWebView ){
+				wke.wkeLoadHTMLW(owner.hWebView,..string.toUnicode(html) );
+			}
+		};
+		html = {
+			_set = function( value ){
+				if( owner.hWebView ){
+					wke.wkeLoadHTMLW(owner.hWebView,..string.toUnicode(value) );
+				}
+			}
+		}
+		load = function(filename){
+			if( type(filename) != type.string ) error("文件路径参数错误",2);
+			if( owner.hWebView ){ 
+				if( ..io.exist(url) ){
+					wke.wkeLoadURLW(owner.hWebView,..string.toUnicode( "file:///" + ..inet.url.encodeMbcs(..io.fullpath(filename),false) )  );
+				}
+				elseif( ..io.localpath(url) ){
+					wke.wkeLoadURLW(owner.hWebView,..string.toUnicode( "file:///" + ..inet.url.encodeMbcs(filename,false) )  );
+				} 
+			} 
+		};
+		isLoaded = function(){
+			if( owner.hWebView ){
+				return wke.wkeIsLoaded(owner.hWebView );
+			}
+		};
+		isLoadFailed = function(){
+			if( owner.hWebView ){
+				return wke.wkeIsLoadFailed(owner.hWebView );
+			}
+		};
+		isLoadComplete = function(){
+			if( owner.hWebView ){
+				return wke.wkeIsLoadComplete(owner.hWebView );
+			}
+		};
+		isDocumentReady = function(){
+			if( owner.hWebView ){
+				return wke.wkeIsDocumentReady(owner.hWebView );
+			}
+		};
+		isLoading = function(){
+			if( owner.hWebView ){
+				return wke.wkeIsLoading(owner.hWebView );
+			}
+		};
+		stopLoading = function(){
+			if( owner.hWebView ){
+				wke.wkeStopLoading(owner.hWebView );
+			}
+		};
+		reload = function(){
+			if( owner.hWebView ){
+				wke.wkeReload(owner.hWebView );
+			}
+		};
+		resize = function(w,h){
+			if(type(h)!=type.number) error("请指定高度参数",2);
+			
+			if( owner.hWebView ){
+				wke.wkeResize(owner.hWebView,w,h ); 
+			}
+		};
+		getWidth = function(){
+			if( owner.hWebView ){
+				return wke.wkeWidth(owner.hWebView ); 
+			}
+		};
+		getHeight = function(){
+			if( owner.hWebView ){
+				return wke.wkeHeight(owner.hWebView ); 
+			}
+		};
+		getContentsWidth = function(){
+			if( owner.hWebView ){
+				return wke.wkeContentsWidth(owner.hWebView ); 
+			}
+		};
+		getContentsHeight = function(){
+			if( owner.hWebView ){
+				return wke.wkeContentsHeight(owner.hWebView ); 
+			}
+		};
+		selectAll = function(){
+			if(owner.hWebView)wke.wkeSelectAll(owner.hWebView); 
+		};
+		copy = function(){
+			if(owner.hWebView)wke.wkeCopy(owner.hWebView); 
+		};
+		cut = function(){
+			if(owner.hWebView)wke.wkeCut(owner.hWebView); 
+		};
+		paste = function(){
+			if(owner.hWebView)wke.wkePaste(owner.hWebView); 
+		};
+		delete = function(){
+			if(owner.hWebView)wke.wkeDelete(owner.hWebView); 
+		};
+		setEditable = function(editable){
+			if(owner.hWebView)wke.wkeSetEditable(owner.hWebView,!!editable); 
+		};
+		focus = function(){
+			if(owner.hWebView)wke.wkeFocus(owner.hWebView); 
+		};
+		unfocus = function(){
+			if(owner.hWebView)wke.wkeUnfocus(owner.hWebView); 
+		};
+		sleep = function(){
+			if(owner.hWebView)wke.wkeSleep(owner.hWebView); 
+		};
+		awaken = function(){
+			if(owner.hWebView)wke.wkeAwaken(owner.hWebView); 
+		};
+		isAwake = function(){
+			if(owner.hWebView)wke.wkeIsAwake(owner.hWebView); 
+		};
+		isDirty = function(){
+			if( owner.hWebView ) return wke.wkeIsDirty( owner.hWebView ); 
+		};
+		setDirty = function(d){
+			wke.wkeSetDirty(owner.hWebView,!!d); 
+		};
+		addDirtyArea = function(x,y,w,h){
+			if(type(h)!=type.number) error("请指定高度参数",2);
+			return wke.wkeAddDirtyArea(owner.hWebView,x,y,w,h); 
+		};
+		paint = function(bits,pitch){
+			return wke.wkePaint(owner.hWebView,bits,pitch:0); 
+		};
+		mouseEvent = function(x,y,flags){
+			if(owner.hWebView)wke.wkeIsAwake(owner.hWebView,x,y,flags); 
+		};
+		contextMenuEvent = function(x,y,flags){
+			if(owner.hWebView)wke.wkeIsAwake(owner.hWebView,x,y,flags); 
+		};
+		mouseWheel = function(x,y,delta,flags){
+			if(owner.hWebView)wke.wkeMouseWheel(owner.hWebView,x,y,delta,flags); 
+		};
+		keyUp = function(vkCode,flags,sysKey){
+			if(owner.hWebView)wke.wkeKeyUp(owner.hWebView,vkCode,flags,sysKey); 
+		};
+		keyPress = function(charCode,flags,sysKey){
+			if(owner.hWebView)wke.wkeKeyPress(owner.hWebView,charCode,flags,sysKey); 
+		};
+		keyUp = function(vkCode,flags,sysKey){
+			if(owner.hWebView)wke.wkeKeyUp(owner.hWebView,vkCode,flags,sysKey); 
+		};
+		doScript = function(js){
+			if( type(js) != type.string ) error("参数必须指定脚本代码",2);
+			if(owner.hWebView)wke.wkeRunJSW(owner.hWebView,..string.toUnicode(js) ); 
+		};
+		eval = function(js){
+			if( type(js) != type.string ) error("参数必须指定脚本代码",2);
+			return ..web.kit.jsParseValue（owner.jsExecState, ..web.kit.jsEval(owner.jsExecState,js) );
+		};
+		document = {
+			_get = function(){
+				return owner.eval("document");
+			} 	
+		};
+		window = {
+			_get = function(){
+				return owner.eval("window"); 
+			} 	
+		};
+		initClientHandler = function(){
+			if( !owner.hWebView ) return;
+			if( owner.clientHandlerPtr ) return;
+			
+			var this = owner;
+			this.clientHandler = {
+				pointer onTitleChanged = ..raw.tocdecl(
+					function(p,s){
+						if( this[["onTitleChanged"]] ) {
+							s = wke.wkeToStringW(s);
+							this.onTitleChanged( ..string.fromUnicode(topointer(s),,true) );
+						}
+					},"void(pointer,pointer title)");
+				pointer onURLChanged = ..raw.tocdecl(
+					function(p,s){
+						if( this[["onURLChanged"]] ) {
+							s = wke.wkeToStringW(s);
+							this.onURLChanged( ..string.fromUnicode(topointer(s),,true) );
+						}
+					},"void(pointer,pointer url)");
+			}
+			this.clientHandlerPtr = ..raw.malloc(this.clientHandler)
+			wke.wkeSetClientHandler(this.hWebView,this.clientHandlerPtr);
+		}; 
+		destroy = function(){
+			if( owner.hWebView ){
+				wke.wkeDestroyWebView(owner.hWebView );
+				_cache_views__[owner.hWebView] = null;
+				owner.hWebView = null;
+			}
+		}; 
+		onTitleChanged = { 
+			_set = function( value ){
+				if( type(value) != type.function ) error("请指定回调函数",2);
+				
+				owner.initClientHandler();
+				owner[["onTitleChanged"]] = value;
+			} 	
+		}; 
+		onURLChanged = { 
+			_set = function( value ){
+				if( type(value) != type.function ) error("请指定回调函数",2);
+				
+				owner.initClientHandler();
+				owner[["onURLChanged"]] = value;
+			} 	
+		};
+		querySelector = function(...){
+			var doc = owner.waitDoc();
+			if(doc) return doc.querySelector(...);
+		};
+		querySelectorAll = function(...){
+			var doc = owner.waitDoc();
+			if(doc) return doc.querySelectorAll(...);
+		};
+		waitDoc = function(timeout){
+			var delay = ..win.delay;
+			var isWnd = ..win.isWindow;
+			var hwnd = owner._form.hwnd;
+			var tk = 0;
+			
+			while( delay(200) && isWnd(hwnd)  ){
+		  		if( owner.hWebView && wke.wkeIsDocumentReady( owner.hWebView ) ){
+		  			return owner.document;
+				}		
+					
+				if( timeout ) {
+					tk+=201;
+					if( tk>timeout )
+						return null,"Timeout!"  
+				};
+			} 
+		};
+		wait = function(timeout){
+			var delay = ..win.delay;
+			var isWnd = ..win.isWindow;
+			var hwnd = owner._form.hwnd;
+			var tk = 0;
+			
+			while( delay(200) && isWnd(hwnd)  ){
+		  		if( owner.hWebView && wke.wkeIsLoadComplete( owner.hWebView ) ){
+		  			return !!wke.wkeIsLoaded(owner.hWebView);
+				}		
+					
+				if( timeout ) {
+					tk+=201;
+					if( tk>timeout )
+						return null,"Timeout!"  
+				};
+	  		
+			} 
+			return false;
+		};
+	)
+}
+ 
+/**intellisense()
+web.kit.view = webkit视图
+web.kit.view() = 创建webkit视图\n!web_kit_view.
+wkeWebView = !web_kit_view.
+end intellisense**/
+
+
+/***intellisense(!web_kit_view)
+external = @.external = {\n	__/*添加JS可访问的external对象,忽略成员函数*/\n};
+zoomFactor = 缩放百分比\n浮点数,1.0为实际大小
+mediaVolume = 音量,范微0.0到1.0
+transparent = 背景是否透明\n不透明则使用白色背景
+cookieEnabled = 是否允许使用cookie
+go("__/*网址*/") = 打开网址
+canGoBack() = 能否后退
+canGoForward() = 能否前进
+goBack() = 后退
+goForward() = 前进
+write(.(html) = 写入HTML
+html = @.html = /**\n<!doctype html>\n<html>\n<head>\n    <style type="text/css">\n    html,body{ height:100%; margin:0; } __\n    </style>\n    <script type="text/javascript"></script>\n</head>\n<body>\n    <div id="header"></div>\n    <div id="container"> \n        <div class="lside"> </div> \n        <div class="rside"> </div>  \n    </div>\n</body>\n</html>\n**/
+load(.( filename) = 加载文件
+isLoaded() =  是否加载成功
+isLoadFailed() = 是否加载失败
+isLoadComplete() = 是否加载完成\n即isLoaded或isLoadFailed函数返回true
+isDocumentReady() = 文档对象是否准备就绪
+isLoading() = 是否正在加载
+stopLoading() = 停止加载
+reload() = 重新载入
+resize(.(w,h) = 调整大小
+getWidth() = 视图宽度
+getHeight() = 视图高度
+getContentsWidth() = 文档宽度
+getContentsHeight() = 文档高度
+selectAll() = 全选
+copy() = 复制
+cut() = 剪切
+paste() = 复制
+delete() = 删除
+setEditable(.(editable) = 设置编辑状态
+focus() = 设置焦点
+unfocus() = 取消焦点
+sleep() = 休眠
+awaken() = 恢复运行
+isAwake() = 是否运行
+isDirty() = 是否需要重绘
+setDirty(.(dirty) = 设置是否需要重绘
+addDirtyArea(.(x,y,w,h) = 设置无效区域
+paint(.(bits,pitch) = 绘图,参数@1为位图像素数组指针
+mouseEvent(.(x,y,flags) = 转发鼠标事件到网页
+contextMenuEvent(.(x,y,flags) = 转发右键菜单事件到网页
+mouseWheel(.(x,y,delta,flags) = 转发滚轮事件到网页
+keyUp(.(vkCode,flags,sysKey) = 转发按键释放事件到网页
+keyPress(.(charCode,flags,sysKey) = 转发按键事件到网页
+keyDown(.(vkCode,flags,sysKey) = 转发按键释放事件到网页
+doScript(.(js代码) = 执行JS脚本
+eval(.(JS表达式) = 计算JS表达式并返回值
+document = 文档对象\ndocument.
+window = js全局对象\n!jsGlobal.
+waitDoc() = 等待文档对象准备就绪,并返回文档对象\ndocument.
+wndproc(.(hwnd,message,wParam,lParam) = 处理窗口消息\n返回值为真表示不再需要后续默认消息处理
+destroy() = 销毁对象
+getForm() = 返回该视图所在窗体对象\n!winform.
+getForm(false) = 返回该视图所在窗口或控件对象
+wait() = 等待页面加载完成,参数可指定超时毫秒数,\n成功返回true
+onURLChanged = @.onURLChanged = function(url){ 
+	if(#url) owner.getForm().msgbox( url )
+}
+onTitleChanged = @.onTitleChanged = function(title){ 
+	owner.getForm().text = title;
+}
+querySelectorAll(.("CSS选择器") = 查询并返回节点集合,length属性获取节点个数
+querySelector(.("CSS选择器") = 查询并返回节点
+querySelectorAll() = !ele.
+querySelector() = !ele.
+end intellisense***/
+ 

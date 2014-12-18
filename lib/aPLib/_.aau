@@ -1,0 +1,111 @@
+/*
+Author: 5e365
+This product uses the aPLib compression library,
+aPLib is free to use even for commercial use.
+http://www.ibsensoftware.com/products_aPLib.html
+*/
+
+class aPLib {
+
+	depack = function(bin,origSize) { 
+ 		if(!origSize)error("请指定原始数据长度",2)
+ 		if( #this.buffer < origSize )
+ 			this.buffer = ..raw.malloc(origSize)
+ 			
+ 		var len = aP_depack_asm_fast( bin, this.buffer )   
+ 		if(len>0)
+ 			return ..raw.tostring(this.buffer,1,len), len; 
+	};
+	 
+	pack = function(bin) { 
+		if(!#bin)return;
+ 		var lenMax = aP_max_packed_size(#bin) 
+ 		if( #this.buffer < lenMax )
+ 			this.buffer = ..raw.malloc(lenMax) 
+ 		
+ 		var lenWork = aP_workmem_size(#bin) 
+ 		if( #this.buffer < lenWork )
+ 			this.bufferWork = ..raw.malloc(lenWork)  
+ 		
+ 		var len = aP_pack(bin, this.buffer, #bin, this.bufferWork, null, null)
+ 		return ..raw.tostring(this.buffer,1,len), len;     
+	};
+	
+	safeDepack = function(bin) { 
+		if(!#bin)return;
+ 		var  origSize = aPsafe_get_orig_size(bin);
+ 		if( origSize <= 0 ) return; 
+ 		if( #this.buffer < origSize )
+ 			this.buffer = ..raw.malloc(origSize) 
+ 			
+ 		var len = aPsafe_depack( bin, #bin,this.buffer,origSize )      
+ 		if(len>0)return ..raw.tostring(this.buffer,1,len), len;   
+	};
+	
+	safePack = function(bin) { 
+		if(!#bin)return;
+ 		var lenMax = aP_max_packed_size(#bin)
+ 		if( #this.buffer < lenMax )
+ 			this.buffer = ..raw.malloc(lenMax) 
+ 		
+ 		var lenWork = aP_workmem_size(#bin)
+ 		if( #this.buffer < lenWork )
+ 			this.bufferWork = ..raw.malloc(lenWork)     
+ 		
+ 		var len = aPsafe_pack(bin, this.buffer, #bin, this.bufferWork , null, null)
+ 		if(len>0)return ..raw.tostring(this.buffer,1,len), len;     
+	};
+	
+	packFile = function(path,bin) { 
+		var file,err = ..io.open(path,"w+b");
+		if(!file) error(err,2)
+		var lenMax = aP_max_packed_size(#bin)
+ 		if( #this.buffer < lenMax )
+ 			this.buffer = ..raw.malloc(lenMax) 
+ 		
+ 		var lenWork = aP_workmem_size(#bin)
+ 		if( #this.buffer < lenWork )
+ 			this.bufferWork = ..raw.malloc(lenWork)     
+ 		
+ 		var len = aPsafe_pack(bin, this.buffer, #bin, this.bufferWork , null, null)
+ 		file.writeBuffer(this.buffer,len);
+ 		file.close();
+ 		return true;
+	};
+	
+	depackFile = function(path ) {   
+		var file,err = ..io.open(path,"r+b");
+		if(!file) error(err,2) 
+		var str  = this.safeDepack(file.read(-1) );
+		file.close();
+		return str;
+	};
+}
+
+  
+namespace aPLib{
+	var dll = ..raw.loadDll($"~/lib/aplib/.res/aplib.dll","aplib.dll")  
+ 
+	aP_pack = dll.api("_aP_pack","int(pointer source, pointer destination, INT length ,pointer workmem, pointer callback, pointer cbparam)") 
+	aP_max_packed_size = dll.api("_aP_max_packed_size","int(INT input_size)")
+	aP_workmem_size = dll.api("_aP_workmem_size","int(INT input_size)") 
+	aP_depack_asm_fast = dll.api("_aP_depack_asm_fast","int(pointer source, pointer destination)");
+	
+	aPsafe_pack = dll.api("_aPsafe_pack","int(pointer source, pointer destination, INT length ,pointer workmem, pointer callback, pointer cbparam)")
+	aPsafe_depack = dll.api("_aPsafe_depack","int(pointer source, INT strlen,pointer destination,INT dstlen)")
+	aPsafe_get_orig_size = dll.api("_aPsafe_get_orig_size","int(pointer source)") 
+}
+ 
+ /**intellisense()
+aPLib() = 创建aPLib对象\n!aPLibObject.
+end intellisense**/
+
+/**intellisense(!aPLibObject)
+depack(.(解压缓冲区大小,解压数据) = 解压无aPLib压缩格式头的压缩数据,\n解压缓冲区大小必须大于原始数据长度
+pack(.(待压缩数据) = 压缩,不添加aPLib压缩格式头
+safeDepack(.(解压数据) = 解压包含aPLib压缩格式头的压缩数据
+safePack(.(待压缩数据) = 压缩,\n添加aPLib压缩格式头以存储原始长度、文件校验值
+packFile(.("压缩路径",待压缩数据) = 压缩数据到文件
+depackFile(.("解压路径") = 解压文件并返回原始数据,所有参数可选,
+end intellisense**/
+ 

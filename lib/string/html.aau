@@ -1,0 +1,103 @@
+//html 转换
+namespace string.html
+ 
+var rep = ..string.replace;
+var removeTagAux ;
+removeTagAux = function(html,tag,...){ 
+    html = rep(html, "\<\s*"+tag+"[^\>]*?\s*\>.*?\<\s*/"+tag+"\s*>",""); 
+    html = rep(html, "\<\s*"+tag+"!\W[^\>]*?\s*\>.+","");
+    
+    if(!...)return html;
+    return removeTagAux( html,...);
+}
+
+removeTag = function(html,tag,...){
+    html = removeTagAux( html,..string.lower(tag),..string.upper(tag) )
+    if(!...)
+     	return html;
+    return removeTag(html,...);
+} 
+
+toText = function(html){ 
+
+	//清除无效标记
+	html = removeTag(html,"head","style","script");
+	..io.print( html )
+	//转换所有空格换行
+	html = rep(html, 
+    	"\<\s*pre[^\>]*?\s*\>(.*?)\<\s*/pre\s*>",
+    	function(c){
+     		c = rep(c," ","&nbsp;");
+     		c = rep(c,'\n',"<br>");
+     		return c;
+    	}
+	);  
+	html = rep(html,"\s+"," ");
+	html = rep(html,"\<[bB][rR]\s*/*\>",'\r\n');
+	html = rep(html,"\</*[pP]\>",'\r\n');
+	html = rep(html,"\</div\>",'\r\n');
+	html = rep(html,"\</DIV\>",'\r\n');
+	
+	//清除所有HTML标记
+	html = rep(html,"\<.+?\>","");
+	
+	//转换特殊字符
+	html = rep(html,"&[a-zA-Z]+;",{
+			["&nbsp;"] = ' ';
+			["&quot;"] = '"';
+			["&apos;"] = "'";
+			["&ldquo;"] = '“';
+			["&rdquo;"] = '”';
+			["&rdquo;"] = '”';
+			["&mdash;"] = '—';
+			["&lt;"] = '<';
+			["&gt;"] = '>';  
+			["&euro;"] = "�";
+			["&cent;"] = '￠';
+			["&pound;"] = '￡';
+			["&yen;"] = '￥'; 
+			["&frasl;"] = "/";
+			["&raquo;"] = "▼";
+			["&times;"] = "×";
+			["&division;"] = "÷";
+			["&currency;"] = "¤"; 
+			["&brvbar;"] = "|";
+			["&sect;"] = "§";
+			["&uml;"] = "¨";
+			["&macr;"] = "ˉ";
+			["&deg;"] = "°";
+			["&plusmn;"] = "±";
+			["&acute;"] = "′";
+			["&micro;"] = "μ";
+			["&middot;"] = "·";
+			["&ordm;"] = "o";
+		} )  
+	html = rep(html,"&[a-zA-Z]+;","");     	
+	html = rep(html,
+    	"&#(\d+);",
+    	function(c){
+    		c = tonumber(c);
+    		var a,b = c & 0xFF,c>>8 & 0xFF;
+     		return b? ..string.pack(a,b) : ..string.pack(a);
+    	} 
+	); 
+	
+	return html;
+}
+
+fromText = function(v){
+	v = rep(v,"@@&",'&amp;');
+	v = rep(v,'@@<',"&lt;");
+	v = rep(v,'@@>',"&gt;");
+	v = rep(v,'@@"',"&quot;"); 
+	v = rep(v,"@@'","&apos;");
+	v = rep(v," ","&nbsp;");
+	v = rep(v,'\n',"<br>");
+	return v;
+}
+
+/**intellisense(string.html)
+toText(__/*HTML代码*/) = 将HTML代码转换为文本
+fromText(__/*普通文本*/) = 将普通文本转换为HTML
+removeTag(html,"script__") = 移除指定的html标记,支持不定个数的标记参数
+end intellisense**/

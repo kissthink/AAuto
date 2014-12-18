@@ -1,0 +1,16 @@
+
+import win.ui;
+import win.ui.menu;
+import com.picture;
+/*DSG{{*/
+var listboxx = win.form(parent=...; min=1;top=0;bottom=386;max=1;text="在线用户";left=0;right=144 )
+listboxx.add( 
+listbox={ bgcolor=16777215;bottom=351;color=0;text="listbox";left=1;
+items={  };font=LOGFONT( name="宋体";h=-16;out=3;family=2;clip=2;quality=1 );vscroll=1;z=0;right=142;top=2;edge=1;cls="listbox" };
+button1={ bottom=380;color=0;text="移入黑名单";left=15;top=356;font=LOGFONT( name="宋体";h=-14;out=3;family=2;clip=2;quality=1 );z=1;right=127;cls="button" }
+)
+/*}}*/
+
+listboxx.show(true) 
+win.loopMessage();
+return listboxx;

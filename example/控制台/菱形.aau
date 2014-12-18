@@ -1,0 +1,78 @@
+//菱形
+//菱形//打印菱形
+
+/*****************************
+Author ID: weiidoo
+Time	 : March 10, 2010
+*****************************/
+
+
+
+//打印单个菱形
+io.open();
+
+for(i=1;5){
+
+	for(j=1;5-i) 
+		io.stdout.write( " ");
+  	
+	for(k=1;2*i-1) 
+		io.stdout.write( "*");
+  	
+	io.stdout.write( '\n');
+}
+
+for(i=1;4) {
+	for(j=1;i) 
+		io.stdout.write( " ");
+  	
+	for(k=1;9-2*i) 
+		io.stdout.write( "*");
+  	
+	io.stdout.write( '\n');
+}
+
+io.print('\n');
+
+//打印多个菱形
+var k=1; 
+for(z=1;5){     
+	//控制行
+	
+	for(i=1;8){ 
+		//控制菱形数量
+	
+    	for(j=1;5-z) 
+    		io.stdout.write( " "); 
+    		 
+    	for(i=1;k) 
+    		io.stdout.write( "*");
+    		  
+    	for(j=1;5-z)
+    		io.stdout.write( " ");  
+    }
+    
+	io.stdout.write( '\n'); 
+	k=k+2;
+}
+
+var k=7;
+for(z=1;4){        
+	//控制行
+	
+	for(i=1;8;1){      
+		//控制菱形数量
+		
+    	for(j=1;z) 
+    		io.stdout.write( " ");  
+    		
+    	for(i=1;k) 
+    		io.stdout.write( "*");  
+    		
+    	for(j=1;z) 
+    		io.stdout.write( " ");  
+    }
+    
+	io.stdout.write( '\n'); 
+	k=k-2;
+}

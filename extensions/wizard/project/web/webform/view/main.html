@@ -1,0 +1,68 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<!--设置浏览器兼容模式,在web窗体中可使用documentMode属性获取实际使用的兼容版本号-->
+<meta http-equiv="X-UA-Compatible" content="IE=8" /
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title></title>
+<link href="image/frame/caption.css" type="text/css" rel="Stylesheet" />
+<script data-main="js/main" src="js/require.js"></script>
+</head>
+<body>  
+<table id="form_frame" width="100%" height="100%" cellpadding="0" cellspacing="0" >
+	<tr>
+		<td height="27">
+
+			<!--标题栏开始-->
+			<div id="caption">
+				<div id="caption_frame">
+					<div id="caption_bar">
+						<div id="caption_title"><a id="caption_sysmenu" href="javascript:void(0);" hidefocus="true"></a><span id="caption_text">Web UI标题文本</span></div>
+						<ul id="caption_button">
+							<li><a id="caption_button_website" href="javascript:void(0);" hidefocus="true" title="意见反馈">意见反馈</a></li>
+							<li><a id="caption_button_min" href="javascript:void(0);" hidefocus="true" title="最小化">最小化</a></li>
+							<li><a id="caption_button_max" class="max" href="javascript:void(0);" hidefocus="true" title="最大化">最大化</a></li>
+							<li><a id="caption_button_close" href="javascript:void(0);" hidefocus="true" title="关闭">关闭</a></li>
+						</ul>
+					</div>
+				</div>
+			</div>
+			<!--标题栏结束-->
+		</td>
+	</tr>
+	<tr>
+		<td height="100%" width="100%" id="tbmain" valign="top">
+			<div id="form_main">
+				<div id="form_main_content" style="padding:20px;">
+
+				<!--窗体内容开始--> 
+                    
+                    <span style="font-size:9pt;">推荐的文件存储位置:</span>
+                    <blockquote style="margin-top:0px; padding-top:0px; padding-left:20pt; margin-left:0px;">
+                        <div style="margin-top:3px">所有图片放在/view/image目录下,图片相关的CSS文件放在同级目录下. </div>
+                        <div style="margin-top:3px">所有js文件请置于/view/js目录下,jQuery请置于以下位置: &quot;/view/js/jQuery.min.js&quot;，<br /><br />  
+                        </div>
+                    </blockquote>
+		 
+                    所有HTML页面请放置于view目录下.<br />
+                    如果view目录设为内嵌资源,则发布时无需修改任何代码自动生成独立EXE文件。<br />
+                    <br />
+                    aauto代码中使用 controller.bind( mainWb ); 绑定控制器以后,<br />
+                    每一个HTML页面载入时自动绑定 /lib/controller/ 目录下的同名aau用户库。<br />
+                    <br />
+                    
+                    <a href="javascript:void(0);" id="btnSysPath"> 调用控制器函数 aauto.getSysPath() </a> <br /> 
+                    <textarea cols="40" rows="5" id="txtSysPath">main.html 自动绑定aauto用户库中的controller.main </textarea>
+                    
+                <!--窗体内容结束--> 
+            	</div>
+			</div>
+			<div id="form_bottom">
+				<div id="form_bottom_rc1"></div>
+				<div id="form_bottom_rc2"></div>
+			</div>
+		</td>
+	</tr>
+</table>  
+</body>
+</html>

@@ -1,0 +1,242 @@
+import inet.url;
+import fsys.localfile;
+import util.metaProperty; 
+ 
+namespace com; 
+
+class flash{
+	ctor( winform ){
+		winform.createEmbed("ShockwaveFlash.ShockwaveFlash",this);
+	};
+	@_metaProperty;
+}
+
+import com.flash.xml;
+namespace flash{
+ 
+	_metaProperty = ..util.metaProperty(
+		movie = {
+			_get = function(){
+				return owner._object.Movie;
+			}
+			_set = function(v){
+				if( owner[["localfile"]] ) owner[["localfile"]].free();
+				var localfile = ..fsys.localfile(v,".swf");
+				owner[["localfile"]] = localfile;
+				if(!localfile) return;
+
+				owner._object.EmbedMovie = false; 
+				owner._object.Movie = localfile.path();
+				if( localfile.temp() ){
+					owner._object.EmbedMovie = true; //允许文件被删除
+				}; 
+			}
+		};
+		show = function(){
+			return owner._form.show();
+		};
+		putMovie = function( url ){
+			owner.movie = url;
+		};
+		loadMovie = function(layer,url){
+			if( owner[["localfile"]] ) owner[["localfile"]].free();
+			var localfile = ..fsys.localfile(url,".swf");
+			owner[["localfile"]] = localfile;
+			if(!localfile) return;
+			 
+			var ret = owner._object.LoadMovie(layer,localfile.path() ); 
+			return ret; 
+		};
+		play = function(){
+			owner._object.Play()
+		};
+		stop = function(){
+			owner._object.Stop()
+		};
+		xcall = function(name,...){
+			var x = xml.buildInvoke(name,...);  
+			var ret = owner._object.CallFunction(x);
+			return xml.parse(ret);
+		};
+		FSCommand = function( cmd ,args ){
+			if( owner.command ){
+				var c = owner.command[cmd];
+				if(c)c(args); 
+			}
+		}; 
+		FlashCall  = function(x){ 
+			var name,args,len = xml.parseInvoke(x);
+			if( owner.external ? name){
+				var func = owner.external[name];
+				var ret = invoke(func,owner.external,..table.unpack(args,1,len) );   
+				owner._object.SetReturnValue( xml.stringify(ret) );
+			}
+		};
+		hwndControl = {
+			_get = function(){
+				return  ..win.getLeaf( owner._form.hwnd )
+			} 	
+		};
+		menu = {
+			_get = function(){
+				return owner._object.Menu;
+			}
+			_set = function(v){
+				owner._object.Menu = v;
+			}
+		};
+		readyState  = {
+			_get = function(){
+				return owner._object.ReadyState;
+			}
+		};
+		wait = function(){
+			var hwnd = owner._form.hwnd;
+			var isWnd = ..win.isWindow;
+			while( ( owner.readyState != 4) && delay(200) && isWnd(hwnd) ){ 
+		  		
+			} 
+			return true;
+		};
+		playing  = {
+			_get = function(){
+				return owner._object.Playing;
+			}
+		};  
+		loop = {
+			_get = function(){
+				return owner._object.Loop;
+			}
+			_set = function(v){
+				owner._object.Loop = v;
+			}
+		};
+		sAlign  = {
+			_get = function(){
+				return owner._object.SAlign;
+			}
+			_set = function(v){
+				owner._object.SAlign = v;
+			}
+		};
+		quality2  = {
+			_get = function(){
+				return owner._object.Quality2;
+			}
+			_set = function(v){
+				owner._object.Quality2 = v;
+			}
+		}; 
+		scale  = {
+			_get = function(){
+				return owner._object.Scale;
+			}
+			_set = function(v){
+				owner._object.Scale = v;
+			}
+		};
+		totalFrames  = {
+			_get = function(){
+				return owner._object.TotalFrames;
+			}
+		};
+		wMode  = {
+			_get = function(){
+				return owner._object.WMode;
+			}
+			_set = function(v){
+				owner._object.WMode = v;
+			}
+		};
+		parameters  = {
+			_get = function(){
+				return owner._object.flashVars;
+			}
+			_set = function(v){
+				if( type(v) == type.table ) v = ..inet.url.stringifyParameters(v,true);
+				owner._object.flashVars = v;
+			}
+		};
+		back = function(){
+			return owner._object.Back();
+		};
+		forward = function(){
+			return owner._object.Forward();
+		};
+		gotoFrame = function(n){
+			return owner._object.GotoFrame(n);
+		};
+		percentLoaded = function(){
+			return owner._object.PercentLoaded(n);
+		};
+		pan = function(x,y,mode=1){
+			return owner._object.Pan(x,y,mode);
+		};
+		rewind = function(x,y,mode){
+			return owner._object.Pan(x,y,Rewind);
+		};
+		setVariable = function(name,value){
+			return owner._object.setVariable(name,value);
+		};
+		getVariable = function(name){
+			return owner._object.getVariable(name);
+		};
+	)
+	_metaProperty.flashVars = _metaProperty.parameters;
+}
+ 
+/**intellisense()
+com.flash = 嵌入FLASH控件支持库
+com.flash(.(winform) = 嵌入FLASH控件,\n参数为窗体或控件对象
+com.flash()= !com_flash.
+!com_flash.hwndControl = Flash控件窗口句柄
+!com_flash.menu = 右键是否显示Flash控制菜单
+!com_flash._object = 控件对象
+!com_flash._host = 容器对象
+!com_flash._host.adjust() = 调整控件窗口大小
+!com_flash._form = 窗体对象\n!winform.
+!com_flash.show() = 显示Flash所在窗口
+!com_flash.play() = 播放
+!com_flash.stop() = 暂停
+!com_flash.rewind() = 返回到影片的第一帧
+!com_flash.back() = 影片后退一帧并停止播放
+!com_flash.forward() = 影片后退一帧并停止播放
+!com_flash.gotoFrame(.(索引) = 将影片跳转到指定的帧并停止播放.\n必须首先调用percentLoaded()函数保证影片完全加载
+!com_flash.percentLoaded() = 返回影片加载的百分比
+!com_flash.putMovie(.("/res/ui->swf") = 加载Flash文件，\n参数可以是文件名，支持内嵌资源目录文件名\n参数也可以是Flash文件的内存数据
+!com_flash.loadMovie(.(layer,url) = 将由url指定的影片载入到由layer指定的层上.
+!com_flash.pan(.(x,y,mode) = 将一个放大过的影片平移由x和y指定的距离,x和y均为相对值,\nmode默认值为1,按百分比计算,如果设为0则以像素计算
+!com_flash.setVariable(.("变量名",值) = 设置FLASH变量
+!com_flash.getVariable("__/*变量名*/") = 获取FLASH变量
+!com_flash.parameters = 设置初始化参数,也就是AS里的loaderInfo.parameters，\n参数格式与URL参数相同,设置一个表参数可自动转换为字符串,\n读取属性时返回字符串
+!com_flash.flashVars = 等价于parameters属性,参考该属性说明
+!com_flash.movie = 设置swf文件地址
+!com_flash.wait() = 等待影片加载完成
+!com_flash.loop = 是否循环播放
+!com_flash.playing = 影片是否正在播放
+!com_flash.sAlign = 使用字符串表示对齐:\n"L":即左对齐\n"T":即顶对齐\n"R":即右对齐\n"B":即底对齐\n上面的值可组合使用,但LTRB的先后顺序不能变,如:左和底的对齐必须写为"LB"
+!com_flash.readyState = 返回影片的当前状态,readyState值有:\n0:正在载入\n1:未初始化\n2:已载入\n3:正在交互\n4:完成例子
+!com_flash.quality2 = 获取设置影片质量,可选使用以下字符串表示值:\n"Low":偏重于播放速度而不管显示效果.\n"High":偏重于画面而不管播放速度\n"AutoLow":先着重于播放速度,但只要有可能就改善显示效果.\n"AutoHigh":一开始是播放速度和显示效果并重,但如有必要就牺牲画质确保速度.
+!com_flash.scale = 缩放模式:\n"NoScale":显示原始大小不缩放,\n"ShowAll":显示全部影片区域,保持影片长宽比例不变.\n"NoBorder":显示部分影片区域,保持影片长宽比例不变.\n"ExactFit":显示全部影片区域,强制将影片的长宽等于控件的长宽.
+!com_flash.totalFrames = 返回影片总帧数
+!com_flash.wMode = 控件的窗口模式,可选值"Window","Opaque","Transparent"
+
+!com_flash.OnReadyStateChange = @.OnReadyStateChange = function( newState ){
+	io.print("OnReadyStateChange")
+}
+!com_flash.OnProgress = @.OnProgress = function( percentDone ){
+	io.print(percentDone)
+}
+!com_flash.xcall(.("FLASH函数名",其他参数) = 调用FLASH中使用ExternalInterface.addCallback()导出的函数
+!com_flash.external = @.external = {
+	函数名 = function(参数){
+		__/*在FLASH中可使用ExternalInterface.call()调用这里的函数*/
+		return "返回值";
+	} 
+}
+!com_flash.command = @.command = {
+	函数名 = function( args ){
+		__/*在FLASH中可使用fscommand("函数名","参数")调用这里的函数*/ 
+	} 
+}
+end intellisense**/

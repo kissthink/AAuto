@@ -1,0 +1,140 @@
+//adb 安卓设备管理
+//http://developer.android.com/tools/help/adb.html
+
+import process.popen;
+namespace process;
+
+class adb{
+    ctor( param,... ){
+        this = ..process.popen( "~/lib/process/adb/.res/adb.exe",param,... );
+        if( !this ) return;
+        
+        if( param == "shell" && !... ){
+        	this.expect("\N+([\$#]) $",3000);
+        	this.__close__ = this.close;
+        	this.close = function(){
+				if( this.stdIn ){ 
+					this.print('exit');
+					sleep(10);
+					this.__close__();
+				}
+			}
+        } 
+    };
+    
+}
+
+namespace adb{
+	print = ..io.print;
+	push = function(local,remote,...){
+		if(!remote) remote = "/mnt/sdcard/";
+		var adb = ..process.adb("push",..io.fullpath(local),remote,... ) 
+		adb.logResponse( function(all,out,err){ print(all) } ) 
+		adb.close(); 
+	}
+	pull = function(remote,local,...){ 
+		var adb = ..process.adb("pull",remote,..io.fullpath(local),... )
+		
+		adb.logResponse( function(all,out,err){ print(all) } ) 
+		adb.close(); 
+	}
+	install = function(local,...){ 
+		var adb = ..process.adb("install",..io.fullpath(local),... ) 
+		adb.logResponse( function(all,out,err){ print(all) } ) 
+		adb.close(); 
+	}
+	uninstall = function(app,...){ 
+		var adb = ..process.adb("uninstall",app,... ) 
+		adb.logResponse( function(all,out,err){ print(all) } ) 
+		adb.close(); 
+	} 
+	getSerialno = function(){ 
+		var adb = ..process.adb( "get-serialno" )
+		var out  = adb.read(-1);
+		adb.close();
+		if(out) return ..string.trim(out);
+	}
+	getState = function(){ 
+		var adb = ..process.adb( "get-state" )
+		sleep(1000);
+		var out = ..string.concat( adb.peek() );
+		adb.close();
+		if(out) return ..string.trim(out);
+	}
+	devices = function(){ 
+		var adb = ..process.adb( "devices" )
+		var out  = adb.read(-1);
+		adb.close();
+		if(out) return ..string.trim(out);
+	} 
+	waitForDevice = function(remote,local){ 
+		var adb = ..process.adb( "wait-for-device" )
+		var out  = adb.read(-1);
+		adb.close();
+		if(out) return ..string.trim(out);
+	}
+	startServer = function(remote,local){ 
+		var adb = ..process.adb( "start-server" )
+		var out,err = adb.expect("daemon started successfully",3000)
+		adb.close();
+		if( out ) return true,out;
+		if( err ) return false,err;
+		return true;
+	}
+	killServer = function(remote,local){ 
+		var adb = ..process.adb( "kill-server" )
+		adb.waitOne();
+		adb.close(); 
+	}
+}
+
+/**intellisense()
+process.adb = 使用管道调用Putty命令行连接工具adb.exe
+process.adb("-d") = 连接当前接入USB设备
+process.adb("-e") = 连接当前运行的模拟器
+process.adb("-s","串号") = 连接指定设备 
+process.adb("shell" ) = 进入shell命令交互模式\n如果参数@1是"shell"则自动执行expect("\N+(.*?)\N+[\$#] $")函数
+process.adb() = !process_adb.
+!process_adb.read() = 从当前位置，向后读取下一行
+!process_adb.read("%s") = 从当前位置，向后读取下一行\n支持多参数
+!process_adb.read("%d") = 从当前位置，向后读取下一个数值\n支持多参数
+!process_adb.read(-1) = 向后读取到文件尾部\n负数表示从文件尾部倒计数位置\n支持多参数
+!process_adb.readErr(-1) = 读取所有错误输出
+!process_adb.each( 间隔时间,超时时间 ) = @for( all,out,err in ??.each() ){
+    io.stdout.write( out,err );__/*读取进程输出直到进程关闭*/
+}
+!process_adb.logger = 指定logResponse的默认回显对象\n该对象必须有log或write成员函数用于输出回显
+!process_adb.logResponse( = 回显进程的标准输出以及错误输出\n该函数会自动同动获取进程输出,并直到进程结束
+!process_adb.logResponse(.(回显函数) = 回显函数可省略,\n如果不指定参数则尝试调用logger输出进程回显\n如果未指定logger对象则默认回显到控制台
+!process_adb.peek(__) = 检测标准输出管道中可读取的数据长度\n有数据则读取数据,无数据则返回空值\n如果stdErr中有错误信息,则第二个返回值为错误信息\n此函数不会因为等待输入而阻塞\n参数可指定等待目标进程执行的延时时间
+!process_adb.peekTo(.(">",回显函数,超时) = 读取数据,直到数据以参数一指定的字符串结束\n返回标准输出,第二个返回值为错误信息\n可选使用参数@2指定回显函数,回显函数有两个参数,分别为标准输出,错误信息\n可选用参数@3指定无输出时的超时限制\n该函数在进程退出后也会返回
+!process_adb.read(0) = 检测是否读取到文件尾
+!process_adb.read(__) = 正数参数表示从当前位置向后读取n个字节\n支持多参数
+!process_adb.expect("\N+(->*?)\N+([\$#])\s*$") = 等待输入光标,root以后光标提示符为#号,\n如果遇到错误输出返回null以及错误信息,返则返回模式匹配结果\n参数@1:模式表达式\n参数@2: 超时值,默认为不限\n参数@3: 文本最大长度,默认为1024
+!process_adb.print("__") = 清空标准输出然后写数据\n多个参数中间添加空格,尾部添加换行
+!process_adb.printf("__") = 清空标准输出然后写数据\n调用string.format函数格式化全部参数,尾部添加换行
+!process_adb.write(__) = 写数据，支持一个或多个参数
+!process_adb.write(__, ) = 写数据，支持一个或多个参数
+!process_adb.waitOne() = 等待进程关闭,不阻塞UI消息循环,可选使用一个毫秒值参数设定超时\n超时或失败返回 null,进程已退出则返回值1为true,返回值2为标准输出,返回值3为错误输出
+!process_adb.wait() = 等待进程关闭,可选使用一个毫秒值参数设定超时\n超时或失败返回 null,进程已退出则返回值1为true,返回值2为标准输出,返回值3为错误输出
+!process_adb.close() = 释放对象
+!process_adb.process = !process.
+!process_adb.stdErr = !file.
+!process_adb.stdOut = !file.
+!process_adb.stdIn = !file.
+end intellisense**/
+
+/**intellisense(process.adb)
+print = 设置执行push,pull,install,uninstall等命令的回显函数\n默认为io.print
+push(.("本地路径","/mnt/sdcard/",->->->) = 上传文件到手机,\n如果提示Permission Denied无权限,\n建议请打开手机USB调试模式,尝试root修改目录权限
+pull(.("/mnt/sdcard/my.txt","本地路径",->->->) = 自手机下载文件,\n如果提示Permission Denied无权限,\n建议请打开手机USB调试模式,尝试root修改目录权限
+install(.("apk文件路径",->->->) = 安装应用到手机
+uninstall(.("应用名") = 卸载应用
+uninstall(.("应用名","-k") = 卸载应用,但保留配置和缓存
+getSerialno() = 返回设备串号
+getState() = 返回设备状态,device为连接成功
+waitForDevice() = 等待设备连接
+startServer() = 启动adb服务端,成功返回true\n如果服务端已启动返回\n服务端为驻留进程用于接收命令并向手机转发指令\n而adb客户端进程在向服务端发送完指令后退出
+killServer() = 停止adb服务端,无返回值\n服务端为驻留进程用于接收命令并向手机转发指令\n而adb客户端进程在向服务端发送完指令后退出
+end intellisense**/
+

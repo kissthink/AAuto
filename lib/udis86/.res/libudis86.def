@@ -1,0 +1,28 @@
+EXPORTS
+
+ud_init @1
+ud_set_mode @2
+ud_set_pc @3
+ud_set_input_hook @4
+ud_set_input_buffer @5
+ud_set_input_file @6
+ud_set_vendor @7
+ud_set_syntax @8
+ud_translate_intel @9
+ud_input_skip @10
+ud_input_end @11
+ud_decode @12
+ud_disassemble @13
+ud_translate_att @14
+ud_insn_asm @15
+ud_insn_ptr @16
+ud_insn_off @17
+ud_insn_hex @18
+ud_insn_len @19
+ud_insn_opr @20
+ud_opr_is_sreg @21
+ud_lookup_mnemonic @22
+ud_set_user_opaque_data @23
+ud_get_user_opaque_data @24
+ud_set_asm_buffer @25
+ud_set_sym_resolver @26

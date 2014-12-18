@@ -1,0 +1,27 @@
+//IDE初始化触发器
+//下面的代码在快手开发环境初始完成以后触发
+  
+sleep(3000);
+//ide.showDesktopAlert("每日提示");
+
+import ide;
+import web.rest.jsonClient;
+import thread.command; 
+
+var http = web.rest.jsonClient();
+var versionInfo = http.get("http://update.aau.cn/v3/version.txt"); 
+if( ! versionInfo ) return;
+sleep(100);
+
+if(  ( ide.getConfig("version") != versionInfo.version )  && ( ide.getConfig("ignore_update") != versionInfo.version) ){  
+	ide.startpage();  
+	sleep(100);
+	
+	import thread.event;
+	var event = thread.event("{5D345FB2-C8CC-4EA6-B762-FCB2A40CE799}.update.startpage") 
+	if( !event.conflict ){
+		event.waitOne();
+	}
+
+	thread.command.post("AAutoQuickerUpdated",versionInfo.version );
+}

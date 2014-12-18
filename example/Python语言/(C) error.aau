@@ -1,0 +1,100 @@
+//C) 异常处理
+
+import console;
+console.open();
+
+import py; 
+
+pyCode = /***
+  
+#类似AAuto中的 try catch 语句
+try: 
+    f = open("file.txt","r") 
+except IOError, e: #python对异常类型限制相对严谨,在aauto中抛出异常并不限制类型
+    print e
+else: # python有一个强大的地方，几乎所有语句后面都能来个else
+    print "其他异常" 
+finally: #AAuto里没有这个
+    print "有没有异常这里都会执行"
+        
+class MyException(Exception):
+    '''这是一个自定义的异常,结承自Exception.'''
+    def __init__(self,message,x):
+        Exception.__init__(self,message)
+        self.x = x #可以自定义一些异常属性
+
+#这个是引发异常,类似AAuto中的 error 函数
+raise MyException( "Unrecoverable error", 123 )
+
+"""
+--------------------------------------------------
+python中常见的一些异常：
+
+SyntaxError	语法错误
+RuntimeError 运行时错误
+NameError 尝试访问一个没有申明的变量
+ValueError	传给函数的参数类型不正确，比如给int()函数传入字符串形
+AttributeError	尝试访问未知的对象属性
+KeyError 请求一个不存在的字典关键字，可以看到python中字典的键(key)与对象的属性(attribute)是区别对待的,AAuto是不区分的
+IndexError 索引超出序列范围
+ZeroDivisionError 除数为0
+IOError	输入输出错误（比如你要读的文件不存在）
+--------------------------------------------------
+"""	
+
+
+***/
+py.exec( pyCode ) //运行python代码
+
+ 
+//下面是类似的AAuto代码
+//=========================================================
+
+try{
+	f = io.open("/不存在的文件.txt");
+}
+catch( e ){ 
+	/* 
+	python对异常类型限制相对严格，在aauto中抛出异常并不限制类型,一般这里会是一个字符串类型的错误信息，
+	所以在python中try语句到处都是，而在aauto中相对较少依赖运行时的异常编码（ 标准库也不会轻易的抛出异常 ），
+	
+	*/
+	
+	io.print( e )
+}
+error("Unrecoverable error!")
+
+/*
+
+例如打开文件，找不到文件python会抛出 IOError 异常，
+而在AAuto中通常不依赖 try 语句，示例：
+
+var file,err = io.open("/文件不存在","r+b")
+if( !file ){
+	io.print("无法打开文件");
+	return;
+}
+
+一般在 AAuto 中一个函数失败惯例多会返回两个返回值，即 null,错误信息。
+错误信息通常用于设计时排除错误，程序的逻辑不应当依赖错误信息的具体内容。
+
+而python是非常喜欢抛出异常的，打开文件有可能会异常,read可能会异常，seek移动指针过了也会异常，
+但是在aauto中失败一率只会简单的返回 null,下面是哈希工具中的一段代码：
+
+while( 
+	var readSize;
+	readSize = file.readBuffer(buffer); //读文件
+	readSize
+) {
+	md5.hashBuffer(buffer,readSize);
+	sha1.hashBuffer(buffer,readSize); 
+	crc32 = string.crc32(buffer,crc32,readSize);
+	
+	win.peekPumpMessage();
+	winform.progress.stepIt();
+}  
+file.close();
+
+很简单，读完了readSize为null, AAuto不关心火星撞地球的机率你的硬盘可能坏了。
+即使你到处写满 try 语句，可是还是可能意外断电你写什么也没有用，所以请记住: AAuto追求极简而不追求完美。
+*/

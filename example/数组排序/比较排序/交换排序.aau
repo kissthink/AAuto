@@ -1,0 +1,104 @@
+io.open();//打开控制台
+
+/*
+ *-------------------------------------------------------
+ * 冒泡排序 
+ *-------------------------------------------------------
+ */
+
+//冒泡排序实现简单，代码较少，是较常用交换类排序
+bubble_sort = function(array){
+    var temp;
+	for( i=1;#array ){
+	    //i前面的已经是最小的数，并排序好了
+   		for(j=#array;i+1;-1){
+   		    //挨个比较
+    		if(array[j]<array[j-1]){
+    		    //小的总是往前排 
+    			bubble = array[j]
+    			array[j] = array[j-1];
+    			array[j-1] = bubble;
+    		}
+   		}  
+	}
+    
+}
+
+io.print("----------------")
+io.print("冒泡排序( 交换类换排序 )")
+io.print("----------------")
+
+array ={2;46;5;17;1;2;3;99;12;56;66;21};
+bubble_sort(array,1,#array)
+
+//输出结果
+for(i=1;#array;1){
+	io.print( array[i] )
+}
+
+/*
+ *-------------------------------------------------------
+ * 快速排序 
+ *-------------------------------------------------------
+ */
+
+io.print("----------------")
+io.print("快速排序( 交换类排序 基于分治法 )")
+io.print("----------------")
+
+parttion = function(array,from,to){ 
+	//选定主元(pivot element)
+	var x = array[to];
+	
+	var left = from-1;
+	for(j=from;to-1){
+	
+		//如果比主元小 
+		if(array[j]<=x){
+			//互换，小的去左边
+			left++; 
+			var lt = array[j]; 
+			array[j] = array[left];
+			array[left] = lt; 
+		}
+	
+	}
+	
+	//主元移中间
+	var pivot = left+1;
+	var temp = array[pivot];
+	array[pivot] = array[to];
+	array[to] = temp
+	
+	return pivot;
+}
+
+
+//快速排序的随机版本
+rand_parttion = function(array,from,to){
+	var pivot = math.random(from,to);
+	var temp = array[pivot];
+	array[pivot] = array[to];
+	array[to] = temp
+	return parttion(array,from,to)
+} 
+
+quick_sort = function(array,from,to){
+	if(from<to){
+			//小的站pivot左边，大的站pivot右边
+			var pivot = rand_parttion(array,from,to)
+			quick_sort(array,from,pivot-1);
+			quick_sort(array,pivot+1,to); 
+	}
+
+}
+
+array ={2;46;5;17;1;2;3;99;12;56;66;21};
+quick_sort(array,1,#array)
+
+//输出结果
+for(i=1;#array;1){
+	io.print( array[i] )
+}
+ 
+ 

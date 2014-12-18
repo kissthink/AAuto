@@ -1,0 +1,81 @@
+//zone 时区转换
+namespace time.zone;
+
+class TIME_ZONE_INFORMATION {
+  int bias;
+  BYTE standardName[64];
+  struct standardDate = ..time();
+  int standardBias;
+  BYTE daylightName[64];
+  struct daylightDate = ..time();
+  int daylightBias;
+} 
+ 
+GetTimeZoneInformation = ::Kernel32.api( "GetTimeZoneInformation", "INT(struct &zoneInfo)");
+SetTimeZoneInformation= ::Kernel32.api("SetTimeZoneInformation","bool( strcut lpTimeZoneInformation)");
+SystemTimeToTzSpecificLocalTime = ::Kernel32.api( "SystemTimeToTzSpecificLocalTime", "bool(struct timeZone,struct tmFrom,struct &tmLocal)");
+TzSpecificLocalTimeToSystemTime = ::Kernel32.api( "TzSpecificLocalTimeToSystemTime", "bool(struct timeZone,struct tmLocal,struct &tmFrom)");
+  
+getInfo = function(bias){
+	var zoneInfo = TIME_ZONE_INFORMATION()
+	if( bias ){ 
+		zoneInfo.bias = bias;
+		return zoneInfo;
+	}
+	
+	var zoneId = GetTimeZoneInformation(zoneInfo)
+	zoneInfo.standardName = ..string.fromUnicode(zoneInfo.standardName);
+	zoneInfo.daylightName = ..string.fromUnicode(zoneInfo.daylightName);
+	return zoneInfo,zoneId;
+}
+
+setInfo = function( info ){
+	info = ..table.mixin( getInfo(),info); 
+	info.standardName = ..string.toUnicode(info.standardName); 
+	info.daylightName = ..string.toUnicode(info.daylightName); 
+	setprivilege('SeSystemtimePrivilege',true)
+	setprivilege('SeTimeZonePrivilege',true)
+	var ret = SetTimeZoneInformation( info )
+	setprivilege('SeSystemtimePrivilege',false)
+	setprivilege('SeTimeZonePrivilege',false)
+	return ret;
+} 
+
+toLocal = function(tmFrom,bias){
+	if( ! ..time.istime(tmFrom) ) 
+		error("参数错误",2)
+	
+	var tmResult = ..time(); 
+	if( SystemTimeToTzSpecificLocalTime(getInfo(bias),tmFrom,tmResult) )
+		return tmResult;
+}
+
+toUtc = function(tmFrom,bias){
+	if( ! ..time.istime(tmFrom) ) 
+		error("参数错误",2)
+	
+	var tmResult = ..time(,"!%c");
+	if( TzSpecificLocalTimeToSystemTime(getInfo(bias),tmFrom,tmResult) )
+		return tmResult;
+}
+
+
+/**intellisense(time.zone)
+getInfo() = 返回当前时区信息\n!time_zone_info.
+toLocal(.(时间对象,时差) = 参数一为time对象,\n时差以分钟为单位,默认取当前时区时差
+toUtc(.(时间对象,时差) = 参数一为time对象,\n时差以分钟为单位,默认取当前时区时差
+toLocal() = !time.
+toUtc() = !time.
+setInfo(zoneInfo) = @.setInfo( bias = -480 )
+end intellisense**/
+
+/**intellisense(!time_zone_info.)
+bias = 时差
+standardName = 时区名
+standardDate = 当前时间\n!time.
+standardBias = 标准时差
+daylightName = 夏令时区名
+daylightDate = 夏令时\n!time.
+daylightBias = 夏令时差
+end intellisense**/
+

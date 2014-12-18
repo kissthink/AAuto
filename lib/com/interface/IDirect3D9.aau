@@ -1,0 +1,93 @@
+import com.interface; 
+namespace com.interface;
+
+class IDirect3D9{
+
+	ctor () {
+		this = ..com.interface.IUnknown();
+	};
+	pointer RegisterSoftwareDevice = "int(pointer pInitializeFunction)";
+	pointer GetAdapterCount = "INT()";
+	pointer GetAdapterIdentifier__ = "int(INT adapter,INT flags,struct &pIdentifier)";
+	pointer GetAdapterModeCount = "INT(INT adapter,int format)";
+	pointer EnumAdapterModes = "int(INT adapter,int format,int mode,struct& pMode)";
+	pointer GetAdapterDisplayMode = "int(INT adapter,struct& pMode )";
+	pointer CheckDeviceType = "int(INT adapter,int DevType,INT adapterFormat,int BackBufferFormat,BOOL bWindowed)";
+	pointer CheckDeviceFormat = "int(INT adapter,int DeviceType,INT adapterFormat,INT Usage,int RType,int CheckFormat)";
+	pointer CheckDeviceMultiSampleType = "int(INT adapter,int DeviceType,int SurfaceFormat,bool Windowed,int MultiSampleType,INT& pQualityLevels)";
+	pointer CheckDepthStencilMatch = "int(INT adapter,int DeviceType,INT adapterFormat,int RenderTargetFormat,int DepthStencilForma)";
+	pointer CheckDeviceFormatConversion = "int(INT adapter,int DeviceType,int SourceFormat,int TargetForma)";
+	pointer GetDeviceCaps = "int(INT adapter,int DeviceType,struct &pCaps)";
+	pointer GetAdapterMonitor = "pointer(INT adapter)";
+	pointer CreateDevice = "int(INT adapter,INT DeviceType,int hFocusWindow,INT BehaviorFlags,struct& pPresentationParameters,pointer& ppReturnedDeviceInterface)";  
+
+	GetAdapterIdentifier = function(adapter,flags){
+		var info = D3DADAPTER_IDENTIFIER9();
+		if( this.GetAdapterIdentifier__(adapter,flags,info) >=0/*_SUCCEEDED*/ ){
+			return info;
+		}
+	}
+}
+
+namespace IDirect3D9{
+	IID = "{81BDCBCA-64D4-426d-AE8D-AD0147F4275C}";
+	
+	class D3DADAPTER_IDENTIFIER9{
+    	byte Driver[512];
+    	byte Description[512];
+    	byte DeviceName[32]; 
+    	struct DriverVersion= {
+    		INT HighPart;
+    		int LowPart;
+    	}
+    	INT VendorId;
+    	INT DeviceId;
+    	INT SubSysId;
+    	INT Revision; 
+    	struct DeviceIdentifier = ..win.guid(); 
+    	INT WHQLLevel; 
+	} ;   	
+}
+
+try {
+
+	::D3d9 := ..raw.loadDll("d3d9.dll");
+	::Direct3DCreate9 := D3d9.api("Direct3DCreate9","pointer(INT SDKVersion)"); 
+	
+	IDirect3D9.Create = function( version = 32/*_D3D_SDK_VERSION*/ ){
+		var pD3d = Direct3DCreate9(version/*_D3D_SDK_VERSION*/); 
+		if(pD3d) {
+			var d3d = ..com.interface(pD3d,IDirect3D9);
+			..com.Release( pD3d );
+			return d3d;
+		}
+	}
+}
+catch(e){
+	IDirect3D9.Create = function(){
+		
+	} 
+}
+
+/**intellisense()
+com.interface.IDirect3D9 = IDirect3D9
+com.interface.IDirect3D9.Create(32) = 创建接口,参数指定版本号
+!IDirect3D9.AddRef() = 引用计数加一,返回引用计数
+!IDirect3D9.Release() = 引用计数减一,返回引用计数
+!IDirect3D9.QueryInterface(__/*接口数*/) = 参数是接口类,参考com.interface.IUnknown源码
+!IDirect3D9.GetAdapterCount() =  得到显卡数量
+!IDirect3D9.GetAdapterIdentifier(.(adapter,flags) =  返回显卡信息
+!IDirect3D9.GetAdapterIdentifier() = !D3DADAPTER_IDENTIFIER9.
+!D3DADAPTER_IDENTIFIER9.Driver = Driver
+!D3DADAPTER_IDENTIFIER9.Description = Description
+!D3DADAPTER_IDENTIFIER9.DeviceName = DeviceName
+!D3DADAPTER_IDENTIFIER9.DriverVersion = DriverVersion
+!D3DADAPTER_IDENTIFIER9.DriverVersion.HighPart = HighPart
+!D3DADAPTER_IDENTIFIER9.DriverVersion.LowPart = LowPart
+!D3DADAPTER_IDENTIFIER9.VendorId = VendorId
+!D3DADAPTER_IDENTIFIER9.DeviceId = DeviceId
+!D3DADAPTER_IDENTIFIER9.SubSysId = SubSysId
+!D3DADAPTER_IDENTIFIER9.Revision = Revision
+com.interface.IDirect3D9.Create() = !IDirect3D9.
+    		int LowPart;
+end intellisense**/

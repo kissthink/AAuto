@@ -1,0 +1,32 @@
+//多线程管理器
+import thread.manage
+
+//创建线程管理器
+manage = thread.manage(3)
+
+io.open()
+func = function(name){
+	import win;
+	for(i=1;10;1){ 
+		io.print( thread.getId(),name )
+		if(!win.delay(1000) ){
+			io.print("收到退出指令")
+			return;
+		}
+	} 
+	return 67;
+}
+
+
+manage.create(func,"线程1").onEnd = function(...){
+	io.print("线程1的回调",...)
+} 
+ 
+manage.createLite(func,"线程2").onEnd = function(...){
+	io.print("线程2的回调",...)
+}
+
+manage.create(func,"线程3")
+
+manage.waitClose()
+io.print("全部退出")

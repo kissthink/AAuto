@@ -1,0 +1,70 @@
+//conn 网卡连接
+import inet;
+namespace inet.conn;
+ 
+
+INTERNET_PER_CONN_OPTION := class {
+    INT   dwOption; 
+    union value = {
+        INT    dwValue;
+        string   pszValue;
+       struct ftValue =::FILETIME() 
+    }
+} 
+ 
+INTERNET_PER_CONN_OPTION_LIST := class {
+    INT   dwSize;
+    string  pszConnection;
+    INT   dwOptionCount;
+    INT   dwOptionError; 
+    pointer  pOptions;
+} 
+
+//设置代理 eg "210.78.22.87:8000"
+setProxy = function(str_conn_name="",proxy_full_addr,proxyBypass="localhost"){ 
+    list = INTERNET_PER_CONN_OPTION_LIST();
+    list.dwSize = ..raw.sizeof( list )  
+	list.tOptions =..raw.toarray( 
+		{ 
+			INTERNET_PER_CONN_OPTION() ; 
+			INTERNET_PER_CONN_OPTION() ; 
+			INTERNET_PER_CONN_OPTION(); 
+		} 
+	) 
+ 
+    list.pszConnection = str_conn_name;  
+    if( #proxy_full_addr){
+    	list.dwOptionCount = 3; 
+    	list.tOptions.array[1].value.dwValue = 0x2/*_PROXY_TYPE_PROXY*/;
+    }
+	else {
+		list.dwOptionCount = 1;
+		list.tOptions.array[1].value.dwValue = 0x1/*_PROXY_TYPE_DIRECT*/  ;
+	} 
+    list.tOptions.array[1].dwOption = 0x1/*_INTERNET_PER_CONN_FLAGS*/; 
+
+    // Set proxy name.
+    list.tOptions.array[2].dwOption = 0x2/*_INTERNET_PER_CONN_PROXY_SERVER*/;
+    list.tOptions.array[2].value.pszValue = proxy_full_addr;//"http://proxy:80";
+
+    // Set proxy override.
+    list.tOptions.array[3].dwOption = 0x3/*_INTERNET_PER_CONN_PROXY_BYPASS*/;
+    list.tOptions.array[3].value.pszValue = proxyBypass;
+     
+	//转换为指针
+	list.pOptions = ..raw.malloc( list.tOptions  ) 
+
+    // Set the options on the connection.
+    var  bReturn = ::InternetSetOption( ,0x4B/*_INTERNET_OPTION_PER_CONNECTION_OPTION*/,list,..raw.sizeof(list) );
+ 
+    ::InternetSetOptionPtr( , 39/*_INTERNET_OPTION_SETTINGS_CHANGED*/,null , 0);
+    ::InternetSetOptionPtr( , 0x25/*_INTERNET_OPTION_REFRESH*/ , null, 0);
+    return bReturn; 
+ };
+ 
+ /**intellisense(inet.conn)
+setProxy() = 默认连接不使用代理
+setProxy("连接名") = 指定连接不使用代理
+setProxy( ,"HTTP://主机地址:端口号") = 为默认连接设置代理
+setProxy("连接名","HTTP://主机地址:端口号" ) = 为指定连接设置代理
+end intellisense**/

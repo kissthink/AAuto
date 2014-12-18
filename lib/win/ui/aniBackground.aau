@@ -1,0 +1,58 @@
+namespace win.ui;
+class aniBackground{
+
+	ctor( ctrl ){
+		this.bmps = {};
+		var bmpIndex = 1; 
+		..table.add_gc(this,"")
+	}
+	
+	add = function(path,delay){ 
+	    var ipic  = path ? ..com.picture.load(path) ;
+	    if( !ipic) error("加载图片失败",2)
+	 
+		..table.push( this.bmps,{ ipic.CopyHandle() ; delay });
+		..com.Release(ipic)
+		return this;
+	}
+	
+	next = function(){
+		bmpIndex = (bmpIndex+1) % #this.bmps;
+		var bmp = this.bmps[bmpIndex +1];
+		return bmp[1],bmp[2];
+	} 
+	
+	clear = function(){
+		if( this.bmps ) {
+			for(i=1;#this.bmps ){
+				::DeleteObject( this.bmps[i][1] ) 
+			} 
+			this.bmps = null;
+		}
+	} 
+	
+	animate = function( ){ 
+		var bmp,delay = this.next(); 
+		ctrl.setBitmap( bmp,false/*禁止销毁位图*/);
+		ctrl.redraw();
+		
+		ctrl.addtimer( 
+ 			delay,function(){  
+ 				var bmp,delay = this.next(); 
+				ctrl.setBitmap( bmp ,false/*禁止销毁位图*/) ;  
+	    		ctrl.redraw();
+	    		return delay;
+ 			} 
+ 		) 
+	} 
+}
+
+/**intellisense()
+win.ui.aniBackground = 动画背景\n建议窗体属性中开启双缓冲优化、以避免闪烁 
+win.ui.aniBackground() =  !ui_aniBackground.
+!ui_aniBackground.next() = 返回下一帧位图句柄,以及延时
+!ui_aniBackground.clear() = 释放所有加载的图像
+!ui_aniBackground.add(  = 添加动画帧
+!ui_aniBackground.add(.("图像",延时) = 图像格式支持bmp,jpg,gif等
+!ui_aniBackground.animate() = go
+end intellisense**/

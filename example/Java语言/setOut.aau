@@ -1,0 +1,53 @@
+//重定向Java标准输出
+
+/*
+在进程中首次创建Java虚拟机以前打开控制台,
+java标准输出默认就能在控制台显示信息了
+*/
+io.open(); 
+
+import java;
+/**
+创建Java虚拟机,可添加任意个命令行参数,支持的参数如下：
+
+-verbose[:class|gc|jni] 控制台显示类加载等调试信息
+-D<name>=<value> 设置系统变量 默认会自动设置 java.class.path
+**/
+var jvm = java( "-verbose:class" ); 
+
+javaReopen = function(funcName,filename){
+
+	//创建Java对象
+	var outstream = jvm.newJavaObject( 
+		"java.io.FileOutputStream",//类名
+		"void(string)",//函数签名
+		..io.fullpath(filename)
+		); 
+	
+	//创建Java对象	
+	var printstream = jvm.newJavaObject( 
+		"java.io.PrintStream",//类名
+		"void(java.io.OutputStream)",//函数签名
+		outstream
+		); 	 
+	
+	//获取Java类静态函数
+	var setOut = jvm.getStaticClassMethod(  
+		"java.lang.System", //类名
+		funcName, //函数名 
+		"void(java.io.PrintStream)"//函数签名语法与声明API相同,不同的是可以使用[]表示数组参数
+	);	
+	setOut(printstream);
+}  
+	
+javaReopen("setOut","/java_stdout.txt")
+javaReopen("setErr","/java_stdout.txt")
+
+io.open()
+io.print("Java标准输出已重定向到/java_stdout.txt")
+
+javaReopen("setOut","conout$") 
+javaReopen("setErr","conerr$") 
+io.print('Java标准输出已重定向到控制台\r\n')
+io.print("如果在首次创建虚拟机以后打开控制台,
+需要用上面的代码重定向java标准输出才能看到虚拟机打印的信息")

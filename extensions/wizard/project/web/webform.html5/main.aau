@@ -1,0 +1,20 @@
+import config; 
+import observer;
+import win.ui;
+/*DSG{{*/
+mainForm = ..win.form( bottom=488;right=589;text="AAuto工程77";mode="popup" )
+mainForm.add(  )
+/*}}*/
+
+import web.form;
+mainWb = web.form( mainForm 
+	,0x4/*_UIFLAG_NO3DBORDER*/,,,true/*securityTrusted*/ ); 
+
+//导入控制器
+import controller; 
+controller.bind( mainWb );
+
+mainWb.go("/view/main.html"); 
+
+mainForm.show() 
+win.loopMessage(); 

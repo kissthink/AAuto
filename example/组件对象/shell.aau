@@ -1,0 +1,10 @@
+import com //导入com支持
+
+shell = com.CreateObject("Shell.Application");
+ 
+shell.CascadeWindows() //层叠窗口
+shell.TileHorizontally(); //横向平铺窗口
+shell.TileVertically(); //纵向平铺窗口
+shell.MinimizeAll(); //最小化所有窗口
+shell.UndoMinimizeALL(); //撤消全部最小化
+

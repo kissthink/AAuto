@@ -1,0 +1,58 @@
+//6) 数组
+import console;
+console.open();
+
+import py; 
+pyCode = /***
+
+#声明数组的语句类似js
+list =[1,2,34,56] #等价于AAuto中的 list = {1;2;34;56 }
+print list[0]; #注意 python中数组索引自0开始,而AAuto中是自1开始
+
+print "数组长度",len(list) #AAuto中取数组长度用#操作符,例如 #list
+ 
+#循环遍历列表
+for i in list:
+    print( i ) 
+    
+#类似AAuto中的计数循环 for(i=i:10){ }
+for i in range(1,10):
+	print(i)
+	
+#上面的代码等价于下面的代码
+for i in [1,2,3,4,5,6,7,8,9,10]:
+    print(i)
+
+#range()函数根据起始值，终止值及步进值三个参数在内存中建立一个列表，
+#当需要一个很大的列表时,这个既占内存又费时间。为了克服它的缺点,Python提供了xrange()函数
+for i in xrange(1,10): #在python3.0中,xrange改名为range，原来的range不是原来的range了
+	print(i)
+	
+	
+#python支持很有意思的切片语法（AAuto不支持)
+#在索引操作符中冒号之前表示切片开始(包含该位置,省略表示数组开始,负数表示自尾部倒计数)，
+#冒号之后表示切片结束(不包含该位置,省略表示数组结束,负数表示自尾部倒计数)。
+#也可以再添加一个冒号用第三个数表示切片间隔数。 
+print list[2:4]
+***/
+py.exec( pyCode ) //运行python代码
+
+//下面是类似的AAuto代码
+//=========================================================
+
+list = {1;2;34;56 } //任何时候用分号分隔数组成员,不能使用逗号
+
+//顺序遍历数组成员,#list取数组长度
+for(i=1;#list;1){
+	io.print( i,list[i] )
+}
+
+//用table.slice函数切片,区别是包含结束位置,相同的是也可以支持负索引
+console.dump( table.slice(list,3,4) )
+ 
+/*
+python的数组直接支持负索引，例如 list[-1] 就是最后一个元素,
+但 aauto 里数组还支持稀疏数组，也就是数组可以真的包含索引为-1的元素，所以不能在aauto里这样用。
+
+但是大多操作数组的函数都支持负索引，例如 table.slice() 等
+*/

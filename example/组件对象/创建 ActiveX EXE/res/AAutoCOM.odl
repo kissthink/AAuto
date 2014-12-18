@@ -1,0 +1,34 @@
+
+[
+uuid(84DF165D-F254-4A88-9D32-445B69DB340F),
+version(1.0)
+]
+library TestAAutoLibrary {
+
+	importlib("stdole32.tlb");
+
+	[ uuid(74BA2C4A-5F07-44FA-A1B8-9D62236E6C3A) ]
+	dispinterface ITestAAuto {
+	
+		properties: // Ù–‘
+		
+		methods: //∑Ω∑®
+			
+			[ id(1) ]
+			BSTR AAuto( [in] BSTR code );
+			
+			[ id(2) ]
+			int Add( [in] int a, [in] int b );
+			
+			[ id(3) ]
+			void Quit( void );
+	
+	};
+	
+	[ uuid(407554F3-F03A-40B7-9226-59312BD7D35D) ]
+	coclass Test {
+		[default] dispinterface ITestAAuto;
+	};
+
+};
+

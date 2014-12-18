@@ -1,0 +1,11 @@
+import console;
+ 
+console.open()
+console.setTitle("${PRJECTNAME}")
+console.log("请输入一行文本，然后回车")
+
+var str = console.getText();
+console.log("您输入的是" ,str );
+ 
+console.pause(); 
+console.close();

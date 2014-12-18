@@ -1,0 +1,28 @@
+namespace test;
+
+class control{
+
+ 	//控件至少要实现以下接口
+	InitialSize = function(){
+		return 500,600
+	}
+	
+	CreateWindow = function(){ 
+		var winform = win.form( text="test.control";right=349;bottom=249;border="none";exmode="none";mode="child" ) 
+		this.winform = winfrom;
+		return winform.hwnd;
+	}
+	
+	SetExtent = function(){
+		return true;
+	}
+	
+	GetClass = function(){
+		return "{687362C8-00D6-4eff-9207-DDB22EE23A6D}"
+	}
+	
+	DestroyWindow = function(){
+		 this.winform.close();
+	}
+	
+} 

@@ -1,0 +1,109 @@
+import fsys;
+namespace sevenZip
+
+class decoder{
+	ctor( path,savePath ){
+		path =  ..io.exist(path,4);
+		if( !path ){
+			return null,"压缩文件路径错误";
+		}
+		
+		savePath = savePath ? ..fsys.createDir(savePath);
+		if( !savePath ){
+			return null,"解压缩路径错误";
+		}
+		
+		
+		var ret,pfile,numfiles = open_zip(path,,0);
+		if( ret != 0 ){
+			return null,"打开压缩文件失败";
+		}
+		
+		..table.add_gc(this,"close");
+	};
+	count = function(){
+		return numfiles;
+	}
+	getFileName = function(index){
+		var ret,pname,isDir = zip_file_get_file_name(pfile,index);
+		if( ret != 0 ) return;
+		return fromUnicode(pname,,true),isDir;
+	}
+	getFileInfo = function(index){
+		var ret,itemInfo = zip_file_get_file_item(pfile,index,CSzFileItem() );
+		if( ret || (!pname) ) return itemInfo;
+	} 
+	extractFile = function(index,outPath){
+		
+		if(!outPath){
+			var ret,pname,isDir = zip_file_get_file_name(pfile,index);
+			if( ret || (!pname) ) return;
+		 	
+			outPath = fromUnicode(pname,,true);
+			outPath = joinpath(savePath,outPath);
+			
+			if( isDir ){
+				createDir( outPath ); 
+				return true,outPath,true;
+			}
+		}
+		
+		createParentDir(outPath)
+		ret = zip_file_extract(pfile,index,toUnicode(outPath) );
+		if( ret == 0 ) return true,outPath,false;
+	};
+	close = function(){
+		if(pfile){
+			close_zip(pfile);
+			pfile = null;
+		}
+	} 
+}
+
+namespace decoder{
+	_dll = ..raw.loadDll( $"~/lib/sevenZip/decoder/.res/7z.dll","sevenZip.decoder.7z.dll")
+	open_zip = _dll.api("open_zip","int(string path,pointer &zipfile,INT &numfiles)" ,"cdecl") 
+	close_zip = _dll.api("close_zip","void(POINTER zipfile)" ,"cdecl")
+	
+	zip_file_get_file_name = _dll.api("zip_file_get_file_name","int(POINTER zipfile,INT index,pointer &wFilename,bool &isDir)" ,"cdecl")
+	zip_file_get_file_item = _dll.api("zip_file_get_file_item","int(POINTER zipfile,INT index,struct &fileitem)" ,"cdecl")
+	zip_file_extract = _dll.api("zip_file_extract","int(POINTER zipfile,int index,string wOutPath)" ,"cdecl")
+ 	
+ 	class CSzFileItem {
+		struct MTime = ::FILETIME();
+		LONG Size;
+		INT Crc;
+		INT Attrib;
+		BYTE HasStream;
+		BYTE IsDir;
+		BYTE IsAnti;
+		BYTE CrcDefined;
+		BYTE MTimeDefined;
+		BYTE AttribDefined;
+	};
+	
+	createDir = ..fsys.createDir;
+	createParentDir = ..fsys.createParentDir;
+	joinpath = ..fsys.joinpath;
+	toUnicode = ..string.toUnicode;
+	fromUnicode = ..string.fromUnicode;
+}
+
+/**intellisense()
+sevenZip.decoder(.("7z文件路径") = 打开压缩文件
+sevenZip.decoder() = !sevenZip_decoder.
+!sevenZip_decoder.close() = 关闭
+!sevenZip_decoder.count() = 返回文件索引总数
+!sevenZip_decoder.getFileName(1) = 返回指定索引的文件名,是否目录\m起始索引为1
+!sevenZip_decoder.getFileInfo(1) = 返回指定索引文件信息,起始索引为1,
+!sevenZip_decoder.extractFile(1) = 解压指定索引文件,起始索引为1,可选使用参数2指定输出绝对路径\n返回三个值:是否成功,解压路径,是否目录
+!sevenZip_decoder.getFileInfo() = !sevenZip_decoder_item.
+!sevenZip_decoder_item.MTime = 文件时间 
+!sevenZip_decoder_item.Size = 文件大小
+!sevenZip_decoder_item.Crc = 文件CRC
+!sevenZip_decoder_item.Attrib = 文件属性
+!sevenZip_decoder_item.IsAnti = IsAnti
+!sevenZip_decoder_item.CrcDefined = CrcDefined
+!sevenZip_decoder_item.MTimeDefined = MTimeDefined
+!sevenZip_decoder_item.AttribDefined = AttribDefined
+end intellisense**/

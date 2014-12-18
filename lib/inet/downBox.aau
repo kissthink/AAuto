@@ -1,0 +1,147 @@
+//downBox 下载对话框
+namespace inet; 
+
+class  downBox{
+	ctor(...){
+/*DSG{{*/
+this = ..win.form(text="正在下载.....";right=504;bottom=100;max=false;mode="popup";parent=...)
+this.add(
+labInfo={cls="static";text="下载进度:";left=32;top=60;right=476;bottom=94;transparent=1;z=3};
+labProgress={cls="static";text="文件大小: 0KB";left=32;top=15;right=476;bottom=36;transparent=1;z=1};
+progress={cls="progress";left=32;top=36;right=474;bottom=56;edge=1;hide=1;max=100;min=0;z=2}
+)
+/*}}*/
+
+		this.parent,this.text,this.closeTimeout = ...
+		if( this.closeTimeout ? type( this.closeTimeout ) != type.number ) this.closeTimeout = 1000;
+	}  
+	test = function(url,path,cfg ){
+		if( !type(url) == type.string ) return null;
+		if( !type(path) == type.string ) return null;
+		
+		..fsys.createParentDir(path);
+		var remoteFile = ..inet.httpFile(url,path,cfg );
+		var ok = remoteFile.test();
+		this.statusCode = remoteFile.statusCode; 
+		this.contentLength = remoteFile.contentLength;
+		this.modified = remoteFile.modified;
+		return ok;
+	}
+	download = function(url,path,cfg ){ 
+	
+		this.onInitDialog = function(hwnd,message,wParam,lParam) { 
+			this.show(); 
+			if( !path ){
+				this.labProgress.text = "存储路径不能为空"
+				return;
+			}
+			
+			var remoteFile = inet.httpFile(url,path,cfg ) 
+			if( !remoteFile ){
+				this.labProgress.text = "存储路径错误"
+				return;
+			}
+			
+			remoteFile.onReceiveBegin = function(statusCode,contentLength,fileSize){
+ 			 
+				if(contentLength){
+					contentLength = contentLength + fileSize;
+					this.labProgress.text = "文件大小: " + fsys.formatSize(contentLength);
+				}
+				else {
+					this.labProgress.text = "文件大小: 未知"
+					contentLength = 1000000;
+				} 
+				
+				//初始化进度条
+				this.progress.setRange(0,1000);
+				this.progress.pos = 0;
+				this.progress.hide = false; 
+				
+				this.progress.downSize = fileSize;
+				this.progress.per = contentLength/1000;
+			}
+			
+			remoteFile.onReceive = function(str,size,contentLength){ 
+				if(win.delay(1) && this.continueModal ){
+					this.progress.downSize +=  size
+					this.labInfo.text = "下载大小: " + fsys.formatSize(this.progress.downSize);
+					this.progress.pos = this.progress.downSize/this.progress.per;    
+				}
+				else {
+					return false;
+				} 
+			}
+			
+			var ret,err,fileSize = remoteFile.download() 
+			this.statusCode = remoteFile.statusCode; 
+			this.contentLength = remoteFile.contentLength;
+			this.modified = remoteFile.modified;
+				
+			if( ret ) {
+				this.labProgress.text = "文件大小: " + fsys.formatSize(fileSize);
+				
+				if(err)
+					this.labInfo.text = "已完成,无须重新下载:" + path
+				else {
+					this.labInfo.text = "下载完毕:" + path
+				} 
+				if( this.endProc ){
+					this.endProc(ret,fileSize,err);
+				}
+				
+				this.complete = true;
+				if( this.closeTimeout ){
+					..win.delay(this.closeTimeout); 
+					this.endModal( remoteFile.path )
+				}
+				this.dialogResult = remoteFile.path;
+			}
+			else {
+				this.labInfo.text = err 
+			}
+			
+			remoteFile.close();
+		}
+		return this.doModal();
+	}
+
+} 
+namespace downBox{ 
+	import win;
+	import win.ui;   
+	import inet.whttp;
+	import inet.httpFile;
+	import fsys;
+}
+ 
+/***intellisense()
+inet.downBox = 下载对话框
+inet.downBox() = 创建一个下载对话框\n!inet_downBox. 
+inet.downBox(.(父窗口,"标题",下载成功关闭超时) = 所有参数可选\n参数@3可选指定下载成功自动关闭对话框的超时值,单位毫秒
+!inet_downBox.text = 对话框标题
+!inet_downBox.labProgress = 显示信息\n!static.
+!inet_downBox.labInfo = 显示进度信息\n!static.
+!inet_downBox.progress = 进度条\n!progress.
+!inet_downBox.download(.(URL,存储文件路径,配置文件 ) = 弹出下载对话框并开始下载文件\n下载成功返回存储文路径
+!inet_downBox.test(.(URL,存储文件路径,配置文件 ) = 检测是否已下载最新文件\n已下载文件未变更返回true\n需要下载或续传返回false,下载错误返回null
+!inet_downBox.setPos(.(x,y,宽,高,插入位置,参数) = 调整窗口位置或排序\n所有参数可选 
+!inet_downBox.getPos() = 返回相对坐标,宽,高 
+!inet_downBox.topmost()=窗体始终最前
+!inet_downBox.topmost(false)=取消窗体始终最前
+!inet_downBox.modifyStyle(.(remove,add) = 如果指定第三个参数，则使用此参数调用::SetWidnowPos 
+!inet_downBox.modifyStyleEx(.(remove,add) = 如果指定第三个参数，则使用此参数调用::SetWidnowPos  
+!inet_downBox.addtimer = @var tmId = ??.addtimer( \n	1000,\n	function(id){\n		/*定时回调函数*/\n	} \n)
+!inet_downBox.killtimer(__/*请输入ID*/) = 删除定时器
+!inet_downBox.settimer(__/*请输入ID*/,1000) = 重新设定定时器的延时时间
+!inet_downBox.setTimeout(.(函数名,延时,其他参数) = 延时执行函数
+!inet_downBox.complete = 是否下载完成
+!inet_downBox.statusCode = HTTP状态码
+!inet_downBox.contentLength = 文件长度\n如果文件长度为零,并且modified属性为false,表示不需要重新下载
+!inet_downBox.modified = 文件在上次下载以后是否修改过
+!inet_downBox.endProc = @.endProc = function(ret,fileSize,unmodified){
+	if(!unmodified)
+		owner.endModal();
+} 
+?inet.downBox = !inet_downBox.
+end intellisense***/

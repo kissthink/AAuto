@@ -1,0 +1,26 @@
+//外部CALL读取命令行
+//列出所有已运行进程的命令行参数
+import winex;
+io.open()
+
+io.print("请关闭所有监控软件")
+execute("pause") //按任意键继续
+
+//遍历所有窗口
+for hwnd,title,theadId,processId in winex.each(   ) { 
+	if(title != ""){ //如果标题不为空
+	
+		//在外部EXE进程创建函数    
+		try{
+
+			//一句代码创建CALL函数
+			var getCommandLine_call = raw.remoteApi(processId,"string()"
+               ,"Kernel32.dll","GetCommandLineA");
+
+			//象API一样使用
+			str = getCommandLine_call()
+			io.print(processId,title,str)
+		}
+		
+	} 	
+}

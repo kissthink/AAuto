@@ -1,0 +1,15 @@
+//获取浏览目录列表
+import winex; 
+import process;
+
+io.open()
+
+prcs = process.find("explorer.exe")
+for hwnd,title,theadId,processId in winex.each(  ) { 
+	
+	if( processId = prcs.id ){
+		var edit = winex.findEx(hwnd,,"Edit"); 
+		if(edit)
+			io.print( win.getText(edit,0x104/*_MAX_PATH*/) )
+	}
+}

@@ -1,0 +1,73 @@
+//fileSystem 嵌入文件系统
+import web.kit;
+namespace web.kit.fileSystem;
+	
+var filesys = {};
+_fopen = ..raw.tocdecl( function(path){ 
+	var f = {};
+	if(  ..io.exist(path) ){
+		f.handle = ..io.open(path,"rb");
+		f.isfile = true;
+	}
+	else {
+		f.handle = ..string.load(path);
+		f.pos = 1;
+	}
+	
+	if( f.handle ) return ..table.push( filesys,f);
+},"addr(string path)");
+
+
+_fclose = ..raw.tocdecl( function(fid){
+	var f = filesys[fid];
+	if( f.isfile  ) f.handle.close();
+	filesys[fid] = null;
+},"void(addr fid)");
+
+_fsize = ..raw.tocdecl( function(fid){  
+	var f = filesys[fid];
+	if( ! f.isfile ) return #f.handle;
+	else return f.handle.size(1)  
+},"INT(addr fid)");
+
+_fread = ..raw.tocdecl( function(fid,buffer,size){
+	var f = filesys[fid];
+	var s;
+	if( ! f.isfile ){
+		s = ..string.sub(f.handle,f.pos,f.pos + size);
+		f.pos = f.pos + #s;
+	}
+	else {
+		s = f.handle.read(size)
+	}
+	::CopyMemory(buffer,s,#s);
+	return #s;
+},"int(addr fid,pointer buffer,INT size)");
+
+_fseek = ..raw.tocdecl( function(fid,offset,origin){
+	var f = filesys[fid];
+	if( f.isfile ){
+		return f.handle.seek( ( { [0] = "set";"cur";"end"} )[origin],offset);
+	}
+	
+	var pos;
+	if( origin == 0 )
+		pos = offset;
+	elseif( origin = 1 )
+		pos = f.pos + offset;
+	else 
+		pos = #f.handle + offset;
+		
+	if( pos > #f.handle ) return -1;
+	f.pos = pos;
+	return 0;
+},"int(addr fid,int offset,int origin)");
+
+var wke = ..web.kit._dll;
+wke.wkeSetFileSystem(_fopen, _fclose, _fsize, _fread, _fseek);
+
+/**intellisense()
+web.kit.fileSystem = 导入此模块以后web.kit即可支持嵌入资源文件。
+end intellisense**/
+
+

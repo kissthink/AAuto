@@ -1,0 +1,21 @@
+import time.ole
+
+//我们试一下创建一个时间对象
+tm = time.ole(); 
+
+//给他1970年以前的时间
+tm.year = 1932;
+
+io.open()
+
+//正确出现数值
+io.print(  tonumber( tm )  ) 
+
+tm.year = 3010;//年
+
+//再把他转换回来，仍然正确显示年份
+io.print( time.ole( tonumber( tm ) ) ) 
+  
+execute("pause") //按任意键继续
+io.close();//关闭控制台
+

@@ -1,0 +1,120 @@
+//stream 内存流文件
+import com.interface.IStream;
+namespace fsys;
+
+class stream{
+	ctor( str,len){ 
+		
+		var hMemory;
+		if( str || len ){
+			if(!len) len = #str;
+			len = ..math.max(len,#str) 
+			hMemory= ::GlobalAlloc( 0x2 /*_GMEM_MOVEABLE*/, len);
+			if( str ){
+				var pMemory=::GlobalLock(hMemory);
+				::CopyMemory(pMemory,str,len);
+				::GlobalUnlock(hMemory); 
+			}
+		}
+		
+		var hr,pIStream = ::CreateStreamOnHGlobal(hMemory, true/*GlobalFree*/); 
+		if(  (hr)<0/*_FAILED*/ ) return;
+		var stream = ..com.interface(pIStream,..com.interface.IStream) 
+		..com.Release(pIStream);
+		
+		this.__isIStream = true;
+	};
+	close = function(){
+		if(stream){
+			..com.Release(stream.__thisPointer);
+			stream = null;
+		} 
+	};
+	readAll = function(){
+		this.reset();
+		return this.read(-1);
+	};
+	read = function(len){
+		if( len < 0 ) len = ( this.size() - this.seek() ) + len + 1; 
+		var hr,s,len = stream.Read(len,len,0);
+		if(  (hr)>=0/*_SUCCEEDED*/ ) { 
+			if(len)return ..string.left(s,len);
+		}
+	};
+	write = function(str,len){
+		if(!len) len = #str;
+		var hr,len = stream.Write(str,len,0);
+		if(  (hr)>=0/*_SUCCEEDED*/ ){ 
+			var cur = this.seek(); 
+			if( cur > this.size() ) this.setSize(cur);
+			return len;
+		}
+	};
+	seek = function(org="cur",move=0){
+		var hr,pos = stream.Seek(move,_seekMode[org],0);
+		if(  (hr)>=0/*_SUCCEEDED*/ ) return pos;
+	};
+	setSize = function(size){
+		var hr,pos = stream.SetSize(size);
+		if(  (hr)>=0/*_SUCCEEDED*/ ) return size;	
+	};
+	stat = function(flag  = 0/*_STATFLAG_DEFAULT*/ ){
+		var hr,s = stream.Stat( STATSTG(),flag);
+		if(  (hr)>=0/*_SUCCEEDED*/ ) return s;
+	};
+	size = function(){
+		var c = this.seek();
+		var len = this.seek("end",0);
+		this.seek("set",c);
+		return len; 
+	}; 
+	reset = function(){
+		this.seek("set",0);
+		return this;
+	};
+	
+	@{_topointer = stream;_type="fsys.stream"};
+}
+namespace stream{
+	_seekMode = {
+	 	["cur"] = 0x1/*_FILE_CURRENT*/;
+	 	["end"] = 0x2/*_FILE_END*/;
+	 	["set"] = 0x0/*_FILE_BEGIN*/;
+	} 	
+	
+	class STATSTG {
+  		pointer pwcsName;
+  		INT type;
+  		LONG cbSize;
+  		struct mtime = ::FILETIME();
+  		struct ctime = ::FILETIME();
+  		struct atime = ::FILETIME();
+  		INT grfMode;
+  		INT grfLocksSupported;
+  		struct clsid = ..win.guid();
+  		INT grfStateBits;
+  		INT reserved;
+	}
+}
+
+/**intellisense()
+fsys.stream = 创建内存流文件
+fsys.stream(.(初始化数据,缓冲区长度) = 所有参数可选
+fsys.stream() = !fsys_stream.
+!fsys_stream.read( = 读数据
+!fsys_stream.read(.(-1) = 参数指定读取长度,-1为读到尾部
+!fsys_stream.readAll() = 移到指针到文件头\n读取到文件尾返回所有数据
+!fsys_stream.size() = 得到数据长度
+!fsys_stream.write( = 写数据
+!fsys_stream.write(.(数据,长度) = 写入数据\n参数@1可使用字符串
+!fsys_stream.seek("end") = 移动指针至结束处
+!fsys_stream.seek("end",__) = 移动至相对结束处的指定偏移量
+!fsys_stream.seek() = 得到当前位置
+!fsys_stream.seek("cur",__) = 移动至相对当前位置的指定偏移量
+!fsys_stream.seek("set") = 移动指针到开始
+!fsys_stream.seek("set",__) = 移动至相对开始处的指定偏移量
+!fsys_stream.reset() = 文件指针移动到开始\n类似seek(0,"set"),不同的是此函数返回对象自身\n!fsys_stream.
+!fsys_stream.close() = 关闭对象
+!fsys_stream.stat() = 返回流状态\n返回值为STATSTG结构体\n!fsysstramSTATSTG.
+!fsysstramSTATSTG.cbSize = 文件长度
+end intellisense**/

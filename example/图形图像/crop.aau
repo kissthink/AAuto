@@ -1,0 +1,13 @@
+//GDI+ Í¼Ïñ¼ôÇÐ
+import gdip;
+import inet.whttp;
+var pngData = inet.whttp().get("http://www.baidu.com/img/baidu_logo.gif");
+
+var bitmap = gdip.bitmap( pngData )
+var bitmagNew = gdip.bitmap(50,50);
+var graphics = bitmagNew.getGraphics();
+graphics.drawImageRectRect(bitmap,0,0,50,50,30,30,50,50)
+bitmagNew.save("/crop.jpg")
+
+import process;
+process.explore_select("/crop.jpg")

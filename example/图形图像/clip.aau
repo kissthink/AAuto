@@ -1,0 +1,23 @@
+//È¡¼ôÌù°åÍ¼Ïñ
+import win.ui;
+/*DSG{{*/
+var winform = win.form(parent=...; text="AAuto Form";right=349;bottom=249 )
+winform.add( 
+button={ bottom=237;text="¶ÁÈ¡¼ôÌù°åÍ¼Ïñ";left=155;top=197;z=2;right=294;cls="button" };
+picturebox={ bottom=187;text="picturebox";left=21;transparent=1;top=16;z=1;right=331;edge=1;cls="picturebox" }
+)
+/*}}*/
+
+import process
+import win.clip;
+winform.button.oncommand = function(id,event){
+	var bmp = win.clip.readBitmap()
+	winform.picturebox.setImage(
+		bmp
+	)
+	com.picture.fromBitmap(bmp).Save("/clip.jpg")
+	process.explore_select("/clip.jpg")
+}
+
+winform.show() 
+win.loopMessage();

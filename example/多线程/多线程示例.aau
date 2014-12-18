@@ -1,0 +1,37 @@
+io.open(); //io.open建议不要在子线程中调用
+io.print("多线程演示程序")
+
+f = function(arg){
+    import win; //线程函数内部要添加自已的import语句
+    
+    
+	for(i=1;10;1){
+	
+		io.print("线程ID:" + thread.getId()  );
+		io.print("收到的参数:" + arg.str );
+		
+		thread.lock("临界区名称");
+		
+		try{ //预防抛出异常时 thread.unlock 无法执行
+		
+			//加锁范围内的代码能避免多线程重入
+			var test  = thread.get("标志名称")
+			test++;
+			thread.set("标志名称", test); 
+			io.print( thread.get("标志名称") );
+		}
+			
+		thread.unlock("临界区名称")
+	  	
+		sleep(1000)
+	}
+
+}
+
+thread.set("标志名称", 1); //多线程需要通过此函数交换变量
+hander,id = thread.create(f,{int=123;str="你好"} )
+hander2,id2  = thread.create(f,{int=456;str="大家好"} )
+
+io.print("thread.waitAll开始等待所有线程")
+thread.waitAll(hander,hander2);
+io.print("thread.waitAll函数返回")

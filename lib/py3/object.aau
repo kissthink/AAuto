@@ -1,0 +1,140 @@
+//object 一切皆对象
+import util.metaProperty;
+namespace py3;
+ 
+class object {
+
+	ctor( object ){
+		var tt = type(object)
+		select(tt) {
+			case type.string{
+				object = ..string.fromto(object,0,65001);
+				this.pyObject = Py_BuildValueByString("s#",object,#object);//owned reference
+			}
+			case type.number{
+				this.pyObject = Py_BuildValueByNumber("d",object);//owned reference
+			} 
+			case type.pointer{
+				this.pyObject = object
+			}
+			case type.null{
+				return null;
+			}
+			else {
+				if(object[["pyObject"]] )
+					return object;
+					
+				error("pyObject构造参数不支持此数据类型:" + tt ,2)
+			}
+			
+		}  
+		
+		..table.add_gc(this,"release");
+	}
+	
+	@_metaProperty;
+}
+
+namespace object {
+
+	_metaProperty = ..util.metaProperty( 
+	
+		release = function(){
+			if( owner.pyObject ){
+				..py3.DecRef(owner.pyObject); 
+				owner.pyObject = null;
+			}
+		}; 
+		steal = function(){
+			var pyObject = owner.pyObject;
+			owner.pyObject = null;
+			return pyObject;
+		};
+		parseString = function(){ 
+			var ret,s = PyArg_ParseByString(owner.pyObject,"s");
+			if( s ) {
+				return ..string.fromto(s,65001,0,true) ; 
+			} 
+		}
+		parseNumber = function(pyObj){
+			var ret,n = PyArg_ParseByNumber(owner.pyObject,"d",0);
+			if(ret)return n;
+		}	
+		_topointer = function(){
+			return owner.pyObject;
+		};  
+		_tostring = function(){
+			var ret = owner.parseString();
+			if(!ret) return  ..string.format("py3.object:%08X", tonumber(owner.pyObject) );
+			return ret;
+		};
+		_tonumber = function(){
+			return owner.parseNumber();
+		}; 
+		has = function(k){
+			return PyObject_HasAttrString( owner.pyObject,k);
+		}; 
+		get = function(k){
+			if( owner.has(k) ){
+				return ..py3.object( PyObject_GetAttrString(owner.pyObject,k) )
+			}
+		};
+		set = function(k,v){
+			PyObject_SetAttrString(owner.pyObject,k,..py3.object(v) ); 
+		};  
+		callObject = function( args ){ 
+			return ..py3.object( PyObject_CallObject( owner.pyObject,args) )
+		};
+		getFuncName = function(){
+			return PyEval_GetFuncName(owner.pyObject );	
+		}
+		getFuncDesc = function(){
+			return PyEval_GetFuncDesc(owner.pyObject );	
+		}
+		call = function( ... ){
+			var args = ... ? {...};
+			if( #args ) args = ..py3.tuple( args );
+			return ..py3.object( PyObject_CallObject( owner.pyObject,args) )
+		};
+		_call = function(...){
+		 	var args = ... ? {...};
+			if( #args ) args = ..py3.tuple( args );
+			return ..py3.object( PyObject_CallObject( owner.pyObject,args) )
+		};	
+		_type = "py3.object";
+	) ;
+	
+	with _metaProperty{
+		getPyAttr = get;
+		callPyFunction = self.call;
+		callPyObject = callObject;
+		getPyDict = getDict;
+	}
+	
+	var dll = assert( ..py3._dll,"请先导入py支持库" );
+	PyObject_HasAttrString = dll.api("PyObject_HasAttrString","bool(PyObject o,str attr_name)","cdecl")
+	PyObject_GetAttrString = dll.api("PyObject_GetAttrString","pyObject(PyObject o,str attr_name)","cdecl")   
+	PyObject_SetAttrString = dll.api("PyObject_SetAttrString","int(PyObject o,str attr_name,pyObject v)","cdecl")
+	PyObject_CallObject = dll.api("PyObject_CallObject","pyObject(PyObject pfunc,pyObject pargs)","cdecl") 
+	Py_BuildValueByNumber = dll.api("Py_BuildValue","pyObject(str format,double)","cdecl") 
+	Py_BuildValueByString = dll.api("Py_BuildValue","pyObject(str format,string,int)","cdecl")
+	PyArg_ParseByNumber = dll.api("PyArg_Parse","int(PyObject args,str format,double &)","cdecl")  
+	PyArg_ParseByString = dll.api("PyArg_Parse","int(PyObject args,str format,pyObject &)","cdecl")  
+	PyEval_GetFuncName = dll.api("PyEval_GetFuncName","string(PyObject *)","cdecl") ;
+	PyEval_GetFuncDesc = dll.api("PyEval_GetFuncDesc","string(PyObject *)","cdecl");
+}
+
+/**intellisense() 
+!pyObject.parseString() = 解析为字符串
+!pyObject.parseNumber() = 解析为数值
+!pyObject.get("__/*属性名*/") = 读写属性成员\n属性值为python对象
+!pyObject.has("__/*属性名*/") = 是否存在指定的属性
+!pyObject.get() = !pyObject.
+!pyObject.callObject(.( py3->tuple对象 ) = 该对象为函数对象时支持此方法\n参数为tuple元数组对象\n返回值为 py3.object对象,可使用 tostring 或 tonumber 等函数转换为aauto类型
+!pyObject.call(__/*不定个数参数*/) = 该对象为函数对象时支持此方法\n参数为不定个数的字符串或数值\n返回值为 py3.object对象,可使用 tostring 或 tonumber 等函数转换为aauto类型
+!pyObject.callObject() = !pyObject.
+!pyObject.call() = !pyObject.
+!pyObject.getFuncDesc() = 获取函数原型
+!pyObject.getFuncName() = 获取函数名
+!pyObject.steal() = steal references\n获取并清空对象内部托管指针,以保持引用计数不被析构函数自动释放
+end intellisense**/

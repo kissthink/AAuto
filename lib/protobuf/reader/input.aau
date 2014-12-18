@@ -1,0 +1,26 @@
+import protobuf.codec;
+
+namespace protobuf.reader; 
+
+class input{
+ 	ctor(){
+ 		this.codecBase128 = ..protobuf.codec(1);
+ 	}
+	pointer = 0;
+	str = '';
+
+	get_pointer = function() {
+		return this.pointer;
+	}
+	
+	add_pointer = function (add) {
+		this.pointer += add;
+	}
+
+	get_message_from = function(from){
+		return ..string.sub(this.str, from, this.pointer-1); 
+	}
+	
+	//next = function (){};	
+} 
+

@@ -1,0 +1,90 @@
+//F) 专用类方法
+
+import console;
+console.open();
+
+import py; 
+pyCode = /***
+
+#定义类 
+class Test(object): 
+	def __init__(self):  
+		self.data = {}
+	
+	def __getitem__(self, key): 
+		print "读取了属性:",key
+		return self.data[key]
+	
+	def __setitem__(self, key, item): 
+		print "设置了属性:",key,item
+		self.data[key] = item
+		
+	def __delitem__(self, key): 
+		print "删除了属性",key
+		del self.data[key]
+	
+	#repr函数会触发此方法,repr有一点象aauto中的table.tostring() 返回的值可以再次传给 eval作为参数解析为对象。
+	def __repr__(self): 
+		print "转换为了字符串"
+		return repr(self.data)
+		
+	def __str__(self): 
+		print "print,str 会调用到，类似AAuto中的_tostring元方法,str类似于aauto中的tostring函数"
+		return repr(self.data)
+			
+	def __cmp__(self, dict):
+		print "比较了对象"
+		return cmp(self.data, dict)       
+	
+	def __lt__(self,other): 
+		print "是否小于,大于反过来"
+		return len(self) < len(other)
+	
+	def __len__(self): 
+		print "取了长度"
+		return len(self.data)
+	
+	def __call__(self): 
+		print "作为函数调用了" 
+
+s = Test() #创建对象 
+s["a"] = 123 #这里不能写 s.a，参考【属性存取器】一节
+#print s["b"] #这里也不能写 s.b
+del s["a"];
+s() 
+***/
+py.exec( pyCode ) //运行python代码
+
+//下面是类似的AAuto代码
+//=========================================================
+
+class test{
+	ctor(){
+		this.data = {}
+	};
+	@_meta
+}
+
+test._meta = {
+	_get = function(k){
+		..io.print("读取属性了")	
+		return owner.data[[k]]; //元方法里多用两个方括号的下标操作符,因为可以避免触发此对象的元方法，当然这里owner.data并没有元方法
+	}
+	_set = function(k,v){
+		..io.print("设置属性了")
+		owner.data[[k]] = v;	
+	} 
+	_call = function(){
+		..io.print("作为函数调用了")
+	}
+	_tostring = function(){
+		..io.print("转换为字符串了")
+		return tostring(owner.data)
+	} 
+}
+var s = test();
+
+s["a"] = 123
+io.print( s["b"] );
+s["a"] = null; //aauto里析构触发器要用 table.gc
+s()

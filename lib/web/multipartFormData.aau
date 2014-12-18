@@ -1,0 +1,113 @@
+//multipartFormData 上传文件表单
+import fsys.mime;
+namespace web;
+
+class multipartFormData{
+	ctor( ){
+		var formData = {};
+		var currentName,currentValue,currentFile;
+		var boundary = "----------" + ..string.random( ..math.random(15,20) );
+		var endOfData;
+	};
+	boundary = function(){
+		return boundary;
+	};
+	contentType = function(){
+		return ..string.format('multipart/form-data; boundary=%s',boundary ) 
+	};
+	add = function(name,value){
+		value = value ? tostring(value);
+		if(! (name && value) ) error("参数不能为空",2); 
+		
+		formData[name] = value;
+	};
+	size = function() { 
+		var contentLength = 0;
+		var testFileSize = function(size){
+			contentLength += size;
+		}
+		
+		while( 
+		    var s;
+		    s = this.read(,testFileSize); 
+		    s
+		) {
+			contentLength += #s;
+		}
+		return contentLength;
+	};
+	read = function(blockSize=0x2000,testFileSize){ 
+		if( currentFile ){
+			if( !testFileSize ){
+				var s = currentFile.read(blockSize);
+				if( s ) return s;
+			}
+			else {
+				testFileSize( currentFile.size(1) );
+			}
+			
+			currentFile.close();
+			currentFile = null;
+			return '\r\n';
+		}
+		
+		if( ( currentName === null)  && endOfData ){
+			endOfData = null;
+			return;
+		}
+		currentName,currentValue = ..table.next(formData,currentName); 
+		if( !currentName ) { 
+			endOfData = true;
+			return ..string.format( '--%s--\r\n',boundary);
+		}
+		if( currentValue[1]=='@'# ){
+			var filePath = ..string.right(currentValue,-2);
+			currentFile = ..io.open( filePath,"rb")
+			 
+			var mime = ..fsys.mime.fromFile(filePath); 
+			var tPath = ..io.splitpath(filePath); 
+			return ..string.format( '--%s\r\n
+Content-Disposition: form-data; name="%s"; filename="%s"\r\n
+Content-Type: %s\r\n\r\n',boundary,currentName,tPath.file,mime )
+		}
+		
+		return ..string.format( '--%s\r\n
+Content-Disposition: form-data; name="%s"\r\n
+\r\n
+%s\r\n', boundary,currentName,currentValue)
+		
+	}
+	readAll = function(blockSize){
+		var t = {};
+		while( 
+    		var s;
+    		s = this.read(blockSize); 
+    		s
+		) {
+			..table.push(t,s)
+		}
+		return ..string.join(t);
+	}
+	close = function(){
+		if( currentFile ){
+			currentFile.close();
+			currentFile = null;
+		}
+	}
+}
+
+..math.randomize() 
+
+/**intellisense()
+web.multipartFormData = 用于构建上传文件表单
+web.multipartFormData() = 构建上传文件表单\n!webMultipartFormData.
+end intellisense**/
+
+/**intellisense(!webMultipartFormData)
+add(.("名字","@值") = 添加字段到上传表单中\n如果值的第一个字符为"@",则@后面应当是上传文件路径
+size() = 获取上传数据总大小
+read(.(块大小) = 读取上传数据\n应循环调用该函数,直到该函数返回空值
+readAll(.(块大小) = 读取所有数据
+contentType() = 返回请求HTTP头Content-Type的值:\n"multipart/form-data; boundary=分隔符"
+close() = 关闭对象\n无需手动调用该函数
+end intellisense**/

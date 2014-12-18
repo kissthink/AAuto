@@ -1,0 +1,102 @@
+import com;
+import win.guid;
+import raw.interface;
+
+namespace com;
+ 
+class interface{
+	ctor(pObj,itface){ 
+		checkInterface(itface,2); 
+		
+		if(!pObj) error("参数@1 不能为空值!",2)
+		var pItFace = ..com.GetIUnknown(pObj,itface.IID)
+		assert(pItFace,"无效的com指针")  
+		
+		this  = ..raw.interface( pItFace, itface );
+		 
+		var queryInterface = this.QueryInterface;
+		this.QueryInterface = function(itface){
+			checkInterface(itface,2); 
+			var hr,pObj = queryInterface( itface.IID );  
+			if(  (hr)>=0/*_SUCCEEDED*/ ){
+				var obj =  ..com.interface(pObj,itface); 
+				..com.Release(pObj);
+				return obj;
+			}
+			else {
+				return null,..lasterr(hr);
+			}
+		}
+	} 
+}
+
+namespace interface{
+	::Ole32 := ..raw.loadDll("ole32.dll");
+	CoCreateInstance = Ole32.api("CoCreateInstance","int(struct rclsid, pointer pUnkOuter,INT dwClsContext, struct riid, pointer &ppv)" )
+    
+	var guid = ..win.guid;
+	checkInterface = function(interface,el=1){
+	    if(type(interface)!=type.class)
+	    	error("接口必须是一个类",el+1)
+	
+		interface.IID = guid.valid(interface.IID)
+		if( ! interface.IID )  
+			error("未指定有效的接口IID(类的静态成员,字符串或 win.guid 对象)",el+1)
+	} 
+ 	checkError = function(hr,ci = 1){
+		if(  hr<0/*_FAILED*/ ) 
+			error(..lasterr(hr),ci + 1) 
+	}
+	create = function(clsid,itface,context=5/*_CLSCTX_LOCAL_SERVER*/){
+		if(type(clsid)==type.string)
+			clsid = guid.fromString(clsid)
+			 
+		checkInterface(itface,2);  
+		var iid =itface.IID ;
+		var hr,unknown =CoCreateInstance(clsid,null,context,iid ); 
+		checkError(hr,2);
+		
+		var iterface =  ..com.interface(unknown,itface);
+		..com.Release(unknown) 
+		return iterface;
+	}
+	//定义接口
+	class IUnknown{ 
+		//所有com接口必须直接继承此接口
+    	pointer QueryInterface = "int(struct iid,pointer &ptr)" ;
+    	pointer AddRef = "int()" ;
+    	pointer Release ="int()" ;
+	}
+	IUnknown.IID = "{00000000-0000-0000-C000-000000000046}";
+}
+ 
+/**intellisense(com.interface)
+checkInterface(__/*接口类*/) = 检查是否法的接口类\n不合法则抛出异常,可使用参数2指定调用级别
+checkError(__/*请输入COM静态接口函数返回值*/) = 如果有错误调用error函数抛出异常
+checkError(__/*请输入COM静态接口函数返回值+函数返回值*/,2) = 如果有错误调用error函数抛出异常\n参数2指定抛出异常的调用级别\n2表示调用当前函数的函数
+create(.(clsid,静态接口类) = 创建静态接口对象
+IUnknown = 未知接口对象
+end intellisense**/                
+
+/**intellisense()
+com.interface(.(com对象,静态接口类) = 参数一可以是com对象、com指针、托管com指针\n参数二是接口类,参考com.interface.IUnknown源码
+?.QueryInterface = !interface.
+?.interface = !interface.
+?.interface.create = !interface. 
+!interface.AddRef() = 引用计数加一,返回引用计数
+!interface.Release() = 引用计数减一,返回引用计数
+!interface.QueryInterface(__/*接口数*/) = 参数是接口类,参考com.interface.IUnknown源码
+end intellisense**/
+ 
+                   
+
+/**intellisense()
+_SUCCEEDED = @ (__/*hr*/)>=0/*_SUCCEEDED*/
+_FAILED = @ (__/*hr*/)<0/*_FAILED*/
+_CLSCTX_INPROC_SERVER=@0x1/*_CLSCTX_INPROC_SERVER*/
+_CLSCTX_INPROC_HANDLER=@2/*_CLSCTX_INPROC_HANDLER*/
+_CLSCTX_LOCAL_SERVER=@4/*_CLSCTX_LOCAL_SERVER*/
+_CLSCTX_SERVER=@5/*_CLSCTX_LOCAL_SERVER*/
+end intellisense**/
+                   
+ 

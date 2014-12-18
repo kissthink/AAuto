@@ -1,0 +1,104 @@
+
+import wsock;
+import wsock.err;
+import win;
+
+io.open();//打开控制台
+
+// 初始化 Winsock.	
+if(! wsock.open() ){
+	io.print("打开wsock错误", wsock.err.lasterr() );
+	return;
+}
+
+
+
+//一、服务器首先启动,通过调用socket()建立一个套接口
+var hSocket= wsock.socket(0x2/*_AF_INET*/,0x1/*_SOCK_STREAM 建立流式套接口*/,0x6/*_IPPROTO_TCP*/ )
+if( hSocket=_INVALID_SOCKET ){
+	io.print("服务端创建套接字错误");
+	wsock.close() //关闭wsock
+	return;
+}
+
+//二、后调用bind()将该套接口和 本地网络地址联系在一起
+var service = wsock.sockaddr_in();
+service.sin_family = 0x2/*_AF_INET*/
+service.sin_addr.S_un.S_addr = wsock.inet_addr( "127.0.0.1" )
+service.sin_port = wsock.htons(7510)
+if wsock.bind( hSocket,service,raw.sizeof(service)) =-1/*_SOCKET_ERROR*/	{
+	io.print("服务端无效绑定", wsock.err.lasterr() );
+	wsock.closesocket(hSocket)
+	wsock.close() //关闭wsock
+	return;
+}
+
+
+//三、再调用listen()使套接口做好侦听的准备,并规定它的请求队列的长度
+if( wsock.listen(hSocket,10/*请求队列长度*/)=-1/*_SOCKET_ERROR*/){
+	io.print("服务端监听套接字出错");
+	wsock.close() //关闭wsock
+	return;
+}
+ 
+io.print("正在监听端口：7510,按ESC退出!")
+import key;
+var file;
+var hSockConnect //这个套接字用来发送文件
+do{
+	sleep(1)
+	
+	//四、之后就调用accept( )来接收连接.客户端在建立套接口后就可调用connect()和服务器建立连接
+	//accept()阻塞(缺省)等待请求队列中的请求,一旦有连接请求来,该函数就建立一个和s有相同属性的新的套接 
+	hSockConnect = wsock.accept(hSocket)
+	if( hSockConnect!= _INVALID_SOCKET ){
+		 
+		import fsys.dlg;
+		
+		io.print( hSockConnect );
+		var fpath = fsys.dlg.open( , "客户端连接成功,请选择文件然后开始发送");
+		if(!fpath){
+			wsock.close()
+			return;
+		}
+		file = io.open(fpath,"rb") //注意io.open默认是文本方式读出的,b指定二进制模式
+		
+		break;
+	}
+	
+}while(! key.getStateX("ESC")) 
+
+if(!file){
+	wsock.close()
+	io.print("已关闭wsock,已退出程序!")
+	return;
+}
+ 
+// 发送数据 
+
+ 
+
+var buf = file.read(1024)
+do{
+	sleep(1)
+	if( wsock.send(	hSockConnect,buf,#buf,0)==-1 ){
+		io.print("服务端发送错误", wsock.err.lasterr() );
+		break ;
+	}
+	
+	io.print("发送"+ #buf)
+	buf = file.read(1024)
+}while(buf) 
+file.close();
+ 
+//wsock.send(	hSockConnect,"<end_sock>",#"<end_sock>",0)
+
+io.print("服务端发送文件完成");
+
+//待数据传送结束后,双方调用close()关闭套接口
+wsock.closesocket(hSocket)
+wsock.closesocket(hSockConnect)
+wsock.close();
+ 
+execute("pause") //按任意键继续
+io.close();//关闭控制台

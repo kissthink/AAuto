@@ -1,0 +1,512 @@
+//.. 编译前预处理 
+namespace preload {};  
+
+__getApiExceptionMessage = function(code,address){
+	var msg = {
+		[0xC0000005] = "EXCEPTION_ACCESS_VIOLATION 存储保护异常";
+		[0x80000002] = "EXCEPTION_DATATYPE_MISALIGNMENT 数据类型未对齐异常";
+		[0x80000003] = "EXCEPTION_BREAKPOINT 中断异常";
+		[0x80000002] = "EXCEPTION_SINGLE_STE 单步中断异常";
+		[0xC000008C] = "EXCEPTION_ARRAY_BOUNDS_EXCEEDED 数组越界异常";
+		[0xC000008D] = "EXCEPTION_FLT_DENORMAL_OPERAND 浮点数计算异";
+		[0xC000008E] = "EXCEPTION_FLT_DIVIDE_BY_ZERO 浮点数计算异";
+		[0xC000008F] = "EXCEPTION_FLT_INEXACT_RESULT 浮点数计算异";
+		[0xC0000090] = "EXCEPTION_FLT_INVALID_OPERATIO 浮点数计算异";
+		[0xC0000091] = "EXCEPTION_FLT_OVERFLOW 浮点数计算异";
+		[0xC0000092] = "EXCEPTION_FLT_STACK_CHECK 浮点数计算异";
+		[0xC0000093] = "EXCEPTION_FLT_UNDERFLO 浮点数计算异";
+		[0xC0000094] = "EXCEPTION_INT_DIVIDE_BY_ZERO 除0异常";
+		[0xC0000095] = "EXCEPTION_INT_OVERFLOW 数据溢出异常";
+		[0xC0000006] = "EXCEPTION_IN_PAGE_ERROR 页错误异常";
+		[0xC000001D] = "EXCEPTION_ILLEGAL_INSTRUCTION 非法指令异常";
+		[0xC00000FD] = "EXCEPTION_STACK_OVERFLOW 堆栈溢出异常";
+		[0xC0000008] = "EXCEPTION_INVALID_HANDLE 无效句病异常"; 
+	} 
+	return string.format('%s，发生错误的内存地址：0x%08X 错误代码：0x%X\n'
+		, msg[code] or (  code & (1<<29) ? "自定义异常" : "未知异常" ),address,code ) 
+	    
+}
+
+/*intellisense(::)*/
+::LOWORD = function(l) {return l & 0xffff }
+::HIWORD = function(l) {return  (l >> 16) & 0xffff }
+::MAKELONG = function(a,b){ return ( ( (b & 0xFFFF) << 16) | (a & 0xFFFF) ) & 0xFFFFFFFF } 
+::LOBYTE = function(l) {return l  & 0xff }
+::HIBYTE = function(l) {return   (l   >> 8) & 0xff  }
+::MAKEWORD = function (a,b){ return ( ( ( b & 0xFF) << 8) | ( a & 0xFF) ) & 0xFFFF  } 
+/*end intellisense*/ 
+
+var u = raw.loadDll("User32.dll");
+var k = raw.loadDll("Kernel32.dll");
+
+::Kernel32 = k;
+::User32 = u; 
+
+::GlobalAlloc = k.api("GlobalAlloc","ptr(INT,INT)" ) ;
+::GlobalReAlloc = k.api("GlobalReAlloc","ptr(PTR hMem,ADDR,INT)" ) ;
+::GlobalLock = k.api("GlobalLock","ptr(PTR)" ) ;
+::GlobalUnlock = k.api("GlobalUnlock","bool(PTR)" ) 
+::GlobalSize = k.api("GlobalSize","ADDR(PTR)" ) 
+::GlobalFree = k.api("GlobalFree","ptr(PTR)" )
+::GetModuleHandle = k.api( "GetModuleHandleA", "pointer(string)");
+
+::MSG = null;
+::FILETIME = class { 
+	INT dwLowDateTime ;
+	INT dwHighDateTime ;
+} 
+  
+/**intellisense(::)
+::User32=User32.dll已默认加载\n!dllModule.
+::Kernel32=Kernel32.dll已默认加载\n!dllModule.
+::FILETIME() = 该结构的64位值,\n表示从1601年1月1日开始的以100纳秒为间隔的值
+::GetModuleHandle(__/*模块名*/) = 返回动态链接库的模块句柄 
+::GlobalAlloc(.(分配选项,内存长度) = 在进程堆上分配内存,\n分配选项可选参数如下:\n\n0x40/*_GPTR*/ 返回指针,内存数据初始化为零\n0x42/*_GHND*/ 返回句柄,内存数据初始化为零,\n0x0/*_GMEM_FIXED*/ 返回指针\n0x2/*_GMEM_MOVEABLE*/ 返回句柄\n内存句柄需要调用 ::GlobalLock 函数转换为内存指针
+::GlobalReAlloc(.(内存句柄,新的长度,分配选项) = 改变GlobalAlloc函数申请的内存大小\n分配选项参考 GlobalAlloc() 说明
+::GlobalLock(__/*内存句柄*/) = 锁定::GlobalAlloc(0x2/*_GMEM_MOVEABLE*/)创建的内存句柄,\n并返回内存指针指针
+::GlobalUnlock(__/*内存句柄*/) = 解锁::GlobalAlloc(0x2/*_GMEM_MOVEABLE*/)创建的内存句柄,\n成功返回true
+::GlobalFree(__/*内存句柄*/) = 释放::GlobalAlloc()分配的内存\n如果成功返回null,否则返回传入句柄
+::GlobalSize(__/*内存句柄*/) = 获取内存长度
+::GetLastError() = 返回系统错误代码
+end intellisense**/
+
+_HINSTANSE = ::GetModuleHandle();
+_INVALID_HANDLE_VALUE = topointer(-1);
+_STUDIO_CODEPAGE = 936;
+
+gcdata = function(t){
+	var d = ..raw.malloc(1);d@ = t;
+	return d;
+}; 
+/**intellisense()
+_INVALID_HANDLE_VALUE = topointer(-1)\n表示无效句柄 
+_HINSTANSE = 当前应用程序的实例句柄
+_STUDIO_CODEPAGE = 开发环境中源码使用的内码
+gcdata(元表) = @..gcdata(  \n	_topointer =  __/*pointer指针*/ \n	_gc = function(){\n		\n	} \n)
+end intellisense**/
+
+namespace string {
+	indexOf = search;
+	gfind = function(str,p,f){ 
+		if(!f) f = 0;
+		var r = function(b,e,...){
+			if(e) f = e ; 
+			return b,e,...;
+		};
+		return function(){
+			return r( find(str,p,f+1) ); 
+		} 
+	} 
+	lines = function(s){
+		return gmatch(s,"[^\r\n]+");
+	};
+	cmpMatch = function(a,b){
+		return  ( type(a)==type(b) && ( ( cmp( a,b) == 0 ) ||  ( match( a  ,b ) ) ) )  
+	};
+	cmp_match = cmpMatch;
+	concatUnicode = function(a,b,...){
+		a = toUnicode(a);
+		b = toUnicode(b);
+		if( #a > 2 ) c = left(a,-3) ++ b;
+		else c = b;
+		if(!...) return c;
+		return concatUnicode(c,...);
+	}
+}
+
+/**intellisense(string)
+gfind(字符串,模式串,开始位置) = @for i,j,group1  in string.gfind( __/*查找字符串*/,"(.)") { 
+	
+}
+lines( 字符串 ) = @for line in ??.lines(__/*按行拆分的字符串*/) { 
+	
+} 
+cmpMatch( __,"" ) = 忽略大小写比较两个字符串\n如果失败则使用模式语法匹配是否相同.\n如果其中一个参数不是字符串则返回false
+concatUnicode(.(str,->->->) = 连接并返回unicode字符串\n参数可以是数值,字符串,unicode字符串
+end intellisense**/
+
+namespace table{
+	find = function(t,v2){ 
+		for(k,v in t){ if( v == v2 ) return k; } 
+	}; 
+	findAll = function(t,v2){
+		var a = {}
+		for(k,v in t){ if( v == v2 ) push(a,k) } 
+		return a;
+	}; 
+	shift = function(t,n=1){
+		if(!t) error("无效参数@1",2)
+		if(#t) return unpack( splice(t,1,n) );
+	};
+	unshift = function(t,...){
+		if(!t) error("无效参数@1",2)
+		if( #t) splice(t,1,0,...); 
+		else push(t,...);
+		return #t;
+	};
+	unpackArgs = function(t){
+		var a,b = range(t)
+		return unpack( t,1,b );
+	};
+	spliceArgs = function(t,i,l,args){
+		return ..table.splice(t,i,l,unpackArgs(args));
+	};
+	eachArgs = function(t){
+		var a,b = range(t);a=0;
+		return function(){ if( a < b ){ a++; return a,t[a] } } ;
+	};
+	slice = function(t,i=1,j){  
+		if(!t) error("无效参数@1",2) 
+  		return { unpack(t,i,j) };
+	};
+	mixr = function(a,b,...){
+		for(k,v in b) if( ( a[[k]] === null ) || (type(k)!="string") || (k[1]!='_'#) ) {
+			if( type(a[k]) == "table" && type(v) == "table" ) mixr( a[k],v ); else a[k] = v; 
+		}
+		if(!...) return a;   
+		return mixr(a,...); 
+	}; 
+	mixin = function(a,b,...){
+		for(k,v in b) if( ( a[[k]] === null ) || (type(k)!="string") || (k[1]!='_'#) ) a[k] = v; 
+		if(!...) return a;   
+		return mixin(a,...); 
+	};  
+	mix = function(a,b,...){
+		for(k,v in b) if( a[[k]] === null){ a[k] = v}; 
+		if(!...) return a;   
+		return mix(a,...);
+	};
+	delegate = function(o,...){
+		return mixin({ @{_get = o } },...);
+	}; 
+	array = function(l,v,...){ 
+		var r = {}
+		var t = type(v);
+		if( (... !== null) && ( t == "number") ) 
+			for(i=1;l )  r[i]=array(v,...); 
+		else {
+			if( t == "function" || t == "class" ) {
+				if( l ){
+					for(i=1;l) r[i]= v(...);
+				}
+				else {
+					while( var i;  i = { v(...) }; i[1]) { push( r,i); }
+				}
+			}
+			elseif( t == "table" ) 
+				for(i=1;l) r[i]= mixin({},v); 
+			else {
+				for(i=1;l) r[i]= v; 
+			} 
+		}
+		return r;
+	}; 
+	getByNamespace = function(k,t){
+		if(!t){ t = ..global; }
+		var p,m = ..string.match(k,"\.*(.+)(%\[\])$");
+		if( m )
+			m = eval(..string.trim(m,"[]")); 
+		else
+			p,m = ..string.match(k,"\.*(.+)\.([^.]+)$");
+		if( m!==null ){ t = getByNamespace(p,t); if(t){ return t[m],t; } }
+		else{ return t[k],t };
+	};
+	var setByNamespace_;
+	setByNamespace_ = function(k,v,t,n=0){  
+		var p,m = ..string.match(k,"\.*(.+)(%\[\])$");
+		if( m ){
+			t = setByNamespace_(p,,t,n+1);
+			k = eval(..string.trim(m,"[]"))
+			if(k===null)k=#t+1;
+		}
+		else{
+			p,m = ..string.match(k,"\.*(.+)\.([^.]+)$"); 
+			if( m!==null ){ t = setByNamespace_(p,,t,n+1); k = m }
+		}
+		
+		if( n ){
+			if( t[k]===null ) t[k] = (v===null) ? {} : v ;
+		}
+		else{
+			t[k] = v;
+		} 
+		return t[k];
+	};
+	setByNamespace = function(k,v,t){
+		if(!t){ t = ..global }
+		return setByNamespace_(k,v,t,0)
+	};
+	define = function(t,...){
+		if(!t@)t@={}
+		if(!t@._defined)t@._defined = {};
+		if(...)push(t@._defined,...);
+	};
+	eachName = function(t,f,n){ 
+		var d = {};
+		var keys = {};
+		var pred = {};
+		if(n){
+			var k;
+			for(i=1;#n){
+				k = n[i] ; d[k] = t[k];
+				if( d[k] !== null ){ push(pred,k); } 
+			}
+		}
+
+		for k in t if( ( d[k] === null )  && type(k)=="string" && k != "_struct") { push(keys, k); d[k] = true; }
+    	sort(keys, f);
+    	
+    	if( n ){
+    		if(#keys)push(pred,unpack(keys));keys=pred; 
+    	}
+    	
+    	if( t@[["_defined"]] ){ 
+			for(i,k in t@._defined){
+				if( d[k] === null ) { push(keys, k); d[k] = true; }; 
+			}
+		}
+    	
+    	var i,k; 
+    	return function () { 
+    		i,k = next(keys,i)
+        	if(k) return k, t[k];
+    	} 
+	};
+	count = function(t){
+		var i = 0;
+		for(k,v in t){i++};
+		return i;
+	};
+	gc = function(o,gc){
+		var gd = ..raw.malloc(1);
+		gd@ = { _gc = function(){ call( type(gc)=="string"?o[gc]:gc,o);} }
+		o[["_gc"]] = gd;
+		return o;
+	}; 
+	add_gc = gc;//废弃
+} 
+
+/**intellisense(table)
+find(.(表,查找值) = 查找表中是否存在某个值并返回对应的键
+findAll(.(表,查找值) = 查找表中是否存在某个值并返回对应的键数组\n找不到返回空数组,可使用#操作符检测长度
+array(.(任意个数组长度,默认值) = 可使用不定个数长度参数指定多维数组长度, 例：\n table.array(3,5,{} ); \n如果默认值是table对象，自动复制创建新值
+array(.(任意个数组长度,函数或类,任意个调用参数) = 可使用不定个数长度参数指定多维数组长度,\n最后一个参数可以是创建默认值的函数或类，并在后面指定调用参数
+slice(.(数组,开始位置,结束位置) = 从指定位置截取并返回新数组\n开始位置可选，默认为1\n结束位置可选,默认为数组长度\n如果位置参数为负数,则自右侧反向计算
+mixr( = 递归式混入、支持混入成员表
+mixr(.(对象,任意多个混入对象) = 使用后面的对象混入前面的对象(浅拷贝),并返回该对象\n对表成员支持递归混入
+mixin( = 覆盖式混入,支持覆盖已存在的值,不支持递归混入成员表
+mixin(.(对象,任意多个混入对象) = 使用后面的对象混入前面的对象(浅拷贝),并返回该对象\n该函数仅修改第一个参数(混入目标) ,覆盖已存在的键值
+mix( = 混入表但不覆盖已存在的值
+mix(.(对象,任意多个混入对象) = 使用后面的对象补全前面的对象(浅拷贝),并返回该对象\n该函数仅修改第一个参数(混入目标),不覆盖已存在的键值.\n可用于设置表的默认值
+delegate(.(委托对象,任意多个混入对象) = 创建一个委托对象的镜像副本,混入后续参数指定的其他对象.\n副本并不复制委托对象,委托对象的改动也会体现到副本中.\n但修改副本对象并不污染委托对象
+delegate(.(委托元函数,任意多个混入对象) = 创建一个对象,混入后续参数指定的其他对象.\n并将委托函数作为新对象的 _get 元方法.
+gc(.(table对象,析构函数)  = 指定析构函数,返回参数@1\n注意析构函数不应抛出异常.\n函数返回table对象自身
+gc(.(table对象,"析构函数名") =  指定析构函数名,返回参数@1\n函数名可以是之后创建的成员函数.\n注意析构函数不应抛出异常
+gc( = 添加对象在销毁前执行的析构函数 
+getByNamespace(.("表内名字空间路径->名字[2]",表对象) = 返回两个值:名字路径指向对象,该对象所在的表.\n参数一为表内名字空间路径,参数二可选指定查找路径的表对象,\n默认在global全局对象内查找路径
+setByNamespace(.("表内名字空间路径->名字[]",新值,表对象) = 参数一指定表内名字空间路径,如果不存在则则创建此表内名字空间,\n参数二指定需要设置的值,如果不指定则创建空表并赋值,\n参数三可选指定一个表对象,默认为global全局对象
+eachName(表对象,排序函数,排序名数组) = @for name,value in ??.eachName(__/*参数: @1表对象, @2排序函数, @3排序表\n遍历表中的所有名字值,省略排序函数使用默认字典序排序\n可选用参数@3指定一个默认的排序优先数组,或用于接收排序后的键名*/){
+	
+}
+define(.(表对象,->->->) = 预定义一个或多个键名\n即使对应键的值为null,仍然在eachName迭代器中显示出来\n注意该迭代器的预定排序对null值无效
+unpackArgs(.(args) = 从索引1到最大索引返回所有元素值,包含中间的null值
+spliceArgs(.(数组,位置,删除长度,参数表) = 类似splice函数替换数组片段,\n从索引1到最大索引取参数表所有元素插入数组指定位置
+eachArgs(.(args) = 迭代器,\n从索引1到最大索引迭代所有元素值,包含中间的null值
+end intellisense**/  
+
+::GetLastError = k.api( "GetLastError", "int()"); 
+var formatMessage = k.api("FormatMessageA","INT(INT dwFlags,pointer source,INT id,INT lang,str& buf,INT size,pointer &arg )");
+lasterr  = function(err,where){
+	err := GetLastError(); 
+	if(err){ 
+		var len,str =  formatMessage( 0x1200 /*_FORMAT_MESSAGE_FROM_SYSTEM  |  _FORMAT_MESSAGE_IGNORE_INSERTS */
+			,null, err,1024/*默认语言*/,256, 256 ); 
+
+		return ..string.concat(str: "未知错误" ,where ," ERROR CODE:",err) ,err;
+	}
+};  
+ 
+var waitForSingleObject = k.api("WaitForSingleObject", "INT(pointer hHandle,INT dwMilliseconds)");
+var waitForMultipleObjects = k.api("WaitForMultipleObjects", "INT(INT nCount,struct lpHandles,INT bWaitAll,INT dwMilliseconds)");
+var msgWaitForMultipleObjects = u.api("MsgWaitForMultipleObjects", "INT(INT nCount,struct lpHandles,INT bWaitAll,INT dwMilliseconds,INT dwWakeMask)");
+
+var threadwait = function( bClose,bAll, ...){
+    var threads,timeout = ...;
+    if(type(threads)!="table") {
+    	timeout = 0xFFFFFFFF
+    	threads ={...}
+    	if( type(threads[#threads]) == "number" ){
+    		timeout = ..table.pop(threads,1)
+    	}
+    }
+    elseif(timeout === null ) timeout = 0xFFFFFFFF  /* Infinite timeout*/
+    	
+    var len = #threads
+    if(!len) error("参数未指定线程句柄",3);
+    var threads_c = raw.toarray( threads ,"pointer" ,"array");
+    var msg,peek,parse,hasMsg;  
+    
+    var ret; 
+    if( (!bAll) && win[["form"]] ){
+    	msg = ::MSG();
+		parse = win._parseMessage;
+		peek = __messagePeek;  
+    	do{
+			ret = msgWaitForMultipleObjects(len,threads_c,bAll,timeout, 0x4FF/*_QS_ALLINPUT*/); 
+			if( ret!=len ) break;
+			hasMsg =  peek(msg); 
+			if(hasMsg) parse(msg);
+		}while( hasMsg!==null ) 
+    }  
+    else {
+    	ret = waitForMultipleObjects(len,threads_c,bAll,timeout, 0x4FF/*_QS_ALLINPUT*/);  
+    }
+ 
+	if( ret == len) {
+		return null;
+	}
+	elseif( ( ret & 0x102/*_WAIT_TIMEOUT*/) == 0x102 ){ 
+		if( ret == 0xFFFFFFFF/*_WAIT_FAILED*/ ){
+			return null,"failed",ret;  
+		} 
+		return null,"timeout",ret; 
+	}
+	elseif( ( ret & 0x80/*_WAIT_ABANDONED_0*/ ) == 0x80 ){ 
+		if( bClose ){
+			for(i,h in threads){
+				..raw.closehandle(h);
+			};
+		}
+		return ( ret - 0x80) + 1,"abandoned";
+	} 
+	else{
+		if( bClose ){
+			for(i,h in threads){
+				..raw.closehandle(h);
+			};
+		}
+		return ret+1;
+	} 
+}; 
+ 
+thread.waitAll = function(...){
+	return threadwait(false,1,...);
+};
+
+thread.waitClose = function(...){ 
+	return threadwait(true,1,...);
+};  
+
+thread.waitOne = function(...){ 
+	return threadwait(false,0,...);
+};
+
+thread.wait = function(handle,ms=0xFFFFFFFF){
+	return waitForSingleObject(handle,ms)== 0/*_WAIT_OBJECT_0*/;
+}; 
+ 
+var setThrdAffinity = k.api("SetThreadAffinityMask","INT(ptr thread,INT mask)" )
+thread.setAffinity = function( cpu = 1,h){
+	if(!h) h = thread.getHandle();
+    return setThrdAffinity( h,cpu );
+};
+
+thread.invoke = function(...){
+	var r,h = call( thread.create,thread,... );
+	if(!r) error(h,2);
+	..raw.closehandle( h ); 
+}
+
+/**intellisense()
+lasterr() = 返回WINAPI或COM API的最后一次错误信息,第二个返回值为错误码\n无错误则返回null空值
+thread.setAffinity(1,__) = 指定线程在哪个CPU上运行,成功返回原CPU序号,失败返回0,\n参数@1指定CPU,参数@2指定线程句柄\n省略参数@2在设置当前线程
+thread.waitOne(__) = 等待一个或多个线程其中一个返回\n参数可以是多个线程句柄,或包含多个线程句柄的table,\n可选使用最后一个参数指定超时值(毫秒)\n如果在主线程中调用此函数,在等待过程中可处理窗口消息\n注意线程句柄不能大于64个\n成功返回值为完成的句柄在数组中的索引,失败返回空,\n返回值2为错误类型,该值为字符串"timeout"表示超
+thread.wait(__) =  等待一个线程句柄返回\n可选使用第二个参数指定超时值(毫秒)\n成功返回true,超时返回false;
+thread.waitAll(__) = 等待一个或多个线程返回\n参数可以是多个线程句柄,或包含多个线程句柄的table\n可选使用最后一个参数指定超时值(毫秒)\n成功返回值为真,失败返回空,\n返回值2为错误类型,该值为字符串"timeout"表示超时
+thread.waitClose(__) = 等待一个或多个线程返回,并释放所有线程句柄\n参数可以是多个线程句柄,或包含多个线程句柄的table
+thread.invoke(线程函数,其他参数) = @.invoke( \n	function(){\n		__/*创建线程但不返回句柄*/\n	}\n)	
+end intellisense**/ 
+
+//io.open共享模式参数
+ /**intellisense()
+_SH_DENYRW=@0x10/*独占读写*/
+_SH_DENYWR=@0x20/*独占写*/
+_SH_DENYRD=@0x30/*独占读*/
+_SH_DENYNO=@0x40/*共享模式*/
+_SH_SECURE=@0x80/*安全模式*/
+end intellisense**/
+
+/*intellisense(::)*/
+::CopyMemory = k.api("RtlMoveMemory","void(POINTER Destination,pointer Source,INT size)" ) ;
+::CopyMemoryByStruct = k.api("RtlMoveMemory","void(POINTER Destination,struct Source,INT size)" ) ;
+/*end intellisense*/
+
+namespace raw {
+
+	convertArray = function(p,l,t="pointer"){
+		if(!p) return;
+		var a; 
+		if( !t[["_struct"]] ) a = toarray(l,t,"v" );
+		else{
+	    	a = toarray(l,"struct","v");a.v = {t};
+		} 
+		return convert(p,a).v;
+	};
+	mixin = function(p,s,v,...){
+ 		if(v){
+    		convert(p, s);
+    		..table.mixin(s,v,...)
+    	}
+    	::CopyMemoryByStruct(p, s, sizeof(s));
+    	return s;
+	};
+}
+ 
+namespace math{ 
+	mulDiv = k.api( "MulDiv", "int(int a,int b,int c)"); 
+ 
+	_size64_meta._add = function(b){
+		return size64(owner).add(b);
+	}
+	_size64_meta._sub = function(b){
+		return size64(owner).sub(b);
+	}
+	_size64_meta._mod = function(b){
+		return size64(owner).mod(b);
+	}
+	_size64_meta._div = function(b){
+		return size64(owner).div(b);
+	}
+	_size64_meta._mul = function(b){
+		return size64(owner).mul(b);
+	}
+}
+
+fiber.generator = function(func,p){
+    var fib = fiber.create(func); 
+    return function(){
+        if( fiber.status(fib) === "dead" ) return;
+        var r = { fiber.resume (fib,p)	} 
+        if( ..table.shift(r,1) ) return ..table.unpack(r,..table.range(r) ); 
+        else error(r[1],2);
+    } 
+} 
+ 
+/**intellisense()
+raw.mixin(.(指针,结构体对象,任意个混入对象) = 混入新的值,支持任意个混入table对象,\n自动更新指针指向内存,并返回结构体对象
+raw.convertArray(.(源内存指针,源数组长度,"数据类型") = 将指针指向的内存转换为普通数组,传入空指针返回空值\n数据类型参数可省略,默认为"pointer"\n类型类型也可以直接传入一个声明元素类型的结构体参数\n注意该函数不会检测内存溢出错误,调用该函数时必须保证数组长度是正确的值
+math.mulDiv(.(a,b,c) = 返回a乘b再除以c的结果,并自动四舍五入转为整数\n可尽量使运算不会溢出,运算错误则返回-1
+math.round(.(数值,精度) = 四舍五入,\n精度指定小数后的位数,默认为0(取整)
+fiber.generator( 生成器,->->-> ) = @for v in fiber.generator(__/*生成器函数,使用fiber.yield返回值*/,) {
+	
+}
+end intellisense**/
+
+__beforeUnload =  function(){
+	if( type( win[['form']] ) == "class" ){ 
+		for(hwnd,winform in win.form._forms){
+			::DestroyWindow(hwnd); 
+		}; 
+	}
+	if(beforeUnload)beforeUnload();
+}

@@ -1,0 +1,43 @@
+//断点续传演示
+
+import fsys;
+import inet.http
+import inet.httpFile;
+
+fsys.createDir("~/download/lib")
+var remoteFile = inet.httpFile(
+	"http://oss.aau.cn/aauto/lib/tcc.cab" ,"~/download/lib/"
+	)
+
+io.open()	
+var ok = remoteFile.test()
+if( ok ){
+	io.print("文件已下载完成、服务器未更新，无需重新下载")
+	return; 
+}
+elseif( ok === null ){
+	io.print("下载错误,HTTP错误代码",remoteFile.statusCode,err);
+	return; 
+}
+
+
+remoteFile.onReceiveBegin = function(statusCode,contentLength,fileSize){
+	if( statusCode == 206/*断点续传*/ ){
+		io.print("正在断点续传")
+	}
+	elseif(fileSize){
+		io.print("正在重新下载")
+	}
+	
+	io.print("未下载长度",contentLength,"已下载长度",fileSize, "HTTP状态码", statusCode )
+}
+
+remoteFile.onReceive = function(str,size,contentLength){
+	io.print("总长度",contentLength , "下载", size )
+	//return false; //返回false停止下载
+}
+
+//下载文件
+var ok,err,fileSize = remoteFile.download() 
+
+io.print( ok,fileSize,err,inet.lastResponse() )

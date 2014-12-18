@@ -1,0 +1,51 @@
+//对称式协程演示
+
+import coroutine; 
+
+tip = /*
+一个运行时程序创建一个进程.
+一个进程可包含多个可以并发运行的线程.
+而一个线程可以包含多个有独立堆栈环境的纤程,纤程不能并发运行.
+=========================================
+*/
+
+function 卖家(消息) { 
+	io.print("卖家收到消息:: ",消息)
+	钱 = coroutine.transfer(买家任务,"大哥,这是你的本本") 
+	
+	io.print("卖家收到消息:: " ,钱) 
+	coroutine.transfer(买家任务,"你真是个好买家,给你好评!欢迎再次光临!")
+}
+
+function 买家(消息) { 
+	io.print("买家收到消息:: ",消息)
+	
+	交易进度 = coroutine.transfer(coroutine.main,"收到货,确认收到货了,给钱吧")
+	io.print("买家:: ",'看看这交易进度:',交易进度) 
+	
+	coroutine.transfer(coroutine.main,"不行啊,我用了几天这东西有问题,我要投诉!")
+}
+
+function 淘宝网站(最高指示) {
+
+	io.open();//打开控制台
+	io.print( tip )
+	
+	io.print("淘宝网站收到消息:: ",最高指示)
+	
+	卖家任务 = coroutine.create( 卖家)
+	买家任务 = coroutine.create(买家)
+	
+	//coroutine.transfer将控制权从一个协程转移到可一个协程
+	var 你收到货了吗 = coroutine.transfer( 卖家任务,"张三订购了一个鸭梨笔记本")
+ 	io.print("淘宝收到消息:: ",你收到货了吗)
+ 	
+ 	var 大家有意见吗 = coroutine.transfer( 卖家任务,"你好,这是买家付给你的钱")
+ 	io.print("淘宝网站收到投诉:: ",大家有意见吗)
+ 	io.print("淘宝:: ","这样啊,这个啊,你要$#@!@#!~...........");
+}
+  
+coroutine.run(淘宝网站,"准备开张了")
+
+execute("pause") //按任意键继续
+io.close();//关闭控制台

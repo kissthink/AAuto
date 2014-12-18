@@ -1,0 +1,22 @@
+import com;
+
+io.open()
+ 
+//¶¨Òåº¯Êý
+function ListFiles(path = "/" ) {
+    var fs = com.CreateObject("Scripting.FileSystemObject")
+    var dir = fs.GetFolder( io.fullpath(path) )  
+
+    for index,folder in com.each(dir.SubFolders) { 
+        ListFiles( folder.path )
+    }
+
+    for index,file in com.each(dir.Files) {
+        ..io.print(file.path)
+    }
+ 
+}
+
+
+ListFiles();
+io.print("OK")

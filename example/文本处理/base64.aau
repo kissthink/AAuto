@@ -1,0 +1,9 @@
+import crypt.bin;
+import console;
+
+base64 = crypt.bin.encodeBase64( "base64编码可以将不可见的二进制字符串转
+换为可见的文本格式,这样我们就可以将图片等二进制文件使用base64编码后直接内置于源代码中间，这样的好处是不用考虑路径的问题，
+在发布独立的源码文件时非常方便" );
+
+console.log( "BASE64编码："  , base64   ) 
+console.log( "BASE64解码："  , crypt.bin.decodeBase64(base64)   ) 

@@ -1,0 +1,39 @@
+import web.form;
+/*DSG{{*/
+var winform = ..win.form( bottom=402;scroll=1;text="AAuto Form";right=534;parent=...)
+winform.add( 
+btnDlCtrlNoImage={ dr=1;bottom=372;text="禁止下载图片";left=246;top=339;z=1;db=1;right=357;cls="button" };
+btnDlCtrlDefault={ dr=1;bottom=372;text="恢复默认值";left=358;top=339;z=2;db=1;right=469;cls="button" }
+)
+/*}}*/
+
+//创建web窗体
+var wb = web.form( winform 
+	,//可输入_UIFLAG_ 前缀的常量自定义外观
+	,//可输入_DLCTL_ 前缀的常量以控制下载行为
+	);
+
+//打开目标网站
+wb.go("http://www.baidu.com/")
+//显示窗体
+winform.show() 
+wb.wait("");//等待指定网址,可以使用模式匹配语法
+
+//---------------------------------------------
+
+//导入webform辅助函数库
+import web.form.util;
+
+winform.btnDlCtrlDefault.oncommand = function(id,event){
+	web.form.util.dlCtrl(wb) //恢复默认值
+	wb.refresh() //刷新	
+}
+winform.btnDlCtrlNoImage.oncommand = function(id,event){
+	web.form.util.dlCtrl(wb,0) //禁止下载图片
+	wb.refresh() //刷新
+	
+}
+
+//进入消息循环
+win.loopMessage();
+return winform,wb;

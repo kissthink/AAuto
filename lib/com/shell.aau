@@ -1,0 +1,16 @@
+//shell 外壳接口
+import com;
+namespace com.shell;
+
+eachWindows = function(){
+	var shell = ..com.CreateObject("Shell.Application")
+	return ..com.each(shell.Windows)
+} 
+
+/**intellisense()
+com.shell.eachWindows = @for(i,objWnd in com.shell.eachWindows() ){ 
+	io.print( ..com.GetTypeInfo(objWnd.document).GetDocumentation().name );
+} 
+?com.shell.eachWindows = !objShellWnd.
+!objShellWnd.document = 文档对象
+end intellisense**/

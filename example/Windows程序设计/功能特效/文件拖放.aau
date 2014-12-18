@@ -1,0 +1,19 @@
+ import win.ui;
+/*DSG{{*/
+winform = ..win.form( text="AAuto Form";bottom=130;topmost=1;right=499;left=0;top=0;acceptfiles=1 )
+winform.add( 
+txtEdit={ right=468;bottom=78;text="edit";left=74;top=50;z=1;edge=1;cls="edit" };
+static={ bottom=36;right=286;left=31;text="将文件拖放到窗体上即可";top=13;transparent=1;z=2;cls="static" }
+)
+/*}}*/
+
+winform.wndproc = function(hwnd,message,wParam,lParam){
+	select(message) { 
+		case 0x233/*_WM_DROPFILES*/{ 
+			winform.txtEdit.text = win.getDropFile(wParam )[1];   
+		} 
+	}
+}
+
+winform.show(true) 
+win.loopMessage( winform );

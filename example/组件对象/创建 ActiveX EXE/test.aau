@@ -1,0 +1,26 @@
+io.open();//打开控制台
+
+import com;
+
+try{
+	obj = com.CreateObject("AAutoCOM.Test")
+}
+
+if(!obj){
+	io.print("请发布本工程，注册控件以后再运行本示例")
+	execute("pause") //按任意键继续
+	io.close();//关闭控制台
+	return;
+}
+
+io.print("12+3等于" ,obj.Add(12,3) );
+
+obj.AAuto("
+	import win;
+	win.msgbox('Hello,我是AAuto编写的COM控件,我正在执行AAuto代码','AAutoCOM.Test')
+")
+
+obj.Quit();
+ 
+execute("pause") //按任意键继续
+io.close();//关闭控制台

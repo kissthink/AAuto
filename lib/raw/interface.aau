@@ -1,0 +1,31 @@
+//interface 静态接口
+namespace raw;
+  
+var app = ..raw.loadDll(); 
+var convert = ..raw.convert;
+class interface{
+	ctor( thisPointer,itFace,cal="stdcall" ){   
+		if( !thisPointer )
+			error("无效的接口指针",2);
+		 
+		this = convert( convert( thisPointer,{ pointer __vtbl } ).__vtbl ,itFace() ) ;
+		
+		var ptr;
+		var tProto = itFace();  
+		for( k,proto in tProto){  
+			ptr = this[k];
+			if( ( type(proto) != "string" ) || ( type(ptr) != "pointer" )   ){ 
+				continue; 
+		    }
+			this[k] = app.api(ptr,proto,cal,thisPointer);//声明API时,可选使用第四个参数指定this指针
+		}  
+		
+		this.__thisPointer = thisPointer;//gc
+	}
+	@{_topointer = thisPointer}
+} 
+
+/**intellisense()
+raw.interface = 用于将指针绑定到静态类型接口
+raw.interface() = @interface_c = raw.interface(\n	指针,\n	class {\n		pointer func = "int()";\n	} \n)
+end intellisense**/

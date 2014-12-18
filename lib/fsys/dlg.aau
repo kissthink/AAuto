@@ -1,0 +1,201 @@
+//dlg 公用对话框
+import win; 
+import fsys;
+
+namespace fsys.dlg   
+var dll = ..raw.loadDll("comdlg32.dll"); 
+var getOpenFileName = dll.api("GetOpenFileNameA","int(struct&)" )
+var getSaveFileName = dll.api("GetSaveFileNameA","int(struct&)" )
+
+OPENFILENAME = class{
+	ctor( bufSize = 260,file ){ 
+	}
+	INT structSize = 0;
+	INT hwndOwner  = 0;
+	pointer instance ;
+	string filter;
+	pointer customFilter;
+	INT maxCustFilter = 0;
+	INT filterIndex = 1;
+	pointer file = ..raw.malloc(bufSize,file); 
+	INT maxFile =  bufSize-1;
+	string fileTitle;
+	INT maxFileTitle = 0;
+	string initialDir;
+	string title;
+	INT flags = 0;
+	WORD fileOffset = 0;
+	WORD fileExtension = 0;
+	string defExt;
+	pointer lCustData;
+	pointer lpfnHook;
+	string lpTemplateName;
+	pointer pvReserved;
+	INT dwReserved = 0;
+	INT flagsEx = 0; 
+	
+	_prepare = function(){
+		this.structSize = ..raw.sizeof(this);  
+		this.initialDir =  ..io.exist(this.initialDir )  
+		
+		if(type(this.filter) == type.string){
+			this.filter = ..string.replace( this.filter,'|','\0');
+			if( !this.defExt ){
+				this.defExt = ..string.match(this.filter,"\z.+?\.(\w+)");
+			}
+		}
+		else{
+			this.filter = '所有文件\0*.*\0\0'; 
+		} 
+		this.maxFileTitle = #(this.title);
+		if( type(this.customFilter) == type.string ){
+			this.customFilter = ..raw.malloc( 40 + #this.customFilter,this.customFilter); 
+		}
+		this.maxCustFilter = #(this.customFilter);
+	};
+	_getFileName = function(){ 
+		var file = ..raw.tostring(this.file);
+		file = ..string.trimright(file,'\0');
+		if( this.flags & 0x200/*_OFN_ALLOWMULTISELECT*/){  
+			var rawFiles = ..string.split(file,'\0');
+			if(#rawFiles>1){
+				var dir = ..table.remove(rawFiles);
+				var files = {}
+				if( dir[#dir] != '\\'# )
+					dir += "\"
+				for( i,name in rawFiles){ 
+					files[i] = dir ++ name;
+				}
+				return files,rawFiles;
+				
+			}
+			return rawFiles;
+		}
+		return file;
+	};
+	open = function(){
+		this._prepare();
+		if( getOpenFileName(this) ){
+			return this._getFileName();
+		}
+	};
+	save = function(){
+		this._prepare();
+		if( getSaveFileName(this) ){
+			return this._getFileName();
+		}
+	} 
+} 
+ 
+openEx  = function(filter="所有文件|*.*||",title="打开文件",initialDir,hwndOwner,flag = 0,bufSize = 2600,defFile){ 
+	ofn = OPENFILENAME( bufSize,defFile ); 
+  	ofn.initialDir = initialDir;
+  	ofn.filter = filter; 
+	ofn.title = title ;
+	ofn.hwndOwner = hwndOwner;
+	 
+	ofn.flags = flag | 0x80000 /*_OFN_EXPLORER*/ | 0x200/*_OFN_ALLOWMULTISELECT*/; 
+	return ofn.open(); 
+}
+
+open  = function(filter="所有文件|*.*||",title="打开文件",initialDir,hwndOwner,flag = 0,defFile){ 
+	ofn = OPENFILENAME(  ,defFile ); 
+  	ofn.initialDir = initialDir;
+  	ofn.filter = filter; 
+	ofn.title = title ;
+	ofn.hwndOwner = hwndOwner;
+	 
+	ofn.flags = 0x80000 /*_OFN_EXPLORER*/ | flag; 
+	return ofn.open(); 
+}
+
+save  = function(filter="所有文件|*.*||",title="保存文件",initialDir,hwndOwner,flag = 0,defFile){ 
+	ofn = OPENFILENAME( bufSize,defFile ); 
+  	ofn.initialDir = initialDir;
+  	ofn.filter = filter; 
+	ofn.title = title ;
+	ofn.hwndOwner = hwndOwner;
+	 
+	ofn.flags = 0x80000 /*_OFN_EXPLORER*/ | flag; 
+	return ofn.save();  
+}    
+
+/**intellisense(fsys.dlg)
+OPENFILENAME(.(缓冲区大小,默认文件名) = 创建OPENFILENAME结构体
+openEx(.(指定文件类型,对话框标题,默认目录,父窗口,选项参数,缓冲区大小) = 打开文件对话框框,支持多选,所有参数为可选参数\n文件类型以竖线分隔,并以坚线分隔类型说明与后缀名,例如\n fsys.dlg.openEx("所有文件|*.*|文本文件|*.txt|")\n第一个返回值为一个数组,包含一个或多个被选定的文件路径\n多选则会返回第二个数组值,包含被选目录路径以及多个文件名.
+open(.(指定文件类型,对话框标题,默认目录,父窗口,选项参数,默认文件名) = 打开文件对话框框,所有参数为可选参数\n文件类型以竖线分隔,并以坚线分隔类型说明与后缀名,例如\n fsys.dlg.open("所有文件|*.*|文本文件|*.txt|")
+save(.(指定文件类型,对话框标题,默认目录,父窗口,选项参数,默认文件名) = 显示保存文件对话框框,所有参数为可选参数\n文件类型以竖线分隔,并以坚线分隔类型说明与后缀名,例如\n fsys.dlg.save("所有文件|*.*|文本文件|*.txt|")
+end intellisense**/
+
+/**intellisense()
+fsys.dlg.OPENFILENAME() = !OPENFILENAME.
+!OPENFILENAME.save() = 打开保存文件对话框,返回文件名
+!OPENFILENAME.open() = 打开文件对话框,返回文件名
+!OPENFILENAME.initialDir = 初始目录
+!OPENFILENAME.filter = 指定文件类型
+!OPENFILENAME.defExt = 默认后缀名
+!OPENFILENAME.title = 标题
+!OPENFILENAME.hwndOwner = 父窗口句柄
+!OPENFILENAME.flags = 一个或多个_OFN_前缀选项
+end intellisense**/
+
+var BROWSEINFO = class {
+	int hwndOwner;
+	pointer pidlRoot;
+	string pszDisplayName;
+	string lpszTitle; 
+	INT ulFlags =  0x00000004 | 0x00000040 | 0x00000010 | 0x00000001 | 0x00000080 ; //BIF_STATUSTEXT | BIF_NEWDIALOGSTYLE | BIF_EDITBOX | BIF_RETURNONLYFSDIRS | BIF_BROWSEINCLUDEURLS; // Flags that control the return stuff
+	pointer lpfn;
+	int lParam;
+	int iImage;
+}
+ 
+SHBrowseForFolder = ::Shell32.api("SHBrowseForFolderA","pointer(struct lpbi)");   
+opendir = function( dir,hwnd,caption,title="请选择目录" ){
+    dir = ..io.exist(dir) 
+
+	var browseCallbackProc = function( hwnd, uMsg, lp, pData) {  
+		select(uMsg) {
+			case 1/*_BFFM_INITIALIZED*/ {
+				if( dir ){
+					::SendMessage(hwnd,0x0400+102/*BFFM_SETSELECTIONA*/,topointer(1),dir);
+				}
+				if(caption){
+					..win.setText(hwnd,caption);
+				}
+			}
+			case 2/*_BFFM_SELCHANGED*/ {
+				var path = ..fsys.pathFromIdList( lp ) 
+				if( #path )
+					::SendMessage(hwnd,0x0400+100/*BFFM_SETSTATUSTEXT*/,null,path); 
+			} 
+		}
+	}  
+	bi = BROWSEINFO();
+	bi.pszDisplayName = ..raw.malloc(260);
+	bi.hwndOwner = hwnd;
+	bi.lpszTitle = title;
+	bi.lpfn = ..raw.tostdcall( browseCallbackProc ,"int(int,int,pointer,pointer)"); 
+	var path = ..fsys.pathFromIdList(SHBrowseForFolder(bi),true);
+	return path; 
+}
+
+/*intellisense(fsys.dlg)
+opendir(.(目录__,父窗口,标题,窗口标题) = 打开目录浏览对话框,\n所有参数都是可选参数 
+opendir(.() = 打开目录浏览对话框
+end intellisense*/
+
+/**intellisense()
+_BIF_BROWSEFORCOMPUTER=@0x1000/*_BIF_BROWSEFORCOMPUTER*/
+_BIF_BROWSEFORPRINTER=@0x2000/*_BIF_BROWSEFORPRINTER*/
+_BIF_BROWSEINCLUDEFILES=@0x4000/*_BIF_BROWSEINCLUDEFILES*/
+_BIF_BROWSEINCLUDEURLS=@0x80/*_BIF_BROWSEINCLUDEURLS*/
+_BIF_DONTGOBELOWDOMAIN=@0x2/*_BIF_DONTGOBELOWDOMAIN*/
+_BIF_EDITBOX=@0x10/*_BIF_EDITBOX*/
+_BIF_RETURNFSANCESTORS=@0x8/*_BIF_RETURNFSANCESTORS*/
+_BIF_RETURNONLYFSDIRS=@0x1/*_BIF_RETURNONLYFSDIRS*/
+_BIF_SHAREABLE=@0x8000/*_BIF_SHAREABLE*/
+_BIF_STATUSTEXT=@0x4/*_BIF_STATUSTEXT*/
+_BIF_USENEWUI=@0x50/*_BIF_USENEWUI*/
+_BIF_VALIDATE=@0x20/*_BIF_VALIDATE*/
+end intellisense**/

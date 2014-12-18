@@ -1,0 +1,89 @@
+//树形控件入门示例
+import win.ui;
+/*DSG{{*/
+var winform = ..win.form(text="AAuto Form";right=349;bottom=249;parent=...)
+winform.add(
+treeview={cls="treeview";left=22;top=17;right=326;bottom=230;asel=false;bgcolor=15793151;edge=1;infoTip=1;z=1}
+)
+/*}}*/
+
+import mouse
+import win.ui.menu
+winform.treeview.onnotify = function(id,code,ptr){
+ 
+    if( code == 0xFFFFFE6E/*_TVN_SELCHANGED*/ ){ //改变选项
+        var nm = winform.treeview.getTreeNotifyMessage(code,ptr)
+        if( nm ){
+            var data  = winform.treeview.getItemData(nm.itemNew.hItem);
+            if( data ) winform.text = tostring(data)
+            else winform.text = winform.treeview.getItemText(nm.itemNew.hItem);
+        }
+    }
+    elseif(code = 0xFFFFFFFB/*_NM_RCLICK*/){ //鼠标右键单击
+        var x,y = mouse.getPos()
+        var hItem,tvht = winform.treeview.hitTest(x,y,true);
+        var menu = win.ui.popmenu(winform)
+        menu.add("删除",
+            function(){ 
+                winform.treeview.delItem(hItem)
+            }
+        )
+        menu.popup(x,y,true);
+    }
+    elseif( code == 0xFFFFFFF4/*_NM_CUSTOMDRAW*/ ){ //来点自绘
+		var lvcd = winform.treeview.getNotifyCustomDraw(code,ptr); 
+		if( lvcd.nmcd.dwDrawStage == 1/*_CDDS_PREPAINT*/ ){
+			return 0x20/*_CDRF_NOTIFYITEMDRAW*/;
+		}
+		elseif( lvcd.nmcd.dwDrawStage == 0x10001/*_CDDS_ITEMPREPAINT*/ ){
+			select(lvcd.iLevel) {
+				case 0{
+					if (lvcd.nmcd.uItemState == ( 0x10/*_CDIS_FOCUS*/ | 1/*_CDIS_SELECTED*/)) 
+						lvcd.clrText = gdi.RGB(255, 255, 255);
+					else	
+						lvcd.clrText = gdi.RGB(0, 0, 255); 
+				}
+				case 1 {
+					if (lvcd.nmcd.uItemState == ( 0x10/*_CDIS_FOCUS*/ | 1/*_CDIS_SELECTED*/)) 
+						lvcd.clrText = gdi.RGB(255, 255, 255);
+					else	
+						lvcd.clrText = gdi.RGB(255, 0, 0);
+				}
+			} 
+			lvcd.update() 
+			return 0/*_CDRF_DODEFAULT*/
+		}
+	}
+}
+
+var hitem = winform.treeview.insertItem( text="程序目录" );
+var hSubItem = winform.treeview.insertItem( { text="子目录" },hitem/*父节点*/); 
+
+var hitem = winform.treeview.insertItem( { 
+    text = "下面用一个数组指定子节点"; { 
+        {  text = "子节点1"  };
+        {  text = "子节点2" };
+        {  text = "下面用一个数组指定子节点"; {
+            "a";"b";"c";{ text = "d" } 
+           }
+        };
+    }
+} ) 
+
+import string.xml;
+xmlstr =  /* 
+<?xml version="1.0" encoding="gb2312"?>
+<project ver="0.60" name="快手工程3" libEmbed="true" icon="...">
+	<file name="main.aau" path="main.aau" >  
+	</file>
+	<folder name="资源文件" path="res" embed="true">
+		<file name="test.aau" path="test.aau" >  
+	</folder>
+	<folder name="库" path="lib"> </folder> 
+</project> 
+*/ 
+xmlDoc = string.xml( xmlstr )
+winform.treeview.insertItem( xmlDoc ) //直接把XML加载到树形控件中, winform.treeview.getItemData(hItem) 获取节点对应的XML数据
+
+winform.show() 
+win.loopMessage();

@@ -1,0 +1,17 @@
+//parser HTML分析
+namespace web.parser;
+
+isUtf8 = function(html){
+   var p = //<content>|<CONTENT>\s*=\s*["'][^"']+?<charset>|<CHARSET>\s*=\s*utf-8\s*["']
+   return ..string.match( html,p)
+}
+
+getTitle = function(html){
+   var p = "\<<title>|<TITLE>\>(.+?)\</<title>|<TITLE>\>" 
+   return  ..string.match( html, p)
+}
+
+/**intellisense(web.parser)
+getTitle(__/*HTML*/) = 提取HTML源码中的标题部份
+isUtf8(__/*HTML*/) = 是否使用UTF8编码
+end intellisense**/

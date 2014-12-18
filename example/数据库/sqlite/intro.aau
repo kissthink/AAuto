@@ -1,0 +1,34 @@
+//入门
+import console;
+import sqlite
+
+//打开数据库连接
+var sqlConnection = sqlite("/testParameters.db")
+
+//exec简化版命名参数
+sqlConnection.exec( "CREATE TABLE IF NOT EXISTS @tablename(title, length, year, starring);",{
+    tablename = "myTableName"
+} ) 
+
+//预处理命名参数：
+sqlConnection.prepare("INSERT INTO myTableName VALUES (@title,@length,@year, 'Jodie Foster');" ).step(
+    title = "标题11111";
+    length = 4;
+    year = time.now();	
+ )
+ 
+//迭代方式查询数据  
+for title, length, year, starring in sqlConnection.each("SELECT * FROM myTableName") {
+    console.log( title, length, year, starring  ) 
+}
+ 
+import string.database;
+var txtdb = string.database(","); //创建文本数据解析器
+
+//导出表为CSV格式
+var txt = txtdb.stringify( sqlConnection.getTable("SELECT * FROM myTableName") )
+console.log( txt )
+ 
+//格式化参数
+sqlConnection.exec("DROP TABLE %s","myTableName" ); 
+console.pause();

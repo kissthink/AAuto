@@ -1,0 +1,18 @@
+
+import com.interface.IPersist; 
+namespace  com.interface;
+
+class IPersistFile{
+	ctor(  ){
+		this = ..com.interface.IPersist(); 
+	}; 
+	pointer IsDirty = "int()";
+	pointer Load = "int(string pszFileName, INT mode)";
+	pointer Save = "int(string pszFileName,bool remember)";
+	pointer SaveCompleted = "int(string pszFileName)";
+	pointer GetCurFile= "int(str& ppszFileName)"; 
+}
+IPersistFile.IID = "{0000010b-0000-0000-C000-000000000046}"; 
+
+ 
+          

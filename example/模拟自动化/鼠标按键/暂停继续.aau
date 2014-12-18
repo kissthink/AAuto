@@ -1,0 +1,21 @@
+
+import  key
+io.open()
+
+while( ! key.getStateX( 0x1B/*_VK_ESCAPE*/ ) ){
+	sleep(200)
+	
+	if( key.getStateX("SPACE") ){
+        io.print("暂停，按空格键继续"); 
+   		key.wait( "SPACE" );
+	}
+	
+	io.print("我在运行,按空格键暂停运行，按“ESC”退出") 
+}
+
+
+execute("pause") //按任意键继续
+io.close();//关闭控制台
+
+
+ 

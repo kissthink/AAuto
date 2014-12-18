@@ -1,0 +1,206 @@
+//activeX 控件
+import win; 
+import com;
+import process;
+import process.admin;
+import win.reg;
+import win.version;
+import console;
+import fsys;
+
+class com.activeX{
+
+	ctor( clsPath,version){
+		if( version === null ) version = 1;
+		version = tonumber(version)
+		if(!version)
+			error("请在第二个参数中指定正确的版本号",2)
+		
+		var tClsPath = ..string.split( clsPath,".") 
+		if(#tClsPath<2){
+			error("类不应置于全局名字空间",2)
+		}
+		
+		try{
+			..global.import(clsPath); 
+		}
+		
+		this._class = ..table.getByNamespace( clsPath );
+		if( ! this._class ){
+			error("参数一指定的类库错误",2)
+		}
+		
+		this._obj = this._class();
+		this.Control = this._obj.InitialSize 
+			&& this._obj.InitialSize
+			&& this._obj.CreateWindow
+			&& this._obj.SetExtent
+			&& this._obj.GetClass
+			&& this._obj.DestroyWindow;
+		
+		this.clsPath = clsPath  		
+		this.Arguments = "/Automation" 
+	 	this.VersionIndependentProgID = clsPath
+	 	this.ProgID = this.VersionIndependentProgID + "." +  version 
+		this.TypeLib = "res/" +  tClsPath[1] + ".tlb"   
+		var tlbpath = "/" + this.TypeLib;
+		if(!..io.exist( tlbpath ) ){
+			var str = ..string.load( tlbpath );
+			if(!str)
+				error("没有找到" + tlbpath,2);
+				
+			..fsys.createParentDir(tlbpath);
+			..string.save(tlbpath, str );
+		}
+		
+		this.CoClass = tClsPath[#tClsPath];
+		this.ComponentName = tClsPath[1] + " Component";
+	};
+	main = function(){
+		var cmdline = _CMDLINE; 
+		if(! #cmdline ) return;
+		
+		cmdline = ..string.trim(cmdline)
+		var tcmd = ..string.split(cmdline," ");
+		var farg  = tcmd[1];
+		farg = ..string.replace(farg,"@\","/");
+		
+		if( ..string.cmp(farg,"/r")==0){ 
+			var ret,err;
+			try{
+				this.register();
+				ret = true;
+				err = "注册组件成功";
+			}
+			catch(e){
+				err = e;
+			} 
+			return ret,err;
+		}
+		else if( ..string.cmp(farg,"/u")==0){
+			var ret,err;
+			try{
+				this.unRegister();
+				ret = true;
+				err = "卸载组件成功";
+			}
+			catch(e){
+				err = e;
+			} 
+			return ret,err; 
+			
+		}
+		else if( ..string.cmp(farg,"/Automation")==0){  
+			var ret,err;
+			try{
+				this.start();
+				ret = true; 
+			}
+			catch(e){
+				err = e;
+			} 
+			return ret,err;
+		}  
+		 
+	};
+	register = function() { 
+		if( _STUDIO_INVOKED ) error("请生成EXE文件后再注册控件",2)
+			
+		..fsys.setCurDir("/");
+		var succeeded;
+		..win.reg.overridePredefinedKey("HKEY_CLASSES_ROOT","HKEY_CURRENT_USER\Software\Classes",
+			function(){
+				succeeded = ..com.RegisterObject( this )
+			}
+		)
+		 
+		if(!succeeded) error("RegisterObject failed!"); 
+	};
+	unRegister = function() { 
+		if( _STUDIO_INVOKED ) error("请生成EXE文件后再卸载控件",2)
+			
+		..fsys.setCurDir("/");
+		var succeeded;
+		..win.reg.overridePredefinedKey("HKEY_CLASSES_ROOT","HKEY_CURRENT_USER\Software\Classes",
+			function(){
+				succeeded = ..com.UnRegisterObject( this )
+			}
+		)
+		 
+		if(!succeeded) error("UnRegisterObject failed!");
+	}; 
+	start = function() { 
+		var appObject, events, e = ..com.NewObject(
+			this._obj , this.clsPath,this.TypeLib )
+ 	
+		if( ! appObject) {
+			error("NewObject failed: " ++ e)
+		}
+ 	
+		var cookie = ..com.ExposeObject(appObject)
+		if( ! cookie) {
+			error("ExposeObject failed!")
+		} 
+		
+		if( (! _STUDIO_INVOKED) &&  (!win[["form"]]) )
+			..win.loopMessage();
+	} 
+}
+
+try {
+	//Please note that the call to OaEnablePerUserTLibRegistration() sets a flag within the OleAut32.dll, 
+    //which persists only until that dll is unloaded. If you unload before registering your tlb, it will not be successful
+	::Oleaut32 := ..raw.loadDll("Oleaut32.dll");
+	enablePerUserTLibRegistration = ::Oleaut32.api("OaEnablePerUserTLibRegistration","void()");
+	enablePerUserTLibRegistration(); //vista以后的系统,允许以普通权限注册控件
+}
+
+namespace com.activeX{
+
+	regsvr32As = function(filepath,reg=true){
+		var filepath = ..io.localpath(filepath) : filepath; 
+		..process.admin.runas_wait("regsvr32", "/s "  + ( reg? "" : "/u " ) + '"' + filepath + '"' )
+	}
+	
+	regsvr32 = function( filepath,install ){
+	
+		var filepath = ..io.localpath(filepath) : filepath; 
+		if( install === null ) install = true;
+		
+		var succeeded;
+		..win.reg.overridePredefinedKey("HKEY_CLASSES_ROOT","HKEY_CURRENT_USER\Software\Classes",
+			function(){
+				try{  
+					var ocx = ..raw.loadDll(filepath)
+					var regsvr = install 
+						? ocx.api("DllRegisterServer","int()" )
+						: ocx.api("DllUnregisterServer","int()" );
+						
+					succeeded = regsvr() >= 0;
+				}	
+			}
+		);	
+		
+		if( succeeded ) return true;
+		..process.admin.runas_wait("regsvr32", "/s "  + ( reg? "" : "/u " ) + '"' + filepath + '"' );
+	} 
+	
+	install = function( filepath,i,... ){
+		..process.admin.runas_wait("regsvr32", {"/s";"/i";i?"":"/u";filepath;...} );
+	} 
+
+} 
+
+/**intellisense()
+?com.activeX = !com_activeX.
+!com_activeX.register() = 注册组件
+!com_activeX.unRegister() = 卸载组件
+!com_activeX.main() = 该函数检测传入参数并执行相应操作\n/r 注册控件 /u卸载控件 /Automation 运行
+!com_activeX.start() = 运行控件 
+com.activeX.install() = 尝试用普通权限安装控件\n如果失败则申请管理权限注册控件
+com.activeX.regsvr32("__") = 尝试用普通权限注册控件\n如果失败则申请管理权限注册控件
+com.activeX.regsvr32("__",false) = 尝试用普通权限卸载外部控件\n如果失败则申请管理权限卸载控件
+com.activeX.regsvr32As("__") = 注册外部控件,\n如果需要管理权限则申请管理权限
+com.activeX.regsvr32As("__",false) = 卸载外部控件,\n如果需要管理权限则申请管理权限
+com.activeX.install("__",true,->->->) = 安装控件,可添加任意个命令行参数,\n如果需要管理权限则申请管理权限
+end intellisense**/

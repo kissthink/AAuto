@@ -1,0 +1,60 @@
+//heap 进程堆
+import process
+namespace process.heap;
+
+/*intellisense(process.heap)*/
+HEAPLIST32 = class {
+INT dwSize;
+INT th32ProcessID; // owning process
+INT th32HeapID; // heap (in owning process's context!)
+INT dwFlags;
+}
+Heap32ListFirst = ::Kernel32.api("Heap32ListFirst","int(pointer hsnap,struct& lppe)")
+Heap32ListNext = ::Kernel32.api("Heap32ListNext","int(pointer hsnap,struct& lppe)")  
+/*end intellisense*/
+
+eachList = function(pid) {
+    return ..process.eachSnap( pid:..process.getId(),0x1/*_TH32CS_SNAPHEAPLIST*/,HEAPLIST32(),Heap32ListFirst,Heap32ListNext)
+}
+
+
+/*intellisense(process.heap)*/
+HEAPENTRY32 = class {
+INT dwSize;
+int hHandle; // Handle of this heap block
+INT dwAddress; // Linear address of start of block
+INT dwBlockSize; // Size of block in bytes
+INT dwFlags;
+INT dwLockCount;
+INT dwResvd;
+INT th32ProcessID; // owning process
+int th32HeapID; // heap block is in
+}
+Heap32First = ::Kernel32.api("Heap32First","int(struct &lphe,INT pid,INT hid)")
+Heap32Next = ::Kernel32.api("Heap32Next","int(struct &lphe)")  
+/*end intellisense*/
+
+//此函数不能用于开发环境的自身进程
+each = function(heapList) {
+	var firstEntry = HEAPENTRY32()
+	
+	firstEntry.dwSize = 36 
+	if( ! Heap32First(firstEntry,heapList.th32ProcessID,heapList.th32HeapID) ){
+		firstEntry = null; 
+	}
+    return function(entry){
+    	if( entry){
+    		entry.dwSize = 36 
+    		if( Heap32Next(entry) )
+    			return entry;
+    	}
+    	else
+    		return firstEntry;
+    }
+    
+}
+
+/**intellisense(process.heap)
+each =  @for heapEntry in process.heap.each(heapList) { \n//io.print( heapEntry.dwAddress  )\n \n}
+eachList =  @for heapList in process.heap.eachList(__/*进程ID*/) { \n//io.print( heapList.dwAddress  )\n \n}
+end intellisense**/

@@ -1,0 +1,38 @@
+import win.ui;
+/*DSG{{*/
+var winform = ..win.form(text="选项卡控件测试";right=349;bottom=249;edge=1;frame=1;parent=...)
+winform.add(
+tab={cls="tab";left=22;top=26;right=318;bottom=221;edge=1;z=1}
+)
+/*}}*/
+
+winform.tab.onnotify = function(id,code,ptr){
+	if(code==0xFFFFFDD9/*_TCN_SELCHANGE*/) 
+		winform.msgbox("切换") 
+} 
+
+/*
+为TAB选项控件添加一个页面。
+一个页面实际上就是一个普通的窗体，可以使用窗体设计器生成，
+创建窗体参数仅需指定text参数(选项卡标题)，以及bottom(高度)，right(宽度)
+然后将win.form函数替换为winform.tab.add即可。
+也可以使用 winform.tab.loadForm("/pageForm.aau") 直接将外部文件加载到选项页面.
+*/
+var pageForm = winform.tab.add( text="选项"; bottom=140;right=325 )
+pageForm.add( 
+	button={ bottom=49;text="你好";left=36;right=135;top=21;z=1;cls="button" } 
+) 
+pageForm.button.oncommand = function(id,event){
+	pageForm.msgbox( pageForm.button.text,"也可以使用回调函数" ); 
+} 
+
+var pageForm2 = winform.tab.add(  text="点这里";bottom=140;right=325  )
+pageForm2.add( 
+button={ bottom=49;text="Hello";left=36;right=135;top=21;z=1;cls="button" }
+) 
+pageForm2.button.oncommand = function(id,event){
+	pageForm2.msgbox( pageForm2.button.text,"Hello!" ); 
+} 
+
+winform.show(true) 
+win.loopMessage( winform );

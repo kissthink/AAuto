@@ -1,0 +1,330 @@
+//.. 超级热键
+import winex;
+import key.hook;
+namespace key
+
+class hotkey{
+	ctor( winform ){
+		var hk = ..key.hook();
+		this.actions = {};    
+		this.downKeys = {};
+		this.say = ..winex.say;
+		var log = logger(this);
+		
+		if( ! ( winform[["hwnd"]] && winform.setTimeout ) )
+			error("参数不是有效的窗体对象",2)
+	
+	
+		log.setEndKeys( "-","(",")","[","]","{","}",":",";","'",'"',"/","\",",",".","?","!",'\n','\t');
+		
+		this.setTimeout = function(func,tk=1,...){
+			winform.setTimeout( 
+				function(...){ 
+					func(...) 
+				},tk,... 
+			)
+		}
+		
+		var firstKeyWaiting;
+		var fireEvent = function(){
+			var vk,node,lastPressVkCode;
+			node,firstKeyWaiting,lastPressVkCode = log.findAction();
+			if(!node) {  
+				if( log.getLength() == 1){  
+					log.clear();
+					return;
+				}
+				 	
+				if( type(this.waitproc) == type.function){
+					this.setTimeout( this.waitproc,1 ); 
+				}
+				return true; 
+			} 
+			
+			var event = node.event
+			var tEvent = type(event); 
+			var focus = ..winex.getFocus();
+			if( (!firstKeyWaiting) && tEvent==type.function){ 
+				this.setTimeout( event,1,focus, log.getCatchKeys() ); 
+				log.clear();
+				
+				var t = type(this.waitproc);
+				if( t == type.function){
+					this.setTimeout( this.waitproc,1,focus ); 
+				}  
+				return true;//取消所有按键
+			}  
+			elseif( (!firstKeyWaiting) && tEvent==type.string){
+				this.setTimeout(
+					function(hwnd){  
+						if( hwnd){ 
+							var str = ..string.trimright(event,"$");  
+							this.say( str );
+						} 
+						if( ..string.endWith(event,'$') ){  
+							if( this.downKeys[lastPressVkCode] ){
+								..key.down(lastPressVkCode) 
+							} 
+							else {
+								..key.press(lastPressVkCode)
+							} 
+						}  
+					},1,focus
+				)  
+				log.clear();
+				var t = type(this.waitproc);
+				if( t == type.function){
+					this.setTimeout( this.waitproc,1,focus ); 
+				} 
+				return true;//取消所有按键
+			}
+			else{
+				if( type(this.waitproc) == type.function){
+					var waitkeys = {}
+					for(k,v in node){
+						if(k!="event") 
+							..table.push(waitkeys,k==0?"[预设终结符]":..key.getName(k));
+					} 
+					this.setTimeout( this.waitproc,1,focus,{ log.getCatchKeys() },waitkeys );
+				}
+				return true;
+			}
+			
+		} 
+		
+		//录制回调函数
+		hk.proc = function(msg,vkcode,scancode,injected,flags,timeStamp,extraInfo){
+			if( injected ) return;  
+        		
+    		select(msg) {
+        		case 0x100/*_WM_KEYDOWN*/ ,0x104/*_WM_SYSKEYDOWN*/ {
+        			if( ! this.downKeys[vkcode]  ){
+        				this.downKeys[vkcode] = true;  
+            			log.push( vkcode );   
+        				return fireEvent(vkcode)    
+        			}
+        		} 
+        		case 0x101/*_WM_KEYUP*/,0x105/*_WM_SYSKEYUP*/{
+        			this.downKeys[vkcode] = false;
+        			if(firstKeyWaiting)
+        				fireEvent();
+        		} 
+    		}   
+		}
+	};
+	getEndKeys = function(){
+		return log.getEndKeys();
+	}
+	
+	setEndKeys = function(...){
+		log.setEndKeys(...)
+	} 
+	reg = function(...){
+		var tab = {...};
+		if(#tab<2)
+			error("至少要指定一个热键、一个触发函数",2)
+			
+		var func = tab[#tab];
+		var t = type(func)
+		if( ( t != type.function) && ( t != type.string ) ){
+			error("最后一个参数必须是函数对象或字符串",2)
+		}
+		
+		var root = {}
+		var node = this.actions 
+		var vk ;
+		for(i=1;#tab-2;1){
+			vk =   ..key.getCode(tab[i] ) ;
+			if(!vk)
+				error("指定了错误的按键,位置:"+i,2)
+			if( ! node[ vk ] ){
+				node[ vk ] = {}; 
+			}   
+			node = node[ vk ]  
+		}
+		 
+		vk = tab[#tab-1];
+		vk = (vk != '\0' )? ( ..key.getCode(vk) ): 0 
+		
+		if( type(func) == type.string ){
+			func = loadcode(func) : func; 
+		} 
+		if(!node[ vk ])
+			node[ vk ] = {};
+			
+		node[ vk ].event = func; 
+	} 
+	
+	regStr = function(str,proc){
+		str = ..string.upper(str);
+		var t = ..string.split(str);
+		..table.push(t,proc);
+		this.reg( ..table.unpack(t) )
+	} 
+	
+	regEndStr = function(str,proc){
+		this.regStr(str + '\0',proc);
+	} 
+	
+	clear = function(){
+		..table.pop(catchKeys,#catchKeys) 
+	} 
+	
+	close = function(){
+		hk.close();
+	}
+	
+}
+
+namespace hotkey{
+
+	class logger{
+		ctor( hotManager ){ 
+			var catchKeys = {};
+		};
+		push = function(vkcode){
+			..table.push( catchKeys,  vkcode )
+		} 
+		clear = function(){ 
+			..table.pop(catchKeys,#catchKeys) 
+		}
+		back = function(pos){  
+			hotManager.setTimeout( 
+				function(){
+					var vk;
+					var backKeys = ..table.splice( catchKeys,1,pos)
+					for(i=1;#backKeys){
+						vk = backKeys[i]
+						if( hotManager.downKeys[vk] ){
+							..key.down(vk)
+						} 
+						else {
+							..key.press(vk)
+						}  
+					} 
+				},1  
+			)	
+		} 
+		getCatchKeys = function(){
+			var tab = {}
+			for(k,v in catchKeys ){
+				..table.push(tab, ..key.getName(v) );
+			} 
+			return ..table.unpack(tab)
+		} 
+		getLength = function(){
+			return #catchKeys
+		}
+		getEndKeys = function(){
+			var tab = {}
+			for(k,v in this.endKeys ){
+				..table.push(tab, ..key.getName(k) );
+			} 
+			return ..table.unpack(tab);
+		} 
+		setEndKeys = function(...){
+			var vk;
+			this.endKeys = {};
+			for(i,v in {...} ){
+				vk = ..key.getCode(v);
+				if(!vk)
+					error("指定了错误的键:" + v,2)
+				this.endKeys[vk] = true;  
+			}  
+		}   
+		findAction = function(){
+			var vk;
+			var node;
+			var next; 
+			var start = 1;
+		 	var foundAction;
+		 	var foundIndex;
+		 	var VK_NLR = ..key.VK_NLR; 
+		 	
+			for(start=1;#catchKeys){ FIND_START:
+				node = hotManager.actions;
+				for(i=start;#catchKeys ){ FIND_END:
+					vk = catchKeys[i]; 
+					next = node[ vk ]; 
+					if(next){
+						node = next; 
+					}
+					else{ 
+						var ilr = VK_NLR[vk];
+						if(ilr){
+							vk = ilr;
+							next = node[ vk ] 
+						}
+						
+						if(!next){
+							if( this.endKeys[vk] ){
+								next = node[ 0 ] 
+							}
+						}
+							
+						node = next;
+						if(!node) 
+							break;
+					} 
+				}  
+				if(node){
+					foundAction = node;
+					foundIndex = start; 
+					break;
+				}	
+			}  
+			if(foundIndex){
+				if( foundIndex != 1){
+					this.back( foundIndex-1 ); 
+				} 
+			}
+			else {
+				if(#catchKeys>1)
+					this.back( #catchKeys  ); 
+			}  
+			
+			var downFirst  = hotManager.downKeys[catchKeys[1] ]
+			if(downFirst){
+				downFirst = false;
+				if(! this.endKeys[ catchKeys[#catchKeys] ] ) {
+					for(k,v in node){
+						if(k!="event")
+							downFirst = true;
+					} 
+				}
+			}
+			return node,downFirst,catchKeys[#catchKeys];
+		}
+	} 
+}
+ 
+
+
+/**intellisense()
+key.hotkey = 超级热键支持库\n超级热键,指的是一组连续按下的键作为热键并触发相应的操作,\n超级热键不需要同时按住多个键,操作方便,可支持更多的热键.
+key.hotkey(winform__/*指定窗体对象*/) = 创建热键方案管理器\nwin.loopMessage() 启动消息循环以后生效
+!key_hotkey.setEndKeys("__") = 设定预设终结键,支持不定个数参数\n支持键名或键码.
+!key_hotkey.getEndKeys() = 返回所有预设终结键键名 
+!key_hotkey.regEndStr(.(超级热键,回调函数或输入文本) = 第一个参数是可以表示有效键名的英文字符\n第二个参数可以是一段用于输出的文本,aau代码或aau文件,\n也可以是一个回调函数\n此函数注册的热键必须在最后按下预设的终结键时才会触发\n使用setEndKeys函数可以修改预设终结键\n输入文本如果以美元符号结束$,则输出当前终结键到目标窗体.
+!key_hotkey.regStr(.(超级热键,回调函数或输入文本) = 第一个参数是可以表示有效键名的英文字符\n第二个参数可以是一段用于输出的文本,aau代码或aau文件,\n也可以是一个回调函数
+!key_hotkey.reg = @.reg(\n	"~","H","I",\n	function(hFocusWnd,...){\n		..winex.say("hello world!",hFocusWnd)\n	} \n)
+!key_hotkey.setTimeout(.(异步执行函数,延时值,其他参数) = 异步执行函数,\n自动禁用热键功能直到函数执行完毕.
+!key_hotkey.waitproc = @.waitproc = function( hwnd,tEnter,tWait ){
+	import win.util.tray;
+	
+	if(!tWait){
+		win.util.tray.pop()//关闭弹窗
+		return;
+	} 
+	win.util.tray.pop(
+		'已按下键:' 
+		+ ..string.join(tEnter,"+")  
+		+ ' 等待候选键:' 
+		+ ..string.join(tWait,",") 
+	)
+}
+!key_hotkey.clear() = 清除所有热键
+!key_hotkey.close() = 关闭热键方案管理器
+?key.hotkey =  !key_hotkey.
+end intellisense**/
+

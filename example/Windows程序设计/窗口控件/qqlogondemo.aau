@@ -1,0 +1,99 @@
+//仿QQ登录界面
+import win.ui; 
+import win.ui.menu
+import process;
+/*DSG{{*/
+var winform = ..win.form(cls="AAuto_QQ2010";text="AAuto_UI_QQ2010";right=350;bottom=226;bgcolor=16708835;max=false;parent=...;style=0)
+winform.add(
+button={cls="button";text="设 置";left=23;top=193;right=99;bottom=216;acceptfiles=1;bgcolor=14215660;color=0;dl=1;dt=1;tabstop=1;z=13};
+button2={cls="button";text="5";left=310;top=157;right=335;bottom=177;acceptfiles=1;bgcolor=14215660;color=0;dl=1;dt=1;flat=1;font=LOGFONT( name='Webdings';charset=2 );tabstop=1;z=1};
+button3={cls="button";text="登 录";left=248;top=193;right=324;bottom=216;acceptfiles=1;bgcolor=14215660;color=0;dl=1;dt=1;tabstop=1;z=10};
+button4={cls="button";left=79;top=152;right=114;bottom=169;acceptfiles=1;bgcolor=14215660;color=0;dl=1;dt=1;image=$"\.res\state.jpg";tabstop=1;z=14};
+checkbox={cls="checkbox";text="记住密码";left=126;top=152;right=192;bottom=172;acceptfiles=1;bgcolor=16708835;checked=1;color=0;dl=1;dt=1;tabstop=1;z=5};
+checkbox2={cls="checkbox";text="自动登录";left=209;top=152;right=275;bottom=172;acceptfiles=1;bgcolor=16577509;color=0;dl=1;dt=1;tabstop=1;z=8};
+combobox={cls="combobox";text="combobox";left=85;top=71;right=249;bottom=91;acceptfiles=1;bgcolor=14215660;color=0;dl=1;dt=1;edge=1;items={"829056"};mode="dropdown";tabstop=1;z=2};
+edit2={cls="edit";text="AAuto Quicker";left=84;top=109;right=248;bottom=130;acceptfiles=1;bgcolor=16777215;color=0;dl=1;dt=1;edge=1;password=1;tabstop=1;z=16};
+picturebox={cls="picturebox";top=182;right=347;bottom=223;acceptfiles=1;bgcolor=16379852;color=0;dl=1;dt=1;left=0;tabstop=1;z=15};
+picturebox2={cls="picturebox";left=-1;top=-4;right=352;bottom=57;acceptfiles=1;bgcolor=14215660;color=0;dl=1;dt=1;image=$"\.res\logon.jpg";tabstop=1;z=3};
+picturebox_floating={cls="picturebox";left=80;top=152;right=111;bottom=172;acceptfiles=1;bgcolor=14215660;color=0;dl=1;dt=1;image=$"\.res\state.jpg";notify=1;tabstop=1;z=4};
+static={cls="static";text="账 号：";left=37;top=72;right=84;bottom=92;acceptfiles=1;bgcolor=14215660;color=0;dl=1;dt=1;tabstop=1;transparent=1;z=6};
+static2={cls="static";text="密 码：";left=37;top=117;right=84;bottom=137;acceptfiles=1;bgcolor=14215660;color=0;dl=1;dt=1;tabstop=1;transparent=1;z=12};
+static3={cls="static";text="注册新账号";left=266;top=77;right=331;bottom=97;acceptfiles=1;bgcolor=14215660;color=16711680;dl=1;dt=1;notify=1;tabstop=1;transparent=1;z=11};
+static4={cls="static";text="找回密码";left=266;top=114;right=331;bottom=134;acceptfiles=1;bgcolor=14215660;color=16711680;dl=1;dt=1;notify=1;tabstop=1;transparent=1;z=9};
+static5={cls="static";text="状 态：";left=36;top=154;right=83;bottom=174;acceptfiles=1;bgcolor=14215660;color=0;dl=1;dt=1;tabstop=1;transparent=1;z=7}
+)
+/*}}*/
+
+var m_isover_floatingbtn = false;
+winform.wndproc = function(hwnd,message,wParam,lParam){
+	select(message) { 
+		case 0x200/*_WM_MOUSEMOVE*/  {
+	    		winform.picturebox_floating.hide= false;
+	    		winform.button4.hide= true;
+	    		if(m_isover_floatingbtn){ 
+	    	    	m_isover_floatingbtn= false;
+	    	    	winform.redraw();
+	    		}
+    	}   
+	}
+}
+
+winform.picturebox_floating.wndproc = function(hwnd,message,wParam,lParam){
+	select(message) {
+		case 0x200/*_WM_MOUSEMOVE*/ {
+	    	winform.picturebox_floating.hide= true;
+	    	winform.button4.hide= false;
+	    	m_isover_floatingbtn = true;
+		}   
+	} 
+}
+
+winform.button4.oncommand = function(id,event){ 
+	var popmenu1 = win.ui.popmenu(winform);
+	popmenu1.add('我在线上',function(){win.msgbox("我在线上!","AAuto UI Demo" )});
+	popmenu1.add('Q 我吧',function(){win.msgbox("Q 我吧!","AAuto UI Demo" )});
+	popmenu1.add();
+	popmenu1.add('离 开',function(){win.msgbox("离 开!","AAuto UI Demo" )});
+	popmenu1.add('忙 碌',function(){win.msgbox("忙 碌!","AAuto UI Demo" )});
+	popmenu1.add('请勿打扰',function(){win.msgbox("请勿打扰!","AAuto UI Demo" )});
+	popmenu1.add();
+	popmenu1.add('隐 身',function(){win.msgbox("隐 身!","AAuto UI Demo" )});
+	//添加按钮弹出菜单
+
+	popmenu1.popup(winform.button4.right - 34 ,winform.button4.bottom); 
+}
+
+winform.button4.hide= true; 
+
+winform.button3.oncommand = function(id,event){ 
+	var userID = winform.combobox.text;
+	var userPW = winform.edit2.text;
+	var strTemp = string.format( '帐号是: %s\r\n密码是: %s', userID,userPW);
+	win.msgbox(strTemp ,"AAuto_UI_DEMO" ); 
+}
+
+winform.static4.oncommand = function(id,event){ 
+	process.execute("http://www.ecranesoft.com/bbs")
+}
+
+winform.static3.oncommand = function(id,event){ 
+	process.execute("http://www.ecranesoft.com/bbs")
+}
+ 
+winform.button2.oncommand = function(id,event){ 
+	if(winform.button2.text == "5"){
+		winform.button.hide= true;
+		winform.button3.hide= true; 
+		winform.bottom -= 40 
+		winform.button2.text = "6"
+	}
+	else{ 
+		winform.button.hide= false;
+		winform.button3.hide= false;  
+		winform.bottom += 40
+		winform.button2.text = "5"
+	} 
+}
+
+winform.show(true) 
+win.loopMessage( winform );

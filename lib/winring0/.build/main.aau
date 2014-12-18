@@ -1,0 +1,58 @@
+import ide;
+import fsys;
+
+var publisDir = ide.getPublisDir();
+if(!#publisDir)return; 
+
+var pubResDir =  fsys.joinpath(publisDir,"/lib/winring0/" ); 
+if(  ! io.exist(pubResDir) ){ 
+	var libPath,libDir = io.libpath("winring0")
+	..fsys.createDir(pubResDir);  
+	..fsys.copy( fsys.joinpath(libDir,"\.res\") ,pubResDir,0x10/*_FOF_NOCONFIRMATION*/  | 0x200/*_FOF_NOCONFIRMMKDIR*/);  
+}
+
+var manifestPath = ..fsys.joinpath( ide.getProjectDir(),".build\Manifest.xml" );
+var manifestData = ..string.load( manifestPath ); 
+if( !manifestData ){
+	import string.template;
+	manifestTemplate = string.template();
+	manifestTemplate.template = /***
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?> 
+<assembly 
+xmlns="urn:schemas-microsoft-com:asm.v1" 
+manifestVersion="1.0">
+<assemblyIdentity 
+    processorArchitecture="x86" 
+    version="5.1.0.0"
+    type="win32"
+    name="${EXENAME}"/>
+    <description>${PROJENAME}</description>
+    <dependency>
+    <dependentAssembly>
+    <assemblyIdentity
+        type="win32"
+        name="Microsoft.Windows.Common-Controls"
+        version="6.0.0.0"
+        publicKeyToken="6595b64144ccf1df"
+        language="*"
+        processorArchitecture="x86"/>
+    </dependentAssembly>
+    </dependency>
+	<!-- Identify the application security requirements. -->
+	<trustInfo xmlns="urn:schemas-microsoft-com:asm.v3">
+    	<security>
+        	<requestedPrivileges>
+            	<requestedExecutionLevel level="requireAdministrator" uiAccess="false"/>
+        	</requestedPrivileges>
+    	</security>
+	</trustInfo>
+</assembly>
+***/ 
+	manifestData = manifestTemplate.format(
+		EXENAME = ide.getProjectProperty("name") + ".exe" ;
+		PROJENAME = ide.getProjectProperty("name")
+	);
+	manifestData = ..string.fromto(manifestData,0,65001);
+	..fsys.createParentDir(manifestPath);
+	string.save(manifestPath,manifestData )
+}

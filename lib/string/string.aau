@@ -1,0 +1,88 @@
+//string 字符串对象
+namespace string;  
+
+class string{
+	ctor( str,... ){
+		if(...)
+			return str,...;
+			
+		this.str = tostring(str);
+	};
+	@_meta
+}
+
+var prototype = {}
+string._meta = { 
+	_get = prototype;
+	_tostring = function(){
+		return owner.str;
+	}  
+}
+prototype.tostring =  string._meta._tostring;
+
+for(k,func in ..string){
+	 prototype[k] = function(...){ 
+	 	return string( func(owner.str,...) )
+	 } 
+}
+ 
+with prototype{
+	split = function(sep){
+		return ..string.split(owner.str,sep);
+	}
+	join = function(lst){
+		return ..string.string( ..string.join(lst,owner.str) )
+	}
+}
+
+/**intellisense() 
+!str.split(__/*分隔符*/) = 拆分为数组
+!str.join(__/*数组*/) = 合并为字符串 
+!str.concat(__/*字符串*/) = 拼接字符串\n允许参数中有null值\n所有参数为null或无参数时无返回值。\n
+!str.reverse() = 将字符串倒序排列\n!str.
+!str.unpack(.(i__,j) = 取字符串的第i个到第j个字符的ascii码数值并返回。
+!str.unpack(.(i__) = 取字符串的第i个字符的ascii码数值。
+!str.lower() = 字符串转换为小写\n!str.
+!str.upper() =  字符串转换为大写\n!str.
+!str.sub(.(i,j ) =  从字符串中截取位置i到j的字符串，如果i,j为负数则从右侧倒数计数
+!str.sub(.(i ) =  从字符串中截取位置i开始的字符串，如果i为负数则从右侧倒数计数
+!str.left(__) =  从字符串左侧截取n个字符
+!str.right(__) =  从字符串右侧截取n个字符
+!str.trim(' ') = 从字符串首尾清除指定的一个或多个字符
+!str.trim() = 从字符串首尾清除所有空白字符
+!str.trimleft(' __') = 从字符串首尾清除指定的一个或多个字符
+!str.trimleft() = 从字符串首尾清除所有空白字符\n!str
+!str.trimright(' __') = 从字符串首尾清除指定的一个或多个字符 
+!str.trimright() = 从字符串首尾清除所有空白字符\n!str
+!str.toUnicode(__/*codepage*/) = 将字符串转换从指定编码转换为unicode编码。
+!str.fromUnicode(__/*codepage*/) = 从unicode编码还原到指定编码。
+!str.toUnicode() = 将字符串转换从ANSI编码转换为unicode编码\n!str
+!str.fromUnicode() = 从unicode编码还原到ANSI编码\n!str
+!str.indexAny("__/*字符串*/") = 查找substr位于str的位置。\nsubstr可以是数值字节码
+!str.indexAny("__/*字符串*/",start) = 查找substr位于str的位置。\nsubstr可以是数值字节码
+!str.lastIndexAny("__/*字符串*/") = 查找substr位于str的位置。\nsubstr可以是数值字节码
+!str.lastIndexAny("__/*字符串*/",start) = 查找substr位于str的位置。\nsubstr可以是数值字节码
+!str.startWith("__/*字符串*/") = 判断substr是否位于str开始处。
+!str.endWith("__/*字符串*/") = 判断substr是否位于str结束处。 
+!str.startWith("__/*字符串*/",true) = 判断substr是否位于str开始处。\n忽略大小写
+!str.endWith("__/*字符串*/",true) = 判断substr是否位于str结束处。\n忽略大小写
+!str.find("__/*模式串*/"); = 使用模式pattern在字符串str中查找\ni,j = !str.find(str,".+?\d" );\n如果有多个捕获分组，将附加为多个返回值。
+!str.find("__/*模式串*/",pos ); = 使用模式pattern在字符串str中查找\ni,j = !str.find(str,".+?\d" );\n如果有多个捕获分组，将附加为多个返回值。
+!str.replace("__/*模式串*/",repl) = 使用模式pattern在字符串str中查找\n然后替换全部搜索到的字符串为repl
+!str.replace("__/*模式串*/",repl,n) = 使用模式pattern在字符串str中查找并替换为repl，\n替换次数为n次
+!str.match("__/*模式串*/") = 第一个参数指定目标字符串，每二个参数指定查找模式串。\n返回找到的字符串或模式串中多个分组匹配的字符串。
+!str.fromto(.(源编码,目标编码) = 转换内码
+!str.str() = 转换为普通文本(不含\0)
+!str.gmatch  = @for m,m2,m3 in ??.gmatch("__/*模式串*/") { \n\n} 
+?string.string = !str.
+string.string() = !str.
+!str.concat() = !str.
+!str.match() = !str. 
+!str.fromto() = !str.
+!str.left() = !str.
+!str.right() = !str.
+!str.sub() = !str. 
+!str.tostring() =  转换为普通字符串
+string.string = 字符串增强支持库
+string.string(__/*字符串*/) = 创建字符串对象
+end intellisense**/

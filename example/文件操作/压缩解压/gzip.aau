@@ -1,0 +1,12 @@
+//gzipΩ‚—πÀı
+
+import zlib;
+import inet.whttp; 
+
+io.open();
+var http = inet.whttp();
+var str = http.get("http://www.sohu.com","Accept-Encoding:gzip, deflate") 
+ 
+str = zlib.gzUncompress(str)
+io.print( str)
+ 

@@ -1,0 +1,61 @@
+//family 字样集合 
+import gdip.core;
+import gdip.font;
+namespace gdip ;
+
+class family {
+	ctor(name,collection){
+		if(type(name) == type.string){ 
+			var e,f = gdip.CreateFontFamilyFromName ( ..string.toUnicode(name),collection) ;
+			if( e ) return null,gdip.errMsg[e];
+			this.pFamily = f;   
+		}
+		else {
+			error("参数错误",2)
+		}
+
+		if(!this.pFamily) return;
+	}
+
+	@_metaProperty//元表指向属性表
+}
+
+
+namespace family {
+
+ 	self.gdip = ..gdip;
+	var gdip = gdip;
+	
+	_metaProperty = ..util.metaProperty(
+	
+	 	createFont = function( emSize,style=0/*_GdipFontStyleRegular*/,unit=2/*_GdipUnitPixel*/ ){
+			return gdip.font(owner,emSize,style,unit) ; 
+		}
+	 	
+		delete = function(){
+			if( owner[["pFamily"]]  ){
+				gdip.DeleteFontFamily(owner[["pFamily"]])
+				owner[["pFamily"]] = null;
+			}
+		}
+		
+		_type = "gdip.family";
+		_topointer = function(){
+			return owner[["pFamily"]];
+		}
+	)   
+}
+
+var $ = _dll; 
+/*intellisense(gdip)*/ 
+CreateFontFamilyFromName = $.api("GdipCreateFontFamilyFromName","int(string name,ptr fontColl,pointer& fontFamily)")
+DeleteFontFamily = $.api("GdipDeleteFontFamily","int(PTR family)") 
+/*end intellisense*/
+ 
+/**intellisense()
+gdip.family("字体名") = 创建字样集合\n创建失败返回空值 
+!gdipfamily.createFont(15,_GdipFontStyle__) = 创建字体,参数一指定大小,\n参数二指定样式\n可选参数三指定单位,默认值为_GdipUnitPixel
+!gdipfamily.delete() = 删除字样集合\n注意不应手工调用此函数,除非该集合内创建的字体已不再使用
+gdip.family() = !gdipfamily.
+!gdipfamily.createFont() = !gdipfont.
+end intellisense**/

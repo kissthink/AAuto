@@ -1,0 +1,110 @@
+//dict 字典
+import util.metaProperty;
+namespace py;
+	
+class dict {
+
+	ctor( object ){ 
+	
+		var tt = type(object) 
+		select(tt) {
+			case type.pointer{ 
+				this.pyDict = object;
+			}
+			case type.null{
+				this.pyDict = PyDict_New();
+			}
+			else {
+				if(object[["pyDict"]] )
+					return object;
+				elseif(object[["pyObject"]] )
+					this.pyDict = object[["pyObject"]];
+				else{
+					error("pyObject构造参数不支持此数据类型:" + tt ,2);
+				}
+			} 
+		}
+	}
+	@_metaProperty
+}
+
+namespace dict {
+
+	_metaProperty = ..util.metaProperty(   
+	
+		_topointer = function(){
+			return owner.pyDict;
+		};   
+		getItem = function(k){
+			return owner[k]
+		};  
+		get = function(k){ 
+			var item = PyDict_GetItemString(owner.pyDict,k) 
+			if(item){
+				//特例 borrow reference
+				..py.IncRef(item);
+				return ..py.object(  item ) ;
+			} 
+		};
+		set = function(k,v){
+			if(v===null)
+				PyDict_DelItemString(owner.pyDict,k);
+			else {
+			 	PyDict_SetItemString(owner.pyDict,k,..py.object(v) ); 
+			} 
+		};
+		each = function(){
+			var pos = 0;
+			var ret,k,v;
+			return function(){
+				ret,pos,k,v = PyDict_Next(owner.pyDict,pos);
+				if( k !== null){
+					return ..py.object(k) ,..py.object(v) 
+				}
+			} 
+		};
+		_len = function(){
+			return PyDict_Size(owner._pyObject);
+		} 
+		statement = function(s,locals){
+			if( !PyDict_GetItemString(owner.pyDict,"__builtins__")  ){
+				//模块会自动导入对内建模块的引用,自己创建的字典需要手动导入
+				PyDict_SetItemString( owner.pyDict,"__builtins__",..py.PyEval_GetBuiltins());
+			}
+			PyRun_String(s,256/*_Py_single_input*/,owner,locals || owner);
+		};
+		exec = function(s,locals){
+			if( !PyDict_GetItemString(owner.pyDict,"__builtins__")  ){
+				PyDict_SetItemString( owner.pyDict,"__builtins__",..py.PyEval_GetBuiltins());
+			}
+			PyRun_String(s,257/*_Py_file_input*/,owner,locals || owner);
+		};
+		eval = function(s,locals){
+			if( !PyDict_GetItemString(owner.pyDict,"__builtins__")  ){
+				PyDict_SetItemString( owner.pyDict,"__builtins__",..py.PyEval_GetBuiltins());
+			}
+			var p = PyRun_String(s,258/*_Py_eval_input*/,owner,locals || owner);
+			if( p ) return ..py.object( p ); 
+		};
+		_type = "py.dict";
+	) 
+	
+	var dll = assert( ..py._dll,"请先导入py支持库" );
+	PyDict_New = dll.api("PyDict_New","pyObject()","cdecl")  
+	PyDict_GetItemString = dll.api("PyDict_GetItemString","pyObject(PyObject dp,string key)","cdecl")  
+	PyDict_SetItemString = dll.api("PyDict_SetItemString","pyObject(PyObject dp,string key,pyObject item)","cdecl") 
+	PyDict_DelItemString = dll.api("PyDict_DelItemString","pyObject(PyObject dp,string key)","cdecl")  
+	PyDict_Next = dll.api("PyDict_Next","int(PyObject dp,INT &pos,pyObject &key,pyObject &value)","cdecl")  
+	PyDict_Size = dll.api("PyDict_Size","INT(PyObject dp)","cdecl") 
+	PyRun_String = dll.api("PyRun_String","pointer(string str, int start, PyObject globals, PyObject locals)")
+}
+
+/**intellisense()
+py.dict() = 创建新的字典对象\n!pyDict. 
+!pyDict.get("键名") = 返回成员
+!pyDict.get() = !pyObject.
+!pyDict.statement(.("python语句",locals) = 以该字典为名字空间运行单个语句,locals省略则默认为当前字典
+!pyDict.exec(.("python代码",locals) = 以该字典为名字空间运行代码,locals省略则默认为当前字典\n类似python代码中的 exec "..." in globals, locals 语句
+!pyDict.eval(.("python表达式",locals) = 以该字典为名字空间运行代码并返回值,locals省略则默认为当前字典\n类似python代码中的 execfile("test.py", globals, locals)
+!pyDict.eval() = !pyObject.
+end intellisense**/

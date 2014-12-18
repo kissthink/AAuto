@@ -1,0 +1,80 @@
+//进制转换
+import win.ui;
+/*DSG{{*/
+var winform = ..win.form(text="AAuto 进制转换工具";right=444;bottom=246;border="dialog frame";max=false)
+winform.add(
+btnBin={cls="button";text="二进制";left=132;top=78;right=192;bottom=108;dr=1;z=10};
+btnDec={cls="button";text="十进制";left=334;top=78;right=394;bottom=108;dr=1;z=4};
+btnHex={cls="button";text="十六进制";left=265;top=78;right=325;bottom=108;dr=1;z=2};
+btnOct={cls="button";text="八进制";left=196;top=78;right=256;bottom=108;dr=1;z=3};
+editCustom={cls="edit";text="10";left=63;top=82;right=96;bottom=105;dr=1;edge=1;num=1;z=5};
+editExpression={cls="edit";text="0x1000 + 017 + 11#3100";left=33;top=39;right=416;bottom=68;dr=1;edge=1;z=1};
+lbInfo={cls="static";text='\n16\xBD\xF8\xD6\xC6\xD2\xD40x\xCE\xAA\xC7\xB0\xD7\xBA( \xC0\xFD\xC8\xE7 0xEF ),\xB0\xCB\xBD\xF8\xD6\xC6\xD2\xD40\xCE\xAA\xC7\xB0\xD7\xBA( \xC0\xFD\xC8\xE7 077 )\n\xC6\xE4\xCB\xFB\xD7\xD4\xB6\xA8\xD2\xE5\xBD\xF8\xD6\xC6,\xD2\xD4\xBD\xF8\xD6\xC6\xBC\xD3#\xBA\xC5\xCE\xAA\xC7\xB0\xD7\xBA\xA3\xA8 \xC0\xFD\xC8\xE7 2#1010 \xA3\xA9\n\n\xD7\xD6\xB7\xFB\xB4\xAE\xD7\xAA\xCE\xAA\xCA\xFD\xD6\xB5 tonumber( "\xD7\xD6\xB7\xFB\xB4\xAE",\xBF\xC9\xD1\xA1\xD6\xB8\xB6\xA8\xBD\xF8\xD6\xC6 ) \n\xCA\xFD\xD6\xB5\xD7\xAA\xCE\xAA\xD7\xD6\xB7\xFB\xB4\xAE tostring( \xCA\xFD\xD6\xB5,\xBF\xC9\xD1\xA1\xD6\xB8\xB6\xA8\xBD\xF8\xD6\xC6 )\n';left=32;top=111;right=416;bottom=228;dr=1;transparent=1;z=8};
+spin={cls="spin";left=96;top=82;right=122;bottom=105;dr=1;edge=1;transparent=1;z=6};
+static={cls="static";text="表达式:";left=22;top=16;right=73;bottom=36;align="right";dr=1;transparent=1;z=7};
+static2={cls="static";text="进制:";left=21;top=86;right=61;bottom=106;align="right";dr=1;transparent=1;z=9}
+)
+/*}}*/
+
+convert  = function(ratio){
+	var exp = winform.editExpression.text
+	
+	var num;
+	try{
+		num = eval(exp)
+		if( num === null ) { 
+			winform.msgboxErr("空值","AAuto进制转换工具") 
+			winform.editExpression.setFocus();
+			return; 
+		}
+		
+		var str = tostring(num,ratio);
+		select(ratio) {
+			case 10,8{
+			} 
+			case 16{
+				str = "0x" ++ string.upper( string.right(str,-3) )
+			}
+			else {
+				str = string.upper( ratio + "#" + str );
+			}
+		}
+		winform.editExpression.text = str;
+	}
+	catch(e){
+		winform.msgboxErr("表达式语法错误:" + e,"AAuto进制转换工具");
+		winform.editExpression.setFocus();
+	}
+} 
+
+winform.spin.setRange(2,36);
+winform.spin.buddy = winform.editCustom; 
+winform.spin.oncommand = function(id,event,pos){
+	if(pos){
+		convert( pos )
+	}
+}
+
+winform.btnBin.oncommand = function(id,event){
+	convert( 2 )
+	winform.editCustom.text = "2"
+	
+}
+
+winform.btnHex.oncommand = function(id,event){
+	convert( 16 )
+	winform.editCustom.text = "16"
+}
+
+winform.btnDec.oncommand = function(id,event){
+	convert( 10 )
+	winform.editCustom.text = "10"
+}
+
+winform.btnOct.oncommand = function(id,event){
+	convert( 8 )
+	winform.editCustom.text = "8"	
+}
+
+winform.show() 
+win.loopMessage();

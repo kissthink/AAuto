@@ -1,0 +1,77 @@
+//使用IE浏览器控件
+import com;
+import console;
+
+//创建IE对象
+var ieApp = com.CreateObject("InternetExplorer.Application.1") 
+
+DWebBrowserEvents2 = {
+
+	BeforeNavigate2 = function( pDisp, url, Flags, TargetFrameName, PostData, Headers, Cancel ) {
+		console.log("BeforeNavigate2",pDisp, url, Flags, TargetFrameName, PostData, Headers, Cancel )
+	} 
+	
+	CommandStateChange = function() {
+	console.log("CommandStateChange")
+	} 
+	
+	DocumentComplete = function( pDisp, url) {
+		console.log("DocumentComplete",pDisp, url)
+	} 
+	
+	DownloadBegin = function() {
+		console.log("DownloadBegin")
+	} 
+	
+	DownloadComplete = function() {
+		console.log("DownloadComplete")
+	} 
+	
+	FileDownload = function(pDisp, url) {
+		console.log("FileDownload",pDisp, url)
+	} 
+	
+	NavigateComplete2 = function(pDisp, url) {
+		console.log("NavigateComplete2",pDisp, url)
+	} 
+	
+	OnVisible = function( Visible ) {
+		console.log("OnVisible",Visible)
+	}
+	
+	NavigateError = function(pDisp, url) {
+		console.log("NavigateError",pDisp, url)
+	} 
+	
+	NewWindow3 = function(ppDisp, Cancel,dwFlags,bstrUrlContext, bstrUrl ) {
+		console.log("NewWindow3",Cancel,dwFlags,bstrUrlContext, bstrUrl )
+	} 
+	
+	NewWindow2 = function( ppDisp, Cancel) {
+		console.log("NewWindow2",ppDisp, Cancel)
+	} 
+	
+};
+ 
+//添加事件触发器
+var res, cookie = com.Connect(ieApp, DWebBrowserEvents2 )
+ 
+//打开网页
+ieApp.Navigate2("http://www.baidu.com") 
+
+//设置外观
+ieApp.Menubar = false; 
+ieApp.AddressBar = false; 
+ieApp.ToolBar = false; 
+
+//其他的一些设置
+ieApp.Top = 200 
+ieApp.Left = 200 
+ieApp.Width=300 
+ieApp.Height=300 
+ieApp.FullScreen = false; 
+ieApp.Resizable = true; 
+ieApp.StatusBar = true;
+
+//显示 IE 
+ieApp.Visible = true 

@@ -1,0 +1,50 @@
+import web.json;
+import web.rest.client;
+namespace web.rest; 
+
+class jsonLiteClient{
+	ctor( ... ){
+		this = ..web.rest.client( ... ); 
+		this.acceptType = "application/json,text/json,*/*";
+		this.stringifyRequestParameters  = function(param,utf8){
+			var p = {};
+			for name,value in param{
+				if( type(value) == "table" && ( ! ( value@ && value@._tostring) ) ){
+					p[name] = ..web.json.stringify(value)
+				}
+				else {
+					p[name] = value;
+				} 
+			}
+			return ..inet.url.stringifyParameters(p,utf8);
+		} 
+		this.parseResponseResult = function(s){
+			if( s="" ) return s;
+			var t = this._http.responseContentType;
+			if( t &&  ..string.match( t,"[\w\/]*<@@json@>![\W]"  ) )
+				return  ..web.json.parse(s);
+				
+			s = ..string.trim(s);
+			if( s[1] == '{'# || s[1] == '['# || ( this._http.statusCode = 200 ) ){
+				return  ..web.json.parse(s);
+			}
+			return;
+		}
+		this.lastResponse = function(){
+			var s = this.lastResponseData;
+			if( s ){
+				s = ..string.trim(s);
+		 		if( s[1] == '{'# || s[1] == '['# ){
+		 			s = ..web.json.stringify( ..web.json.parse(s),true);
+		 		}
+		 		if( ..console && _STUDIO_INVOKED  ) ..console.log(s) else ..io.print(s);
+		 		return s;
+			}
+		};
+	}; 
+}
+
+/**intellisense()
+web.rest.jsonLiteClient = REST客户端\n仅返回数据使用JSON格式
+web.rest.jsonLiteClient() = 创建REST客户端,\n!web_restClient.
+end intellisense**/

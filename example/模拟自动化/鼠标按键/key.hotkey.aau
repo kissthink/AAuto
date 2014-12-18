@@ -1,0 +1,72 @@
+//超级热键演示
+import win.ui;
+/*DSG{{*/
+var winform = win.form(text="超级热键演示";right=349;bottom=249 )
+winform.add( 
+edit={ bottom=225;right=341;left=19;multiline=1;top=16;z=1;text='~hi\r\nSHIFT+Q,Q\r\n~AAU.CN\r\nCtrl+K\r\nCtrl+K,K点这里,连续按上面各行的键:\r\n';edge=1;cls="edit" }
+)
+/*}}*/
+
+import key.hotkey; 
+
+//创建超级热键,必须用于窗口程序中
+hotkey = key.hotkey(winform) 
+
+hotkey.reg(
+    "CTRL","K", 
+    function(hwnd,...){
+        ..winex.say("你按了CTRL+K!")
+    } 
+)
+
+hotkey.reg(
+    "CTRL","K","K", 
+    function(hwnd,...){
+        ..winex.say("你按了CTRL+K,K!")
+    } 
+)
+
+//添加新的热键方案  
+hotkey.reg(
+    "~","H","I",
+    function(hwnd,...){
+        ..winex.say("hello world!")
+    } 
+)
+
+//添加新的热键方案
+import fsys.lnk;
+import process;
+hotkey.reg(
+    "SHIFT","Q","Q", 
+    function(...){  
+        var path = fsys.lnk.search("qq.exe");
+        process.execute(path)
+    } 
+)
+
+hotkey.regStr(
+    "~aau.cn",
+    function(...){ 
+        ..winex.say("http://www.aau.cn",hwnd)
+    } 
+)
+  
+//可选指定下面的触发器函数, 当用户按下部份热键、并有一个或多个可能的候选键时触发
+import win.util.tray;
+hotkey.waitproc = function( hwnd,tenter,twait ){
+    if(!tenter){
+        win.util.tray.pop()
+        return;
+    }  
+    win.util.tray.pop(
+        '已按下:' 
+        + ..string.join(tenter,"+")  
+        + ' 等待候选键:' 
+        + ..string.join(twait,",") 
+        ,"超级热键模式已启动"
+    )
+} 
+
+winform.show() 
+win.loopMessage();

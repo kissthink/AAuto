@@ -1,0 +1,24 @@
+//输出COM对象类型信息
+
+import com;
+var fs = com.CreateObject("Scripting.FileSystemObject")
+
+//输出com对象成员
+dumpObject = function(obj,file="/dump.txt"){
+
+	//输出重定向
+	io.stdout.reopen(file,"w+t");
+	//输出COM对象成员
+	com.DumpTypeInfo(fs)
+	//还原标准输出
+	io.stdout.reopen("CONOUT$","w+t")
+	str =  string.load("/dump.txt"); 
+	return str;
+	
+}
+ 
+str = dumpObject(fs); 
+
+import process
+process.execute("/dump.txt");
+ 

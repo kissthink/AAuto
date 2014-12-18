@@ -1,0 +1,324 @@
+/*
+作者 lujjjh 
+http://www.ecranesoft.com/bbs/showtopic-9084.aspx
+*/    
+import win.ui;
+import win.ui.menu
+/*DSG{{*/
+var winform = ..win.form(text="AAuto Explorer ";right=587;bottom=514;maxmize=1;parent=...)
+winform.add(
+bthome={cls="button";text="主页";left=557;top=144;right=582;bottom=205;dr=1;dt=1;z=5};
+btnClose={cls="button";text="关闭";left=557;top=71;right=582;bottom=132;dr=1;dt=1;z=10};
+btnGo={cls="button";text="Go";left=448;top=5;right=531;bottom=31;dr=1;dt=1;z=4};
+btnback={cls="button";text="后退";left=557;top=290;right=582;bottom=351;dr=1;dt=1;z=7};
+btnforward={cls="button";text="前进";left=557;top=214;right=582;bottom=275;dr=1;dt=1;z=6};
+btnrefresh={cls="button";text="刷新";left=557;top=359;right=582;bottom=420;dr=1;dt=1;z=8};
+btnrefresh3={cls="button";text="硬刷新";left=557;top=426;right=582;bottom=487;dr=1;dt=1;z=9};
+editUrl={cls="edit";left=52;top=4;right=432;bottom=27;dl=1;dr=1;dt=1;edge=1;font=LOGFONT( name='宋体' );tabstop=1;z=3};
+static={cls="static";text="地址：";left=12;top=11;right=52;bottom=27;dl=1;dt=1;font=LOGFONT( name='宋体' );transparent=1;z=2};
+tab={cls="tab";left=8;top=31;right=552;bottom=481;cp=1;db=1;dl=1;dr=1;dt=1;edge=1;font=LOGFONT( name='宋体' );z=1}
+)
+/*}}*/
+
+//开启自动完成 
+import win.util.autoComplete;
+win.util.autoComplete(winform.editUrl,6/*_SHACF_URLALL*/)
+
+//创建状态栏
+import win.ui.statusbar;
+var stat = win.ui.statusbar( winform );
+
+winform.editUrl.wndproc = function(hwnd,message,wParam,lParam){ 
+	if (  message == 0x101/*_WM_KEYUP*/ ) { 
+		if ( wParam == 0xD/*_VK_RETURN*/ ) {
+			addWebPage( winform.editUrl.text );
+		}
+	} 
+} 
+  
+import web.form; 
+import web.form.util; 
+web.form.util.enableTab(true); //启用网页对选项卡的支持，例如鼠标中键打开等等 
+  
+import string.mbcs;
+winform.tab.modifyStyle(,0x2000000/*_WS_CLIPCHILDREN*/);  
+winform.modifyStyle(,0x2000000/*_WS_CLIPCHILDREN*/) 
+
+//当网址发生改变
+onUrlChange = function () { 
+	if(winform.tab.form ){
+		winform.editUrl.text = winform.tab.form._embedObject.location; 
+		winform.btnback.disabled = winform.tab.form._embedObject.btnback
+		winform.btnforward.disabled = winform.tab.form._embedObject.btnforward
+	}
+	else {
+		winform.editUrl.text = "";
+	}
+} 
+
+addWebPage = function ( url ) {
+
+	//创建web窗体
+	var form = winform.tab.add( text = "Loading..." ); 
+	var wb = web.form( form , , 0x10/*_DLCTL_DLIMAGES*/| 0x20/*_DLCTL_VIDEOS*/  );
+	wb.noScriptErr = true;
+	
+ 	form.onEraseBkgnd  = function(hwnd,message,wParam,lParam){
+    	return 0;
+	}
+	
+	//获得索引位置
+	var sel = #winform.tab.items ;
+	winform.tab.selIndex = sel;
+	
+	//web窗体事件 
+	var preTitle;
+	wb.TitleChange = function(title){ 
+		if(preTitle==title)
+			return; 
+			
+		preTitle = title
+		var str = string.mbcs( title )  
+		winform.tab.setItemText(sel,str.limit(15/*_MAX_WEBTITLE*/)  ) 
+	} 
+	//新窗口事件
+	wb.NewWindow3=function(ppDisp, Cancel,dwFlags,bstrUrlContext, bstrUrl ) {
+		wb.NewWindow2 = null;
+	 	/*弹出新窗口以前触发 */
+		if(dwFlags & 0x10000/*_NWMF_FORCEWINDOW*/ )
+			return;//如果用户选择在新窗口打开，不处理
+			
+		//否则,在新的选项卡打开
+		return addWebPage( "about:blank" ).application;
+	} 
+	wb.NewWindow2 = function ( ppDisp, Cancel ) {  
+		return addWebPage( "about:blank" ).application;
+	}
+	wb.NavigateComplete2 = function (pDisp, url) {
+		onUrlChange();  
+		//wb.refresh()
+	} 
+	wb.CommandStateChange=function(cmd,enable) {
+	 	/*当命令的激活状态改变时触发。它表明何时激活或关闭Back和Forward菜单项或按钮 */ 
+	 	select(cmd) {
+	 	
+	 		case 0x2/*_CSC_NAVIGATEBACK*/ {
+	 			winform.btnback.disabled = !enable
+	 			wb.btnback = !enable 
+	 			
+	 		}
+	 		case 0x1/*_CSC_NAVIGATEFORWARD*/ {
+	 			winform.btnforward.disabled = !enable
+	 			wb.btnforward = !enable
+	 		}  
+	 	}
+	 } 
+	wb.StatusTextChange = function ( text ) {
+		if ( winform.tab.form == wb._form )
+			stat.setText( text );
+	}
+	  
+/*
+	wb.ProgressChange = function ( progress, progressMax ) {  
+		if ( progressMax && winform.tab.form == wb._form ){ 
+			stat.setText( "正在载入..." + (progress / progressMax * 100) + "%" );
+		}
+	} 
+*/
+	
+	//打开网址
+	wb.go( url );   
+	
+	return wb;
+}
+
+var wb = addWebPage( io._exedir );
+wb.document.currentViewMode = 1
+import winex;
+import win.ui.ctrl.listview;
+listview = win.ui.ctrl.listview();
+listview.hwnd =  winex.findEx(wb.hwndEmbedding, ,"SysListView32") 
+var str = listview.getItemText(1) 
+
+addWebPage( "http://www.aau.cn/forum.php?mod=guide" );
+
+/*控制网页按钮部份{{*/ 
+	winform.btnGo.oncommand = function(id,event){ 
+		addWebPage( winform.editUrl.text ); 
+	}//endproc
+	winform.btnClose.oncommand = function(id,event){
+		 if(!winform.tab.selIndex)
+		 	return;
+		 	
+		 winform.tab.remove(winform.tab.selIndex)  
+		 onUrlChange();
+	}//endproc
+	winform.btnrefresh3.oncommand = function(id,event){
+		if(!winform.tab.selIndex)
+		 	return;
+		 	
+		winform.tab.form._embedObject.refresh3()
+	}//endproc
+	winform.btnrefresh.oncommand = function(id,event){
+		if(!winform.tab.selIndex)
+		 	return;
+		 	
+		winform.tab.form._embedObject.refresh()
+	}//endproc
+	winform.btnback.oncommand = function(id,event){
+		winform.tab.form._embedObject.goback()
+	}//endproc
+	winform.btnforward.oncommand = function(id,event){
+		winform.tab.form._embedObject.goforward();	
+	}//endproc
+	winform.bthome.oncommand = function(id,event){
+		if(!winform.tab.form)
+			addWebPage( "about:blank");
+		winform.tab.form._embedObject.gohome()
+	}//endproc
+/*}}*/
+
+/*选项卡的右键的菜单{{*/ 
+	//创建弹出菜单,当右键点击选项卡时,弹出关闭窗口的菜单
+	winform.popmenu = win.ui.popmenu(winform);
+	winform.popmenu.add(
+		'刷新',
+		function(id){
+			winform.tab.form._embedObject.refresh3()
+		}
+	);
+	winform.popmenu.add(
+		'关闭',
+		function(id){ 
+			if(!winform.tab.selIndex)
+				return ; 
+			winform.tab.remove( winform.tab.selIndex )  
+			onUrlChange();
+		}
+	) 
+	winform.popmenu.add();
+	winform.popmenu.add(
+		'全部关闭',
+		function(id){ 
+			winform.tab.removeAll();
+			onUrlChange();
+		}
+	)
+/*}}*/
+
+import fsys;
+import string.list;
+import winex;
+ 
+//加载收藏夹到菜单
+reloadFavorites = function(){
+	canonicalizeDir = function(dir){
+		return ..string.lower( ..fsys.path.canonicalize(dir) );
+	} 
+	
+	var fav = fsys.getSpecial(0x0006 /*_CSIDL_FAVORITES*/ ) 
+	fav = canonicalizeDir(fav);
+	
+	winform.favmenu = win.ui.popmenu(winform);//创建弹出菜单
+	winform.favmenu[ fav ] = winform.favmenu 
+	winform.favmenu[ fav ].add( 
+		"添加到收藏夹", 
+		function(id){ 
+			winex.enum( 
+				function(hwnd,depth){
+					::SendMessageInt(hwnd,0x111/*_WM_COMMAND*/,::MAKELONG(2261/*_IDM_ADDFAVORITES*/,1),hwnd )
+				} 
+				,winform.tab.form._embedObject.hwndEmbedding 
+			)
+			reloadFavorites();   
+		}
+	);
+
+	fsys.enum( fav, "*.url",
+		function(dir,filename,fullpath,findData){ 
+				if(filename){ 
+					dir = canonicalizeDir(dir);
+					var tlist = string.list(fullpath)  
+					var title = string.mbcs( ..string.left(filename,-5) );
+					if( !tlist.URL ) return;
+					
+					winform.favmenu[dir].add(
+						title.limit(20),
+						function(id){ 
+							if( winform.tab.form )
+								winform.tab.form._embedObject.go(tlist.URL) 
+							else {
+								addWebPage( tlist.URL )
+							}
+							
+						}
+					) 
+				} 
+		},
+		function(dir){
+			if(!winform.favmenu[dir]){
+				dir = canonicalizeDir(dir);
+				dirParent = canonicalizeDir( ..fsys.getParentDir(dir)  );
+				
+				winform.favmenu[ dir ] = win.ui.popmenu(winform);
+				winform.favmenu[ dirParent ].add( ..fsys.getFileName(dir) ,winform.favmenu[ dir ]  )
+			}
+		}
+	); 
+				
+	var menu = winform.menu;
+	if(!menu){
+		menu = win.ui.menu(winform);//创建主菜单
+		menu.add('收藏夹',winform.favmenu) 
+		winform.popDrive = win.ui.popmenu(winform);
+		import sys.volume;
+		var tab = sys.volume.getLogicalDrives() 
+		var openDrive = function(id){ 
+			winform.tab.form._embedObject.go( winform.popDrive.getString(id,0) );
+		}  
+		for(i=1;#tab;1){
+			winform.popDrive.add(tab[i] + "\",openDrive)  
+		}
+		menu.add('本地文件',winform.popDrive) 
+	}
+	else {
+		menu.remove( 1 );
+		menu.insert(1,"收藏夹",winform.favmenu)
+	}  
+	 
+	menu.redraw()
+}
+reloadFavorites();
+
+/*消息处理函数{{*/
+	//当用户切换选项卡,触发此函数
+	winform.tab.onnotify = function(id,code,ptr){
+		if ( code == 0xFFFFFDD9/*_TCN_SELCHANGE*/ ) {
+			onUrlChange();
+		}
+	}
+	
+ 
+	//tab控件消息回调函数
+	winform.tab.wndproc = function(hwnd,message,wParam,lParam){
+		if ( message == 0x207/*_WM_MBUTTONDOWN*/ or message = 0x203/*_WM_LBUTTONDBLCLK*/) { 
+			//鼠标中键点击选项卡或双击,关闭窗口
+			var i = winform.tab.fromPoint( ::LOWORD(lParam), ::HIWORD(lParam) ); 
+			if ( i ) {
+				winform.tab.remove(i)  
+				onUrlChange();
+			} 
+		}
+		else if (message = 0x204/*_WM_RBUTTONDOWN*/){
+			//鼠标右键点击选项卡,弹出菜单
+			var rc = ::RECT()
+			rc.left,rc.top = ::LOWORD(lParam), ::HIWORD(lParam)
+			::ClientToScreen(winform.tab.hwnd,rc);
+			winform.popmenu.popup(rc.left,rc.top,true);//弹出菜单
+		}
+		
+	}
+/*}}*/
+
+winform.show(0x3/*_SW_MAXIMIZE*/) 
+win.loopMessage();

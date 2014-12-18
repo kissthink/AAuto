@@ -1,0 +1,25 @@
+//上传文件
+import web.form;
+import web.uploadData;
+/*DSG{{*/
+var winform = ..win.form( bottom=524;scroll=1;right=717;text="AAuto Form";parent=...)
+winform.add(  )
+/*}}*/
+
+//创建web窗体
+var wb = web.form( winform );
+	
+//构建数据包
+string.save("/test.txt","这是测试数据" )
+var formdata = web.uploadData("user=&pass=","file","/test.txt");    
+
+//上传    
+wb.post("http://test.aau.cn/aauto/test/post.php" , formdata.data ,formdata.header);
+wb.wait("");//等待指定网址,可以使用模式匹配语法
+
+//显示窗体
+winform.show() 
+
+//进入消息循环
+win.loopMessage();
+return winform,wb;

@@ -1,0 +1,111 @@
+//lite 未注册组件调用
+import com.interface.IClassFactory;
+namespace com
+
+class lite{
+	ctor( dllFile,... ){
+		this.dll = ..raw.loadDll(dllFile,... )
+		..table.push( _dll_cache__,this.dll );
+		
+		var DllGetClassObject = this.dll.api("DllGetClassObject","int(struct clsid, struct iid, pointer& ppv)" )
+    	if( !DllGetClassObject ){
+    		return;
+    	}
+    	
+    	var DllRegisterServer,DllUnregisterServer;
+    	try{
+    		DllRegisterServer = this.dll.api("DllRegisterServer","int()" );
+			DllUnregisterServer = this.dll.api("DllUnregisterServer","int()" );
+		} 
+		
+    	var IClassFactory = ..com.interface.IClassFactory;
+		checkInterface(IClassFactory); 
+	};
+	registerServer = function(){
+		return DllRegisterServer &&  (DllRegisterServer())>=0/*_SUCCEEDED*/
+	};
+	unregisterServer = function(){
+		return DllUnregisterServer &&  (DllUnregisterServer())>=0/*_SUCCEEDED*/
+	};
+	createInstance = function(clsid,itface,IFactory ){
+		clsid = guid.valid(clsid)
+		if(!clsid) error("参数@1 指定了错误的CLSID",2)
+			
+		if(IFactory){
+			checkInterface(IClassFactory);
+		}
+		else {
+			IFactory = IClassFactory;
+		} 
+		var hr,pFactory = DllGetClassObject(clsid,IFactory.IID  ); 
+		checkError(hr,2);
+		
+		if(!itface) itface = ..com.interface.IUnknown; 
+		checkInterface(itface,2);  
+		var classFactory =  ..com.interface(pFactory,IFactory);
+		
+		var hr,unknown = classFactory.CreateInstance(null,itface.IID);
+		checkError(hr,2);
+		
+		var interface =  ..com.interface(unknown,itface);
+		..com.Release(unknown)
+		return interface;
+	}
+	createObject = function(clsid,iid,IFactory ){
+		clsid = guid.valid(clsid)
+		if(!clsid) error("参数@1 指定了错误的CLSID",2)
+			
+		if(IFactory){
+			checkInterface(IClassFactory);
+		}
+		else {
+			IFactory = IClassFactory;
+		}
+		var hr,pFactory = DllGetClassObject(clsid,IFactory.IID );  
+		checkError(hr,2); 
+		 
+		if(iid){
+			iid = guid.valid(iid);
+			if(!iid) error("参数@2 指定了错误的IID",2)
+		}
+		else {
+			iid = IID_IDispatch; 
+		}
+		var classFactory =  ..com.interface(pFactory,IFactory );  
+		var hr,unknown = classFactory.CreateInstance(null,iid);  
+		checkError(hr,2);
+		
+		var object = ..com.QueryObject(unknown); 
+		..com.Release(pFactory)
+		..com.Release(unknown)
+		
+		return object; 
+	}
+	createEmbed = function(winform,clsid,iid,embedObject){
+		var obj = this.createObject(clsid,iid);
+		return winform.createEmbed(obj,embedObject);
+	} 
+}
+
+namespace lite{ 
+	guid = ..win.guid;
+	IID_IDispatch = guid.fromString("{00020400-0000-0000-C000-000000000046}");  
+	
+	checkError = ..com.interface.checkError;
+	checkInterface = ..com.interface.checkInterface;
+	
+	_dll_cache__ = {};
+}
+
+/**intellisense()
+com.lite = 免注册COM组件调用接口
+com.lite(.("x->dll") = 参数用法与 raw.loadDll() 函数相同,支持内存OCX\n如果该组件不是合法的COM组件,返回null空值
+com.lite() = !com_lite_dll.
+!com_lite_dll.createEmbed(.(winform,CLSID,IID) = 创建嵌入控件\n参数3可省略,默认值为 IID_IDispatch\n可选在参数4中指定绑定对象表
+!com_lite_dll.createEmbed() = !embedObject.
+!com_lite_dll.createObject(.(CLSID,IID) = 创建COM对象\n参数2可省略,默认值为 IID_IDispatch
+!com_lite_dll.createInstance(.(CLSID,静态接口) = 创建COM接口\n参数2可省略,默认值为 com.interface.IUnknown
+!com_lite_dll.createInstance() = !interface.
+!com_lite_dll.registerServer() = 注册组件
+!com_lite_dll.unregisterServer() = 卸载组件
+end intellisense**/

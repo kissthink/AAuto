@@ -1,0 +1,259 @@
+//message 消息对象
+import protobuf.codec;
+import protobuf.reader.input;
+import protobuf.reader.inputString;
+
+import protobuf.type.scalar;
+import protobuf.type.enum;
+import protobuf.type.bytes;
+import protobuf.type.string;
+import protobuf.type.int;
+import protobuf.type.bool;
+import protobuf.type.signedInt;
+
+import inet.http;
+import inet.url;
+
+namespace protobuf;
+ 
+class message {  
+	ctor( reader ) {
+		this.chunk = '';
+  		this.wired_type = WIRED_LENGTH_DELIMITED;//type of the class
+  		this._codecBase128 =  ..protobuf.codec();  
+  		this.reader = reader; ;
+  		
+        this.value = this;  
+        this.values = {}; //the values for the fields
+  		this.fields = {}; //here are the field types 
+    };  
+  	
+    get_types = function(number) { 
+        var types = {}; 
+        
+        var binstring = ..string.format("%b",number )
+        var low = ..string.right(binstring,3);
+        var high = ..string.left(binstring,#binstring - 3)  +  '0000';
+         
+        types.wired = tonumber(low,2);
+        types.field = tonumber(binstring,2) >> 3;
+        return types;
+    }; 
+    
+    _add_arr_value = function (index) {
+    	var v = this.fields[index]();
+    	table.push( this.values[index], v );
+    	
+        return v;
+    };
+
+    _set_arr_value = function ( index, index_arr, value) {
+    
+       if (type(value) == type.table) {
+            this.values[index][index_arr]  = value;
+        }
+        else {
+            this.values[index][index_arr]  = this._create_field_object(index,value); 
+        }
+        return  this.values[index][index_arr] ;//return object; 
+    };
+
+    _remove_last_arr_value = function(index) {
+    	..table.pop( this.values[index] );
+    };
+    
+    _get_field_class = function( index ){  
+    	var cls = eval( this.fields[ index ] )
+    	if(!cls)
+    		error( '\nWrong protobuf message class:' + this.fields[ index ] ,2)
+    	return cls;
+    };
+    
+    _create_field_object = function( index,value ){
+    	var msg = this._get_field_class( index )( this.reader );
+    	
+    	if(value !== null)
+    		msg.value = value;
+    		 
+    	return msg;
+    };
+    
+    _set_value =  function (index, value) { 
+        if (type(value) == type.table) {
+            this.values[index] = value;
+        }
+        else {
+            this.values[index] = this._create_field_object(index,value); 
+        }
+        return  this.values[index];//return object;
+    };
+
+    _get_value = function (index) {
+    	var value = this.values[index]; 
+    	
+    	if( value[["value"]] !== null || value[["_isScalar"]] )
+    		return value[["value"]]
+    		 
+        return value 
+    };
+
+	_set_time_value = function(index, value,format){
+		value.format = format;
+		return owner._set_value( index,tostring(value) );
+	};
+	
+	_get_time_value = function(index,format){
+		var str = owner._get_value(index)
+		return ..time(str,format);
+	};
+	
+    _get_arr = function ( index ) {
+        return this.values[index] ;
+    };
+    
+    _get_arr_value = function (index, key) {
+        return this.values[index][key];
+    };
+
+    _get_arr_size = function (index) {
+        return #(this.values[index]);
+    }; 
+
+    serialize = function( rec = - 1) {
+        var str = '';
+        
+        if (rec > -1){
+            str ++= this._codecBase128.set_value(rec << 3 | this.wired_type);
+        }
+		 
+        var stringinner = ''; 
+	    
+        for(index,field in this.fields ){
+        	 
+            var value = this.values[index] 
+             
+            if ( value[["is_array"]] ) {
+            	
+                for(i=1;#value;1){
+                	 var array_value  = this._set_arr_value(index,i,value[i] );  
+                 	 stringinner = stringinner  ++   array_value.serialize(index);  
+                }  
+                
+            }
+            else if( value !== null )  { 
+            	value = this._set_value(index,value);   
+            	
+                stringinner ++= value.serialize(index); 
+            }  
+            	
+        } 
+		
+        stringinner = stringinner ++ this.chunk;
+
+		if (this.wired_type == ..protobuf.message.WIRED_LENGTH_DELIMITED && rec > -1){ 
+            stringinner = this._codecBase128.set_value(#stringinner) ++ stringinner;
+           
+        }  
+        return str ++ stringinner;
+    };  
+
+    deSerialize = function (){
+        this.chunk = ''; 
+        var length = this.reader.next();  
+        this.deSerializeAux(length);
+    };
+
+    deSerializeAux = function ( length = 99999999 ) {
+    	var consume;
+    	var reader = this.reader
+        var _begin = reader.get_pointer();
+        while (reader.get_pointer() - _begin < length)  {
+            var oldpointer = reader.get_pointer();
+            var next = reader.next(); 
+              
+            if ( ! next )
+                break;
+                
+            var messtypes = this.get_types(next);  
+            
+            if (! this.fields[ messtypes.field ] ) {
+            	 
+                if (messtypes['wired'] == WIRED_LENGTH_DELIMITED ) {
+                    consume =..protobuf.type.string(reader);
+                }
+                else if (messtypes['wired'] == WIRED_VARINT) {
+                    consume = ..protobuf.type.int(reader);
+                }
+                else {
+                    error('I dont understand this wired code:' ++ messtypes['wired'],3);
+                }
+
+                consume.deSerialize();
+                this.chunk ++= reader.get_message_from(oldpointer);
+                continue;
+            }
+
+            var value = this.values[messtypes['field']];
+          	var msg =  this._create_field_object(  messtypes['field'] ); 
+          	
+          	
+            if (messtypes['wired'] != msg.wired_type) {
+            	 error('\r\n' ++ 'Pb type:' 
+                    ++ messtypes['wired'] 
+                    ++ '\r\n' ++ 'but message type ' 
+                    ++ msg.wired_type ++ '\r\n' ++ "message class:" ++ this.fields[messtypes['field']] );
+            }
+            
+            if ( value[["is_array"]] ) {   
+            	
+                var t = ..table.push(
+                	this.values[messtypes['field']] ,
+                	msg
+                ); 
+           
+            }
+            else {
+                this.values[messtypes['field']] = msg; 
+            }
+               
+            msg.deSerialize() 
+        }
+    };
+    
+	serializeToString = function(){
+		return this.serialize();
+	};
+	 
+	
+    parseFromString = function (message) {
+    	if(!#message)
+    		error("参数不能为空字符串",2) 
+ 		
+ 		for(k,v in this.values){ 
+ 			if( v.is_array)
+ 				this.values[k] = { is_array = true; }
+ 		} 
+        this.reader = ..protobuf.reader.inputString(message);
+        this.deSerializeAux();
+    };  
+    
+    tostring = function(){
+    	return this.serialize();
+    };
+    
+    fromString  = function(){
+    	return this.parseFromString();
+    };
+} 
+
+
+namespace message { 
+    WIRED_VARINT = 0;//Varint int32, int64, uint32, uint64, sint32, sint64, bool, enum 
+    WIRED_64BIT = 1; //64-bit fixed64, sfixed64, double 
+    WIRED_LENGTH_DELIMITED = 2; //Length-delimited string, bytes, embedded messages, packed repeated fields 
+    WIRED_STRING = 2;
+    WIRED_START_GROUP = 3;//Start group groups (deprecated)
+    WIRED_END_GROUP = 4;//End group groups (deprecated)
+    WIRED_32BIT = 5;//32-bit
+}
+  

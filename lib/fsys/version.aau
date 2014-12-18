@@ -1,0 +1,159 @@
+//version 版本信息
+namespace fsys;
+
+class version{
+	ctor( value ){ {
+		var tp = type(value);
+		if( tp == "table" ){
+			..table.mixin(this,value);
+		}
+		elseif( tp == "number" ){
+			var ver = { WORD build; BYTE minor; BYTE major}
+			..raw.convert({INT n = value },ver ); 
+			..table.mixin(this,ver);
+			this.revision = 0;
+		}
+		elseif( tp == "string" ){
+			var v,t = ..string.match( ..string.trim(value) ,"([\d\.\-]+)\s*(.*)");
+			this.releaseType = t;
+			
+			if(v){ 
+				v = ..string.split(v:"",".,-");
+				this.major = tonumber(v[1],10);
+				this.minor = tonumber(v[2],10);
+				this.build = tonumber(v[3],10);
+				this.revision = tonumber(v[4],10); 
+			}
+			
+			if( t && !this.revision && ..string.match(t,"build\-(\d+)") ){
+				this.revision = tonumber(..string.match(t,"build\-(\d+)"),10);
+				this.releaseType = null;
+			}
+		}
+		
+		if( this.major === null ) this.major = 0;
+		if( this.minor === null ) this.minor = 0;
+		if( this.build === null ) this.build = 0;
+		if( this.revision === null ) this.revision = 0;
+	} };  
+	valid = function(){
+		with(this){
+			return major || minor || build || revision;
+		}
+	};
+	WORD build;
+	BYTE minor;
+	BYTE major;
+	@_meta;
+}
+
+namespace version{ 
+	_meta = {
+		_tonumber = function(){
+			return ..raw.convert(owner,{INT n = value }).n;
+		};
+		_tostring = function(){
+			var f = "%d.%d.%d.%02d";
+			if( !owner.revision ){
+				f = "%d.%d.%02d";
+				if( !owner.build ) f = "%d.%d"; 
+			}
+			var s = ..string.format(f,owner.major,owner.minor,owner.build,owner.revision);
+			if( #owner.releaseType ) s = s + " " + owner.releaseType;
+			return s;
+		}
+		_eq = function(b){
+			return  owner.major == b.major && owner.minor == b.minor
+				&& owner.build == b.build && owner.revision == b.revision
+		} 
+		_lt = function(b){
+			if( owner == b) return false;
+			if( owner.major < b.major )return true;
+			if( owner.major > b.major )return false;
+			if( owner.minor < b.minor )return true;
+			if( owner.minor > b.minor )return false;
+			if( owner.build < b.build )return true;
+			if( owner.build > b.build )return false;
+			if( owner.revision < b.revision )return true;
+			if( owner.revision > b.revision )return false;
+			return false;
+		}
+		_le = function(b){ 
+			return owner < b || owner == b;	
+		}
+	}
+	
+	var dll = ..raw.loadDll("Version.dll") 
+	GetFileVersionInfoSize = dll.api("GetFileVersionInfoSizeA","int(string filename,int& handle)")
+	GetFileVersionInfo = dll.api("GetFileVersionInfoA","bool(string filename,int handle,int len,pointer data)");
+	VerQueryValue = dll.api("VerQueryValue","int(STRING pBlock,string subBlock,pointer &buffer,int& len)") 
+		
+	class TRANSLATE {
+		WORD language;
+		WORD codePage; 
+	}  
+	
+	var queryStringInfo = function(verInfo,translation,key){
+		var ok,pBuf,len = VerQueryValue(verInfo
+			, ..string.format("\StringFileInfo\%04X%04X\%s",translation.language,translation.codePage,key)
+			, ,0
+			); 
+		if(ok && pBuf && len){ return ..string.str(..raw.tostring( pBuf,1,len ) ); }	
+	} 
+	
+	getInfo = function(path){ 
+		
+		var verSize=GetFileVersionInfoSize(path,0); 
+		var verInfo = ..raw.malloc(verSize);
+		var re = GetFileVersionInfo(path,0,verSize,verInfo)
+		if(!re)return;
+		
+		var ok,pBuf,len = VerQueryValue(verInfo, "\VarFileInfo\Translation", ,0)  
+		if( ok ) {	
+			var translation = ..raw.convert(pBuf,TRANSLATE() ); 
+			return{
+				productVersion = ..fsys.version( queryStringInfo(verInfo,translation,"ProductVersion") );
+				fileVersion = ..fsys.version( queryStringInfo(verInfo,translation,"FileVersion") );
+				fileDescription = queryStringInfo(verInfo,translation,"FileDescription");
+				productName =  queryStringInfo(verInfo,translation,"ProductName"); 
+				originalFileName = queryStringInfo(verInfo,translation,"OriginalFileName"); 
+				internalName = queryStringInfo(verInfo,translation,"InternalName");
+				companyName = queryStringInfo(verInfo,translation,"CompanyName");
+				language = translation.translation;
+				codePage = translation.codePage;
+			}
+		}
+	} 
+} 
+
+/*
+版本号在微软平台的标准顺序为major.minor.build.revision( AAuto中以此为准 )
+一些软件中的顺序为major.minor.revision.build 看起来好象不一样,版本号的计算方法也各不相同
+但他们的实际含义都类似于：更后面的表示的都是更小的版本号,表示更小的修改变化,以及保持更好的兼容性。
+
+越是前面的版本号表示越重要公开的频率越高,
+例如 major.minor 一般出现在公开版本号中,build出现的较少,
+而 revision 通常用于区别内部重编译版本。
+*/
+
+/**intellisense() 
+fsys.version("0->0->0->0__") = 创建版本号,支持大于小于相等比较,可转换为字符串或数值,\n参数可以为空,或者数值,字符串,表对象等\n如果参数为字符串,忽略无关文本,版本号后的文本提取为releaseType\n版本号为2~4组以圆点分隔的数值,顺序为major.minor.build.revision,\n转换为32位数值版本号时忽略revision
+fsys.version() = !fsys_version.
+!fsys_version.major = 发行版本号中的主版本号,8位数值
+!fsys_version.minor = 发行版本号中的副版本号,8位数值
+!fsys_version.build = 编译版本号,16位数值\n有时候用于非公开的内部版本号
+!fsys_version.revision = 非公开的内部修订版本号\n一般重新编译程序时自动增加此版本号\n注意在使用tonumber将全部版本号转换为一个数值时,忽略revision,
+!fsys_version.releaseType = 发行版本类型,例如:"alpha", "beta","RC" 等\n可选字段,字符串类型
+!fsys_version.valid() = 版本号是否有效
+fsys.version.getInfo(__/*执行文件路径*/) = 返回返本信息	
+fsys.version.getInfo() =  !fsys_version_info.
+!fsys_version_info.productName = 产品名称
+!fsys_version_info.productVersion = !fsys_version.
+!fsys_version_info.fileVersion = !fsys_version.
+!fsys_version_info.fileDescription = 文件描述
+!fsys_version_info.originalFileName = 原始文件名
+!fsys_version_info.internalName = 内部名;
+!fsys_version_info.companyName = 公司名;
+!fsys_version_info.language = 语言代码
+!fsys_version_info.codePage = 代码页
+end intellisense**/

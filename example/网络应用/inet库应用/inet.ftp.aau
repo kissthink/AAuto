@@ -1,0 +1,26 @@
+//ftp简单示例
+import inet.ftp
+
+//创建ftp连接
+ftp = inet.ftp("218.87.96.160","down","arklan" );
+
+io.open();//打开控制台
+
+//列出目录下的文件
+for(dir,file,findData in ftp.eachDir("\")){
+	 io.print(  dir,file : "目录" ); 
+}
+
+for(dir,file,findData in ftp.eachDir("\arkhy")){
+	 io.print(  dir,file : "目录" ); 
+}
+
+//下载文件
+if( ftp.download("\本地文件.txt","\arkhy\updata.txt") ){
+	 io.print(  dir,file : "目录" ); 
+}
+
+ftp.close();
+
+execute("pause") //按任意键继续
+io.close();//关闭控制台

@@ -1,0 +1,203 @@
+//list 字符串列表 
+namespace string;
+ 
+class list{ 
+    ctor(str, separator = '\r\n', mark= '=' ) {  
+    	var path; 
+    	
+        if( ( #str < 0x104/*_MAX_PATH*/ ) && ( ..io.exist(str) ) ){
+        	str = ..string.load(str);
+        	path = str;
+        }
+        
+        if(str) createList(this,str,separator,mark);
+       		
+    };  
+    @..table.mixin( _metaProperty, {
+    	separator = {
+    		_get = function(){
+    			return separator
+    		};
+    		_set = function(v){
+    			separator = v;
+    		} 
+    	}
+    	mark = {
+    		_get = function(v){
+    			return mark
+    		};
+    		_set = function(v){
+    			mark = v;
+    		}
+    	}
+    	["(path)"] = {
+    		_get = function(v){
+    			return path
+    		};
+    		_set = function(v){
+    			path = v;
+    		}
+    	}
+    } );  
+}
+ 
+namespace list {
+	import util.metaProperty;
+	
+	var push = ..table.push
+	var trim = ..string.trim;
+	var trimleft = ..string.trimleft;
+	var find = ..string.find;
+	var left = ..string.left;
+	var sub = ..string.sub;
+	var match = ..string.match;
+	
+	createList = function( this,s="",separator,mark ) {  
+		while( 
+    		var i,j,vi,vj,si,sj,c,k,v ;
+    		i,j = find(s,"@@" + mark ); 
+    		i 
+		) {
+			k = trim( sub(s,1,i-1) );
+			s = trimleft( sub(s,j+1) ); 
+			c = s[1];
+			if( c == '"'# || c == '"'#  ){
+				vi,vj = find(s,'%' + s[[1]] ++ s[[1]] )
+				if(vi){
+					v = sub(s,vi+1,vj-1); 
+					s = sub(s,vj+1); 
+					si,sj = find(s,"@@"  + separator);  
+					if( si) s = trimleft( sub(s,sj+1) ); 
+					else s = ""; 
+				}
+				else {
+					v = s;
+					break;
+				} 
+			} 
+			elseif(c == '{'# || c == '('# || c == '['#){
+				vi,vj = find(s,"%\"  + s[[1]] ++ ( c == '{'# ? "\}" :(  c == '('# ? "\)" : "\]" ) ) )
+				if(vi){
+					v = sub(s,vi+1,vj-1);  
+					si,sj = find(s,"@@"  + separator,vj+1);
+					if(!si) {
+						v = s;
+						s = "";
+					}
+					else{
+						v = trim( sub(s,vi,si-1) ); 
+						s = sub(s,sj+1);  
+					}
+				}
+				else {
+					v = s;
+					break;
+				} 
+			}
+			else {
+				si,sj = find(s,"@@"  + separator);
+				if( si ){
+					v = trim( sub(s,1,si-1) );
+					s = trimleft( sub(s,sj+1) ); 
+				}
+				else {
+					v =  s;
+				} 
+			} 
+			
+			if( !this[k] )push(this,k);
+			this[k] = trim(v);
+		}
+	}	 
+	
+	_metaProperty = ..util.metaProperty( 
+		save = function(filepath){ 
+			if(filepath)
+				owner["(path)"] = filepath;  
+			
+    		..string.save(owner["(path)"] ,tostring(owner) )   
+    		return owner;
+    	}
+    	load = function(filepath){  
+    		if( ! #filepath ){
+    			error("请指定正确的文件路径",2)
+    		}  
+    		for( k,v in owner ){
+    			owner[[k]] = null; 
+    		}  
+    		var str = ..string.load( filepath ) 
+       		owner["(path)"] = filepath; 
+       		createList(owner,str,owner.separator,owner.mark);  
+       		return owner;
+    	};
+    	mixin = function(...){
+    		return ..table.mixin(owner,...);
+    	};
+		set = function(k,v) {   
+			k = tostring(k)
+			if( owner[[k]] === null )
+				..table.push(owner,k) 
+				
+			owner[[k]] = v; //使用[[]]操作符不会再次触发元方法，可以避免函数递归溢出。
+			return owner ; 
+		}; 
+		find = function(k){
+    		for(i=1;#owner){
+    			if( ..string.cmp( owner[i],k ) == 0) return i,owner[i],v; 
+    		} 
+    	};  
+		each = function(){
+			var this = owner;
+			return function(i=0){
+				i++;
+				var k = this[i]; 
+				return k?i,k,this[k]
+			} 
+		}; 
+		_tostring = function() {
+			if(  not #owner ) return "";
+ 			var mark = owner.mark
+			var t = {}
+			var v; 
+			for( i= 1 ; #owner){
+				v = trim( tostring( owner[owner[i] ] ) );
+				if( find(v,"@@"+owner.separator) ){
+					if( ! (match(v,"^%''$") 
+						|| match(v,'^%""$')
+						|| match(v,"^%\{\}")
+						|| match(v,"^%\[\]") 
+						|| match(v,"^%\(\)") ) ){
+						if( find(v,'@"' ) ){
+						    v = "'" + v + "'";
+						}
+						else {
+						    v = '"' + v + '"';
+						}
+						
+					}
+				}
+    			push(t, ..string.concat( owner[i],mark,v ) );
+			} 
+			return ..string.join(t,owner.separator) ;
+		};
+	)
+}
+
+/**intellisense()
+string.list = 字符串列表
+string.list( = 创建字符串列表
+string.list(字符串,分隔符,键值对分隔符) = 第一个参数也可以是文件路径\n所有参数可选
+!stringlist.load("__/*文件路径*/") = 加载配置文件 
+!stringlist.save("__/*文件路径*/") = 保存配置文件
+!stringlist.save() = 保存配置文件\n!stringlist.
+!stringlist.mixin = @.mixin(\n	键 = 值__;\n)
+!stringlist.find("__/*键名*/") = 查找指定键所在位置,忽略大小写\n返回三个值: 位置索引,键名,键值
+!stringlist.separator = 分隔符,默认为回车换行
+!stringlist.mark = 分隔键值对的符号,默认为等号
+!stringlist.each = @for i,k,v in ??.each() { 
+	io.print("顺序:"+i,"名字:"+k,"值:"+v )__ 
+}
+?string.list = !stringlist.
+string.list() = !stringlist.
+!stringlist.load() = !stringlist.
+end intellisense**/
