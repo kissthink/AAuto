@@ -219,16 +219,16 @@ namespace soImage{
 				return ImageGetNumFrames( owner.hImage ); 
 			}
 			getFrame = function(){ 
-				return ImageGetFrame( owner.hImage ); 
+				return ImageGetFrame( owner.hImage ) + 1; 
 			}
 			setFrame = function( nFrame ){ 
-				ImageSetFrame( owner.hImage,nFrame); 
+				ImageSetFrame( owner.hImage,nFrame - 1 ); 
 			}
 			getFrameDelay = function(){ 
 				return ImageGetFrameDelay( owner.hImage ); 
 			}
 			setFrameDelay = function( d ){ 
-				return ImageGetFrameDelay( owner.hImage,d ); 
+				return ImageSetFrameDelay( owner.hImage,d ); 
 			} 
 		}
 	} 
@@ -333,7 +333,7 @@ getPixel(.(x,y) = 返回指定坐标点颜色
 setPixel(.(x,y,颜色) = 修改指定坐标点颜色
 setTransColor(.(是否透明,透明颜色) = 修改透明颜色
 getTransColor() = 获取透明颜色
-bpp(8) = 修改图像位宽
+bpp(8) = 修改图像位宽\n参数为0是获取图像当前位宽
 crop(.(左,上,右,下) = 剪切图像
 median(2) = 中值滤波,参数指定半径
 repair(.(修复半径,修复次数) = 修复被破坏的图片 
@@ -352,12 +352,11 @@ splitYuv() = 拆分YUV三个图像
 splitCmyk() = 拆分为CMYK四个图像 
 split(.(行,列) = 按指定的行,列数目拆分并返回多个图像，\n返回值为数组
 splitAuto(.(杂点系列) = 自动拆分并返回多个图像，\n返回值为数组
-
 getJpegQuality() = 返回JPGE图像质量
 setJpegQuality(80) = 修改JPGE图像质量,参数为1到100之间
 getNumFrames() = 返回图像帧数目
-getFrame() = 返回图像当前帧索引
-setFrame(0) = 设置图像当前帧
+getFrame() = 返回图像活动帧
+setFrame(__) = 设置图像活动帧,起始索引为1,\n此函数并不影响当前加载的图像,\n而是在下次加载图像时起作用
 getFrameDelay() = 返回帧延时
 setFrameDelay(1000) = 修改帧延时,以毫秒为单位
 end intellisense**/

@@ -1,12 +1,12 @@
 //视频播放器控件
 import win.ui;
 /*DSG{{*/
-var winform = ..win.form( right=626;text="mediaplayer 视频播放器控件";bottom=482 )
-winform.add( 
-btnDump={ dr=1;bottom=472;right=515;left=427;top=445;z=4;db=1;text="显示成员";cls="button" };
-btnPlay={ dr=1;bottom=472;right=312;left=224;top=445;z=2;db=1;text="播放";cls="button" };
-btnStop={ dr=1;bottom=472;right=416;left=328;top=445;z=3;db=1;text="停止";cls="button" };
-static={ dr=1;dl=1;bottom=434;right=606;left=32;dt=1;top=16;z=1;db=1;edge=1;cls="static" }
+var winform = ..win.form(text="mediaplayer 视频播放器控件";right=626;bottom=482)
+winform.add(
+btnDump={cls="button";text="显示成员";left=427;top=445;right=515;bottom=472;db=1;dr=1;z=4};
+btnPlay={cls="button";text="播放";left=224;top=445;right=312;bottom=472;db=1;dr=1;z=2};
+btnStop={cls="button";text="停止";left=328;top=445;right=416;bottom=472;db=1;dr=1;z=3};
+static={cls="static";left=32;top=16;right=606;bottom=434;db=1;dl=1;dr=1;dt=1;edge=1;z=1}
 )
 /*}}*/
 

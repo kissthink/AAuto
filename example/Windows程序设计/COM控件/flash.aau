@@ -1,2 +1,26 @@
-//FLASH播放器
-thread.create("~\example\Flash\call.aau")
+//ATL加载PDF控件
+import win.ui;
+/*DSG{{*/
+var winform = ..win.form(text="atlax加载控件";right=599;bottom=399)
+winform.add(
+custom={cls="atlax";text="AcroPDF.PDF.122";left=8;top=12;right=590;bottom=388;db=1;dl=1;dr=1;dt=1;edge=1;transparent=1;z=1}
+)
+/*}}*/
+
+var pdf = winform.custom.getControl();
+if( "IAcroAXDocShim" == com.GetTypeInfo(pdf).GetDocumentation().name  ){
+	import fsys.dlg;
+	pdf.LoadFile( fsys.dlg.open("*.pdf|*.pdf||","打开PDF文件") );
+	
+	pdf.setShowToolbar( false ); //去掉工具栏
+	pdf.setCurrentPage( 2 ); //翻到第2页
+	pdf.setZoom( 50 ); //设置百分比
+	//pdf.printWithDialog(); //打印
+}
+else {
+	pdf.Navigate("about:系统未安装Adobe Reader");
+}
+
+winform.show() 
+win.loopMessage(); 
+

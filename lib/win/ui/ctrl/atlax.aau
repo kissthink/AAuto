@@ -1,6 +1,6 @@
 //atlax ATL控件
 namespace win.ui.ctrl; 
-import win.ui.ctrl.metaProperty;//导入控件属性元表支持
+import win.ui.ctrl.metaProperty;
 
 class atlax{
     ctor(parent,tParam){  
@@ -14,14 +14,22 @@ class atlax{
     }  
     onCreated = function(){
 		var out = {ptr unknow}; 
-		if( _dll.AtlAxGetControl(this.hwnd,out) ){
-			var object = ..com.QueryObject( out.unknow )
+		if(  0 <= _dll.AtlAxGetControl(this.hwnd,out) ){ 
+			var object = ..com.QueryObject( out.unknow );
 			if( object ) this._embedObject = { _object = object; _form = this }; 
-		} 
+		}
 	}
 	getControl = function(){
 		return this._embedObject._object;
 	}
+	getControlTypeName = function(){
+		var inf =  ..com.GetTypeInfo(this._embedObject._object);
+		return inf ? inf.GetDocumentation().name;
+	}
+	getControlClsId = function(){
+		var inf =  ..com.GetTypeInfo(this._embedObject._object);
+		return inf ? inf.GetTypeAttr().GUID;
+	} 
 	translateAccelerator = function(msg){
      	if (::SendMessageByStruct(this.hwnd, 0x037F/*_WM_FORWARDMSG*/, 0,msg)  )
      		return true; 
@@ -94,8 +102,9 @@ namespace atlax {
 !atlAxWin.msgboxTest("__") = 弹出询问对话框,可选用参数@2指定标题
 !atlAxWin.orphanWindow() = 使控件脱离原来的窗口,可以显示在父窗口外面，\n但仍然显示在原来的位置，继续如影随形的跟随父窗口移动或改变大小,\n控件原来的固定边距等参数仍然有效
 !atlAxWin.getControl() = 返回com控件对象
+!atlAxWin.getControlTypeName() = 返回COM接口名
+!atlAxWin.getControlClsId() = 返回COM对象类名
 ?win.ui.ctrl.atlaxwin  =!atlAxWin.
 win.ui.ctrl.atlax() = 静态文本控件\n!atlAxWin.
 win.ui.ctrl.atlax = 静态文本控件支持库
 end intellisense***/
- 
