@@ -194,7 +194,32 @@ richedit._metaProperty = editDecorateMeta ( metaProperty(
     		var link = ..raw.convert(ptr, ENLINK_STRUCT() ); 
 			owner.onlink(link.msg,owner.rangeText( link.chrg.cpMin,link.chrg.cpMax) )
     	} 
-    }  
+    } 
+    streamOut = function(format,callback){
+    	if( format === null ) format = 2/*_SF_RTF*/;
+    	callback = ..raw.tostdcall(callback,"INT(INT cookie, pointer buf,INT count, INT & read)");
+    	var edstream = { INT cookie = format;INT err; pointer pfnCallback = callback } ;
+    	::SendMessageByStruct(owner.hwnd,0x44A/*_EM_STREAMOUT*/,format,edstream);
+    	if( !edstream.err )return true;
+    	return null,edstream.err;
+    }
+   	streamIn = function(format,callback){
+    	if( format === null ) format = 2/*_SF_RTF*/;
+    	callback = ..raw.tostdcall(callback,"INT(INT cookie, pointer buf,INT count, INT & read)");
+    	var edstream = { INT cookie = format;INT err; pointer pfnCallback = callback } ;
+    	::SendMessageByStruct(owner.hwnd,0x449/*_EM_STREAMIN*/,format,edstream);
+    	if( !edstream.err )return true;
+    	return null,edstream.err;
+    } 
+    getTextObjectModel = function(){
+    	var out = {pointer ptr}
+		if( ::SendMessageByStruct(owner.hwnd,0x43C/*_EM_GETOLEINTERFACE*/,0,out) ){
+			var textDocument = ..com.QueryObject(out.ptr);
+			..com.Release(out.ptr);
+			return textDocument;
+		}  
+    }
+    
  ) )
  
 /***intellisense()
@@ -292,8 +317,13 @@ win.ui.ctrl.richedit() = 多功能文本框控件\n!richedit.
 !richedit.canPaste() = 能否粘贴
 !richedit.canCopy() = 能否复制  
 !richedit.langOptions = 设置输入和远东语言选项\n选项为数值,使用_IMF_前缀常量表示
+!richedit.streamIn(格式,输入函数) = @.streamIn( ,function(format,buf,len){  \n	return 0,file.readMemory(buf,len);__\n} )
+!richedit.streamOut(格式,输出函数) = @.streamOut( ,function(format,buf,len){  \n	var ok,bytes = file.writeMemory(buf,len);__ \n	return 0,bytes;\n} )
 !richedit.orphanWindow() = 使控件脱离原来的窗口,可以显示在父窗口外面，\n但仍然显示在原来的位置，继续如影随形的跟随父窗口移动或改变大小,\n控件原来的固定边距等参数仍然有效
-
+!richedit.getTextObjectModel() = 返回COM对象TextDocument
+!TextDocument.Range(.(0,0) = 返回区块对象,\n参数为开始索引,结束索引
+!TextDocument.Range() = !TextDocumentRange.
+!TextDocumentRange.
 _ENM_NONE=@0x0/*_ENM_NONE*/
 _ENM_CHANGE=@0x1/*_ENM_CHANGE*/
 _ENM_UPDATE=@0x2/*_ENM_UPDATE*/
@@ -332,4 +362,10 @@ _IMF_FORCEACTIVE=@0x40/*_IMF_FORCEACTIVE*/
 _IMF_FORCEINACTIVE=@0x80/*_IMF_FORCEINACTIVE*/
 _IMF_FORCEREMEMBER=@0x100/*_IMF_FORCEREMEMBER*/
 _IMF_MULTIPLEEDIT=@0x400/*_IMF_MULTIPLEEDIT*/
+_SF_TEXT=@1/*_SF_TEXT*/
+_SF_RTF=@2/*_SF_RTF*/
+_SF_UNICODE=@0x10/*_SF_UNICODE*/
+_SF_UTEXT=@0x11/*_SF_UTEXT*/
+_SFF_PWI=@0x800/*_SFF_PWI*/
+_SF_PWI=@0x10802/*_SF_PWI*/
 end intellisense***/

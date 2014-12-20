@@ -330,8 +330,9 @@ com.GetTypeInfo() = !typeinfo.
 !typeattr.flags.hidden = hidden
 !typeattr.flags.oleautomation = oleautomation
 !typeattr.GUID = GUID  
-
+!file.readBuffer( = 读取数据到缓冲区,成功返回读取长度,失败返回null
 !file.readBuffer(.(缓冲区指针,读取长度) = 参数必须是使用raw.malloc()函数创建的缓冲区指针\n长度参数可选,默认为缓冲区长度,成功返回读取的字节长度\n建议设置合理的缓冲区大小(建议大于1MB),\n该函数比read()函数快很多。
+!file.writeBuffer( = 写入缓冲区数据,成功返回写入长度,失败返回null
 !file.writeBuffer(.(缓冲区指针,写入长度) = 参数一必须是使用raw.malloc()函数创建的缓冲区指针\n长度参数可选,默认为缓冲区长度.\n此函数一般结合readBuffer()函数用于快速复制文件数据.
 !file.write(.(__, ) = 写数据,支持一个或多个参数\n参数可以是字符串,数值,或结构体
 

@@ -107,7 +107,7 @@ namespace tooltip {
 /**intellisense()
 win.ui.tooltip = 提示控件
 win.ui.tooltip() = !win_ui_tooltip.
-win.ui.tooltip(.(winform,创建参数) = 创建提示提示控件,参数@2可省略\n参数@1为窗体对象 
+win.ui.tooltip(.(winform,创建参数) = 创建提示控件,参数@2可省略\n参数@1为窗体对象 
 !win_ui_tooltip.update() = 刷新
 !win_ui_tooltip.setMaxWidth(.(宽度) = 设置提示框最大宽度
 !win_ui_tooltip.relayEvent( msg ) = 将鼠标消息发送到tooltip控件\n在winform.pretranslate中调用此函数

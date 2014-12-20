@@ -145,7 +145,7 @@ namespace file{
 			if( !l ) l = m;
 			elseif( l > m ) l = m;
 			elseif( l < 0 ) return;
-			var ok,readSize = ReadBuffer( owner.hfile,buffer,l,0)
+			var ok,readSize = ReadBuffer( owner.hfile,buffer,l,0);
 			if(ok)return readSize;
 		}
 		writeBuffer = function(buffer,l){
@@ -153,7 +153,18 @@ namespace file{
 			if( !l ) l = m;
 			elseif( l > m ) l = m;
 			elseif( l < 0 ) return;
-			return WriteFile( owner.hfile,buffer,l,0)
+			var ok,writeSize = WriteFile( owner.hfile,buffer,l,0);
+			if(ok)return writeSize;
+		}
+		readMemory = function(p,l){  
+			if( !l ) error("请指定内存长度",2) 
+			var ok,readSize = ReadBuffer( owner.hfile,p,l,0)
+			if(ok)return readSize;
+		}
+		writeMemory = function(p,l){
+			if( !l ) error("请指定内存长度",2) 
+			var ok,writeSize = WriteFile( owner.hfile,p,l,0);
+			if(ok)return writeSize;
 		}
 		flush = function(){
 			if(owner.hfile){
@@ -288,8 +299,10 @@ fsys.file(.(path,mode="r",shareMode,creation,attrib,secAttrib) = 所有参数可选,\n
 !fsysfile.read() = 读取一行文本\n返回文本不包含回车换行符
 !fsysfile.read(-1) = 读取所有内容到文件尾部
 !fsysfile.write(__/*字符串*/) = 写入字符串\n参数也可以是数值、结构体
-!fsysfile.readBuffer(.(缓冲区指针,读取长度) = 参数必须是使用raw.malloc()函数创建的缓冲区指针\n长度参数可选，默认为缓冲区长度,成功返回读取的字节长度
-!fsysfile.writeBuffer(.(缓冲区指针,写入长度) = 参数一必须是使用raw.malloc()函数创建的缓冲区指针\n长度参数可选，默认为缓冲区长度.
+!fsysfile.readMemory(.(内存指针,读取长度) = 自内存读取,成功返回读取长度,失败返回null,\n必须使用参数@2显示指定内存长度,\n请谨慎指定参数,指定了错误的内存地址或长度后果自负
+!fsysfile.writeMemory(.(内存指针,写入长度) = 写入内存,成功返回写入长度,失败返回null,\n必须使用参数@2显示指定内存长度,\n请谨慎指定参数,指定了错误的内存地址或长度后果自负
+!fsysfile.readBuffer(.(缓冲区指针,读取长度) = 成功返回读取长度,失败返回null,\n参数必须是使用raw.malloc()函数创建的缓冲区指针\n长度参数可选，默认为缓冲区长度,成功返回读取的字节长度
+!fsysfile.writeBuffer(.(缓冲区指针,写入长度) = 写入缓冲区,成功返回写入长度,失败返回null,\n参数一必须是使用raw.malloc()函数创建的缓冲区指针\n长度参数可选，默认为缓冲区长度.
 !fsysfile.seek("end") = 移动指针至结束处\n返回当前位置,返回值大于2GB则为负值,\n获取文件大小推荐使用 size() 函数
 !fsysfile.seek("end",__) = 移动至相对结束处的指定偏移量
 !fsysfile.seek() = 得到当前位置

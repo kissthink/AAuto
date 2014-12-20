@@ -1,13 +1,22 @@
-//richedit右键菜单
+//响应通知,添加右键菜单
 import win.ui;
 /*DSG{{*/
-var winform = win.form( bottom=266;parent=...;text="richedit 弹出菜单";right=453 )
-winform.add( 
-richedit={ bottom=231;text="richedit 默认没有右键菜单,
+var winform = ..win.form(text="richedit 弹出菜单";right=453;bottom=266;parent=...)
+winform.add(
+richedit={cls="richedit";text="richedit 默认没有右键菜单,
 使用 winform.richedit.popMenu() 函数创建弹出菜单.
-请点击这里点击右键测试.";left=28;multiline=1;top=28;z=1;right=417;edge=1;cls="richedit" }
+请点击这里点击右键测试.";left=28;top=28;right=417;bottom=231;edge=1;multiline=1;z=1}
 )
 /*}}*/
+
+//如果经接收_EN_CHANGE通知就要加下面这句
+winform.richedit.modifyEvent(,0x1/*_ENM_CHANGE*/)
+winform.richedit.oncommand = function(id,event){
+    if(event == 0x300/*_EN_CHANGE*/){
+        //文本发生改变了
+        winform.text = "文本发生改变了"
+    } 
+}
 
 import win.ui.menu;
 winform.richedit.wndproc = function(hwnd,message,wParam,lParam){

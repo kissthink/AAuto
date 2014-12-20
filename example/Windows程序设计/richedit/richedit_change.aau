@@ -1,24 +1,30 @@
-//richedit响应通知消息
+//载入或保存RTF文件
 import win.ui;
 /*DSG{{*/
-var winform = win.form(parent=...; text="richedit控件演示";right=349;bottom=249 )
-winform.add( 
-static={ bottom=109;right=232;left=53;top=84;z=3;nWrap=1;transparent=1;text="请在上面输入任意文本";cls="static" };
-richedit={ bottom=74;color=0;right=300;left=46;multiline=1;top=18;font=LOGFONT( name='Microsoft Sans Serif' );z=1;text="";edge=1;cls="richedit" };
-edit={ bottom=177;right=300;left=46;multiline=1;top=121;z=2;text="";edge=1;cls="edit" }
+var winform = ..win.form(text="打开保存RTF文件";right=599;bottom=399)
+winform.add(
+richedit={cls="richedit";left=18;top=10;right=586;bottom=387;db=1;dl=1;dr=1;dt=1;edge=1;hscroll=1;multiline=1;vscroll=1;z=1}
 )
 /*}}*/
 
-//如果经接收_EN_CHANGE通知就要加下面这句
-winform.richedit.modifyEvent(,0x1/*_ENM_CHANGE*/)
+import fsys.dlg;
+import fsys.file;
+var path = fsys.dlg.open("*.rtf|*.rtf||","打开RTF文件");
 
-winform.richedit.oncommand = function(id,event){
-    if(event == 0x300/*_EN_CHANGE*/){
-        //文本发生改变了
-        winform.edit.text = winform.richedit.text
-    } 
+if( path ){
+    var file = fsys.file(path,"r+b");
+    winform.richedit.streamIn( ,function(format,buf,len){ 
+        return 0,file.readMemory(buf,len):0;
+    } )
+    file.close()
+     
+    var file = fsys.file("/test.rtf","w+b")
+    winform.richedit.streamOut( ,function(format,buf,len){
+        return 0,file.writeMemory(buf,len) : 0;
+    } )
+    file.close()
 }
 
 winform.show() 
 win.loopMessage();
-
+ 
