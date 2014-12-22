@@ -1,7 +1,7 @@
 //默认库源代码
 import raw.struct;
 namespace zeromq
-var dll = ..raw.loadDll( $"~\lib\zeromq\.res\libzmq.dll","zeromq.dll")
+var dll = ..raw.loadDll( $"~\lib\zeromq\.res\libzmq.dll","zeromq.dll","cdecl")
 
 errno = dll.api("zmq_errno","int()" ,"cdecl" ) 
 strerror = dll.api("zmq_strerror","string(int errnum)","cdecl") 
@@ -297,7 +297,6 @@ namespace context{
 	zmq_term = dll.api("zmq_term","int(pointer context)" ,"cdecl")
 	zmq_socket = dll.api("zmq_socket","pointer(pointer context,int type)"  ,"cdecl" ) 
 }
-content = context;
 
 /**intellisense(zeromq)
 lasterr() = 检测最后调用API发生的错误\n如果存在错误则返回两个值:\n错误信息,错误代码
@@ -404,8 +403,3 @@ _ZMQ_STREAMER=@1/*_ZMQ_STREAMER*/
 _ZMQ_FORWARDER=@2/*_ZMQ_FORWARDER*/
 _ZMQ_QUEUE=@3/*_ZMQ_QUEUE*/
 end intellisense**/
-
-STUDIO_BUILD = /*
-import raw.struct;
-import thread.shareHandle;
-*/
