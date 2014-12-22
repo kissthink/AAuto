@@ -25,6 +25,7 @@ onGesturePan = @onGesturePan = function (ltTarget,ltOwner,ltGestureParams) {\n	_
 onGestureRotate = @onGestureRotate = function (ltTarget,ltOwner,ltGestureParams) {\n	__/*旋转*/\n}
 onGestureTap1 = @onGestureTap1 = function (ltTarget,ltOwner,ltGestureParams) {\n	__/*单击*/\n}
 onGestureTap2 = @onGestureTap2 = function (ltTarget,ltOwner,ltGestureParams) {\n	__/*双击*/\n}
+onFrameDocumentComplete = @onFrameDocumentComplete = function (ltTarget,ltOwner,reason,behaviorParams) {\n	__\n}
 onApplicationEvent = @onApplicationEvent = function (ltTarget,ltOwner,reason,behaviorParams) {\n	__/*postEvent或sendEvent发出一大于0x100的消息*/\n}
 onElementControlCreated = @onElementControlCreated = function (ltTarget,ltOwner,reason,behaviorParams) {\n	var ltCtrl = ltOwner.getCtrl();__/*自定义控件已创建*/\n}
 onButtonClick = @onButtonClick = function (ltTarget,ltOwner,reason,behaviorParams) {\n	__\n}

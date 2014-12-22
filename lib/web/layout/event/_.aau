@@ -305,7 +305,7 @@ namespace BEHAVIOR{
 		[UI_STATE_CHANGED] = "onUiStateChanged";
 		[FORM_SUBMIT] = "onFormSubmit";
 		[FORM_RESET] = "onFormReset";
-		[DOCUMENT_COMPLETE] = "onDocumentComplete";
+		[DOCUMENT_COMPLETE] = "onFrameDocumentComplete";
 		[CLOSE_POPUP] = "onClosePopup";
 		[REQUEST_TOOLTIP] = "onRequestTooltip"; 
 		[ANIMATION] = "onAnimation"; 
@@ -834,6 +834,7 @@ _HL_KEY_CHAR=@2/*_HL_KEY_CHAR*/
 
 !weblayout.onSize = @.onSize = function (ltOwner) {\n	__\n}
 !weblayout.onTimer = @.onTimer = function (ltOwner,timerId) {\n	__\n}
+!weblayout.onFrameDocumentComplete = @.onFrameDocumentComplete = function (ltTarget,ltOwner,reason,behaviorParams) {\n	__\n}
 !weblayout.onApplicationEvent = @.onApplicationEvent = function (ltTarget,ltOwner,reason,behaviorParams) {\n	__/*postEvent或sendEvent发出一大于0x100的消息*/\n}
 !weblayout.onButtonClick = @.onButtonClick = function (ltTarget,ltOwner,reason,behaviorParams) {\n	__\n}
 !weblayout.onButtonPress = @.onButtonPress = function (ltTarget,ltOwner,reason,behaviorParams) {\n	__\n}

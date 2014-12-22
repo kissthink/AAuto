@@ -1207,7 +1207,7 @@ web.layout.element() = !layoutEle.
 !layoutEle.onGestureRotate = @.onGestureRotate = function (ltTarget,ltOwner,ltGestureParams) {\n	__/*旋转*/\n}
 !layoutEle.onGestureTap1 = @.onGestureTap1 = function (ltTarget,ltOwner,ltGestureParams) {\n	__/*单击*/\n}
 !layoutEle.onGestureTap2 = @.onGestureTap2 = function (ltTarget,ltOwner,ltGestureParams) {\n	__/*双击*/\n}
-
+!layoutEle.onFrameDocumentComplete = @.onFrameDocumentComplete = function (ltTarget,ltOwner,reason,behaviorParams) {\n	__\n}
 !layoutEle.onApplicationEvent = @.onApplicationEvent = function (ltTarget,ltOwner,reason,behaviorParams) {\n	__/*postEvent或sendEvent发出一大于0x100的消息*/\n}
 !layoutEle.onButtonClick = @.onButtonClick = function (ltTarget,ltOwner,reason,behaviorParams) {\n	__\n}
 !layoutEle.onButtonPress = @.onButtonPress = function (ltTarget,ltOwner,reason,behaviorParams) {\n	__\n}
