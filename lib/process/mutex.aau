@@ -47,11 +47,24 @@ namespace mutex{
 	OpenMutex = ::Kernel32.api("OpenMutexA","ptr(INT desiredAccess,bool bInherit,string lpName)"); 
 	CreateMutex = ::Kernel32.api("CreateMutexA","ptr(struct attr,bool bOwner,string lpName)" ); 
 	ReleaseMutex= ::Kernel32.api("ReleaseMutex","int(ptr h)"); 
+	
+	lock = function(name,proc){
+		if(!name) error("请指定互斥体名称",2);
+		name = ..string.replace(name,"@@\","/");
+		var mutex = ..process.mutex(name);
+		mutex.waitOne();
+		proc();
+		mutex.release();
+		mutex.close();
+	}
 }
  
+ 
 /**intellisense() 
+
 process.mutex = 进程互斥体
 process.mutex(.("唯一名称",句柄是否可继承,线程独占模式) = 参数@1议使用GUID生成工具生成唯一标识符\n参数@2指定句柄是否可被子进程继承,为可选参数,默认为false,\n参数@3可选,默认为false,true表示同时只能有一个线程独占互斥体
+process.mutex.lock(.("互斥体名称",回调函数) = 该函数在多进程中互斥执行
 !mutex.close() = 关闭互斥体句柄\n该函数并不关闭互斥体创建的内核对象\n当所有引用内核对象的对象关闭,内核对象自动释放
 !mutex.conflict = 如果互斥体已存在,此属性为真值\n否则为空值
 !mutex.release() =  线程在处理完共享资源后,\n应在离开时调用此函数释放互斥体所有权

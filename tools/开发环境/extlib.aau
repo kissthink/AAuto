@@ -62,6 +62,7 @@ winform.btnPub.oncommand = function(id,event){
         		inform.msgboxErr("扩展库名字错误")
         		return;
     		}
+    		if( libdir == ".") libdir = ""; 
     		
     		var tmp = string.template(setupCode)
     		var setupCode = tmp.format(
@@ -70,35 +71,36 @@ winform.btnPub.oncommand = function(id,event){
         		FILENAME = libfilename;
     		)
     		
-    		fsys.delete("/.pub-lib/temp/")
-    		fsys.createDir("/.pub-lib/temp/")
+    		fsys.delete("~/tools/开发环境/.pub-lib/temp/")
+    		fsys.createDir("~/tools/开发环境/.pub-lib/temp/")
     		
-    		fsys.copy(libpath,"/.pub-lib/temp/")
-    		string.save("/.pub-lib/temp/setup.dl.aau",setupCode )
+    		fsys.copy(libpath,"~/tools/开发环境/.pub-lib/temp/")
+    		string.save("~/tools/开发环境/.pub-lib/temp/setup.dl.aau",setupCode )
     		
     		winform.edit.text = "";
-    		var tarFile = fsys.tar("/.pub-lib/"+ libname + ".tar");
+    		..fsys.delete( "~/tools/开发环境/.pub-lib/"+ libname + ".tar" )
+    		var tarFile = fsys.tar("~/tools/开发环境/.pub-lib/"+ libname + ".tar");
     		tarFile.onWriteFile = function( filename ){
         		winform.edit.appendText("已打包" + filename + '\r\n')
         		win.pumpMessage()
     		}
-    		tarFile.pack("/.pub-lib/temp/",,false)
+    		tarFile.pack("~/tools/开发环境/.pub-lib/temp/",,false)
     		tarFile.close();
 		
-    		sevenZip.lzma.encodeFile("/.pub-lib/"+ libname + ".tar"
-        		,"/.pub-lib/"+ libname + ".tar.lzma",function(inSize,outSize){
+    		sevenZip.lzma.encodeFile("~/tools/开发环境/.pub-lib/"+ libname + ".tar"
+        		,"~/tools/开发环境/.pub-lib/"+ libname + ".tar.lzma",function(inSize,outSize){
             		winform.edit.appendText("输入大小"+ fsys.formatSize(inSize)," 压缩大小:",fsys.formatSize(outSize),'\r\n') 
             		win.pumpMessage()
         		}
     		)
-    		fsys.delete("/.pub-lib/temp/")
-    		fsys.delete("/.pub-lib/"+ libname + ".tar")
+    		fsys.delete("~/tools/开发环境/.pub-lib/temp/")
+    		fsys.delete("~/tools/开发环境/.pub-lib/"+ libname + ".tar")
     		
     		import process;
-    		process.explore_select("/.pub-lib/"+ libname + ".tar.lzma")
+    		process.explore_select("~/tools/开发环境/.pub-lib/"+ libname + ".tar.lzma")
     		winform.edit.appendText("全部操作已完成")
     		
-    	},..io.exist( ide.getProjectDir() )
+    	}, ..io.exist( ide.getProjectDir() )
 	)
 	fiber.resume (fb);
 }

@@ -10,8 +10,18 @@ class dlMgr{
 		this[["create"]] = function(){ 
 			if( this.onDownloadRecive ) this.onDownloadReceive = this.onDownloadRecive;
 			
-			..thread.invoke(  function(hCmd,getUpdateFiles,...){
-				var ok,err,filename = getUpdateFiles(hCmd,...);
+			..thread.invoke(  function(hCmd,getUpdateFiles,updateUrl,saveDir,appVersion,appDir){
+				import process.mutex;
+				var mutex =  process.mutex("UPDATE:" + ..string.replace(saveDir,"@@\","/"));
+				if( mutex.conflict ){
+					mutex.close();
+					..thread.command.send(hCmd,"onError","更新进程冲突");
+					return;
+				}
+				
+				var ok,err,filename = getUpdateFiles(hCmd,updateUrl,saveDir,appVersion,appDir);
+				mutex.close();
+				
 				if( !ok ) ..thread.command.send(hCmd,"onError",err,filename);
 			} ,this._form.hwnd,getUpdateFiles, updateUrl,saveDir,appVersion,appDir );
 		}; 
@@ -31,7 +41,7 @@ namespace dlMgr{
 		
 		var send = ..thread.command.send;
 		var sendIdle = ..thread.command.sendIdle;
-
+		 
 		if( ! ..inet.url.is(updateUrl,0x0/*_URLIS_URL*/) ){
 			return null,"更新URL格式错误",updateUrl;
 		}
