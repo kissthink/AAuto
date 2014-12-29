@@ -7,6 +7,11 @@ namespace process.admin;
 OpenProcessToken = ::Advapi32.api( "OpenProcessToken", "pointer(POINTER ProcessHandle,INT DesiredAccess,pointer &TokenHandle)");
 GetTokenInformation = ::Advapi32.api( "GetTokenInformation", "int(POINTER TokenHandle,int infoClass,struct &TokenInfo,INT len,INT &retLen)");
  
+isLeastPrivileges = function(hProcess){
+	var admin,xpVersion = isRunAs(hProcess);
+	return !(xpVersion || admin)
+}
+
 isRunAs = function(hProcess) { 
 	if(!hProcess){
 		hProcess = ..process.getHandle();
@@ -89,6 +94,7 @@ runas_leastPrivileges = function(path,arguments,workdir,taskName){
 }
 
 /**intellisense(process.admin)
+isLeastPrivileges() = 进程是否运行于VISTA以后的系统并且无管理权限\n可选在参数中指定进程句柄,不指定则默认取当前进程权限
 isRunAs(.(进程句柄) = 判断进程是否以管理权限运行,\n成功返回true,XP返回flase,以及majorVersion版本号,\n参数可选,默认为当前句柄 
 runas(.(执行程序路径,启动参数,窗口显示样式,工作目录,窗口句柄,等待选项) = 运行应用程序,\n如果是vista以后系统请求管理权限,\n省略参数@1则默认指定为当前EXE路径,其他参数可选
 runas_wait(.(执行程序路径,启动参数,窗口显示样式,工作目录,窗口句柄) = 运行应用程序,并等待进程结束,\n如果是vista以后系统请求管理权限,,\n省略参数@1则默认指定为当前EXE路径,其他参数可选

@@ -107,9 +107,13 @@ namespace string {
 	concatUnicode = function(a,b,...){
 		a = toUnicode(a);
 		b = toUnicode(b);
-		if( #a > 2 ) c = left(a,-3) ++ b;
-		else c = b;
-		if(!...) return c;
+		
+		var c = a;
+		if( #a > 2 && #b > 2 ) c = left(a,-3) ++ b;
+		elseif( #b > 2 ) c = b; 
+		
+		a,b = ...
+		if( (a === null) && (b === null) ) return c;
 		return concatUnicode(c,...);
 	}
 }

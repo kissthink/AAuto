@@ -76,3 +76,4 @@ chm = chm 电子书
 icmp = icmp 报文协议
 newLisp = newLisp 语言
 wps = wps 办公软件
+service = service 服务程序

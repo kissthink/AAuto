@@ -9,14 +9,14 @@ class works{
 		var guid = tostring(..win.guid.create())
 		this._gArg = guid; 
 		this._gRet = guid + "_R"; 
-		this._gWorked = guid + "_W"
-		this._gSign = guid + "_S"
+		this._gWorked = guid + "_W"; 
+		this._gSign = guid + "_S"; 
 		
-		this._tArgs = ..thread.table( this._gArg )
-		this._tRet = ..thread.table( this._gRet ) 
-		this._tWorked = ..thread.table( this._gWorked )
+		this._tArgs = ..thread.table( this._gArg ); 
+		this._tRet = ..thread.table( this._gRet );  
+		this._tWorked = ..thread.table( this._gWorked ); 
 		
-		..thread.set(this._gSign ,true )   
+		..thread.set(this._gSign ,true );    
 		var threads = {} 
 		for(i=1;limit;1){
 			var thrd = {}
@@ -34,7 +34,8 @@ class works{
 							arg = tArgs.remove() 
 							if(arg){
 								tWorked.push(1)
-								tRet.insert( func(arg) ); 
+								var ret = func(arg);
+								if(ret!==null) tRet.insert( ret ); 
 								tWorked.pop(1)
 								continue ;
 							}
@@ -133,12 +134,12 @@ class works{
 			}
 			if( f ){
 				r = this.pop(1);
-				if(r)f(r);
+				if(r!==null)f(r);
 			}
 		}
 		if(f){
 			r = this.pop(1);
-			while( r && delay(10) ){
+			while( (r!==null) && delay(10) ){
 				f(r);
 				r = this.pop(1);
 			} 
@@ -172,4 +173,3 @@ thread.works() = !thread_wk.
 	__/*遍历所有待执行任务,\n该函数会暂停所有任务*/
 }
 end intellisense**/
- 

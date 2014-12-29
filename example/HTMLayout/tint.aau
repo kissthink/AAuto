@@ -1,11 +1,12 @@
 //tint 函数转换工具
 import win.ui;
 /*DSG{{*/
-var winform = ..win.form(text="HTMLayout tint函数转换工具";right=599;bottom=399;parent=...)
+var winform = ..win.form(text="HTMLayout tint函数转换工具";right=599;bottom=399;border="dialog frame";max=false;parent=...)
 winform.add(
-btnTint={cls="button";text="计算";left=309;top=43;right=376;bottom=70;z=2};
+btnTint={cls="button";text="计算";left=309;top=43;right=389;bottom=70;z=2};
 edit={cls="edit";text="tint(#FF0000,-0.5, 0.9)";left=30;top=43;right=306;bottom=67;edge=1;multiline=1;z=1};
-editResult={cls="edit";left=30;top=78;right=306;bottom=101;edge=1;multiline=1;z=3}
+editResult={cls="edit";left=30;top=78;right=306;bottom=101;edge=1;multiline=1;z=3};
+static={cls="edit";text="tint( 颜色,亮度,饱和度) 亮度或饱和度的取值范围为-1.0至+1.0 之间表示百分比的小数";left=31;top=15;right=540;bottom=37;bgcolor=16777215;readonly=1;z=4}
 )
 /*}}*/
 
