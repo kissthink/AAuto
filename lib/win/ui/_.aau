@@ -367,8 +367,7 @@ namespace form{
 						if(!wParam){ctrl.show(false);continue;}  
 						var rc = ctrl.cacheOrphanWindowRect__; 
 						var l,t = ..win.toScreen(this.hwnd,rc.left,rc.top); 
-						..win.setPos( hwnd,l,t, , ,,0x14/*_SWP_NOACTIVATE | _SWP_NOZORDER*/ );
-						ctrl.show(true);
+						..win.setPos( hwnd,l,t,rc.width() ,rc.height() ,,0x40/*_SWP_SHOWWINDOW*/ | 0x14/*_SWP_NOACTIVATE | _SWP_NOZORDER*/ );
 					}
 				}
 			}
@@ -380,7 +379,7 @@ namespace form{
 					if( ctrl.cacheOrphanWindowRect__ ){   
 						var rc = ctrl.cacheOrphanWindowRect__; 
 						var l,t = ..win.toScreen(this.hwnd,rc.left,rc.top); 
-						..win.setPos( hwnd,l,t, , ,,0x14/*_SWP_NOACTIVATE | _SWP_NOZORDER*/ ); 
+						..win.setPos( hwnd,l,t,rc.width() ,rc.height() ,,0x14/*_SWP_NOACTIVATE | _SWP_NOZORDER*/ );
 					}
 				} 
 			}
@@ -467,18 +466,21 @@ namespace form{
 					
 					ctrlSize[ctrl.hwnd] = { cx = r - l;cy = b - t };
 					if( !..win.getStyle(ctrl.hwnd,0x40000000/*_WS_CHILD*/) ){ 
-						ctrl.cacheOrphanWindowRect__ = ::RECT(l,t,r,b);
-						l,t = ..win.toScreen(this.hwnd,l,t);
-						r,b = ..win.toScreen(this.hwnd,r,b);
-						..win.setPos( hwnd,l,t, , ,,0x14/*_SWP_NOACTIVATE | _SWP_NOZORDER*/);
+						ctrl.cacheOrphanWindowRect__ = ::RECT(l,t,r,b); 
 					}
-					else{
-						hPosInfo = ::DeferWindowPos(hPosInfo,ctrl.hwnd,0,l,t, r - l, b - t , 0x1C/*_SWP_NOACTIVATE |  _SWP_NOZORDER | _SWP_NOREDRAW*/ )  
+					else{ 
+						hPosInfo = ::DeferWindowPos(hPosInfo,ctrl.hwnd,0,..math.floor(l),t, r - l, b - t , 0x1C/*_SWP_NOACTIVATE |  _SWP_NOZORDER | _SWP_NOREDRAW*/ );
    					}
    				}
    				 
    				::EndDeferWindowPos(hPosInfo);
    				for(hwnd,ctrl in this._ctrlAutoResize ){
+   					if( ctrl.cacheOrphanWindowRect__ ){
+   						var rc = ctrl.cacheOrphanWindowRect__;
+   						var l,t = ..win.toScreen(this.hwnd,rc.left,rc.top); 
+						..win.setPos( ctrl.hwnd,l,t,rc.width() ,rc.height() ,,0x14/*_SWP_NOACTIVATE | _SWP_NOZORDER*/ ); 
+						
+   					}
    					if( ctrl._preadjust ){ 
 						ctrl._preadjust( ctrlSize[hwnd].cx, ctrlSize[hwnd].cy );//before redraw
 					} 

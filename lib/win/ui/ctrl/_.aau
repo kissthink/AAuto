@@ -2,12 +2,13 @@
 import com.picture
 import win.ui.ctrl.common;
 import win.ui.ctrl.metaProperty;
+import win.ui.ctrl.static;
 import win.ui.ctrl.button; 
+import win.ui.ctrl.custom;
 namespace win.ui.ctrl;  
 
-//以下控件的库名与控件类名必须相同,发布时将从下面排除未使用的控件库
+//发布时将从下面排除未使用的控件库
 /*OPT_IMPORT{{*/
-import win.ui.ctrl.static;
 import win.ui.ctrl.picturebox;	
 import win.ui.ctrl.edit;
 import win.ui.ctrl.richedit;
@@ -24,7 +25,6 @@ import win.ui.ctrl.trackbar;
 import win.ui.ctrl.scrollbar; 
 import win.ui.ctrl.spin;
 import win.ui.ctrl.calendar;
-import win.ui.ctrl.custom;
 import win.ui.ctrl.thread;
 import win.ui.ctrl.splitter;
 import win.ui.ctrl.plus;

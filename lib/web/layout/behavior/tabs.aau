@@ -237,6 +237,7 @@ self.select = function(ltOwner /*our tabs container*/,panelName){
 		error("²ÎÊý´íÎó",1);
 			
     var eleTab = ltOwner.querySelector( ':root>.strip>[panel="%s"]', panelName );
+    eleTab.style.display = "block";
     selectTab(ltOwner, eleTab);
 }
 
@@ -342,12 +343,18 @@ close = function(ltOwner,panelName){
 		eleTab = panelName.queryParent("[panel]",0)
 	}
 	if(!eleTab) return true;
-	panelName = eleTab.panel;
-	var elePanel = ltOwner.querySelector(':root>.panel[name="%s"]', panelName);
-	
 	if( eleTab.previous() ) selectTab(ltOwner,eleTab.previous());
-	eleTab.delete();
-	elePanel.delete();
+	
+	if(!eleTab.closeable){
+		eleTab.style.display = "none";
+	}
+	else{
+		panelName = eleTab.panel;
+		var elePanel = ltOwner.querySelector(':root>.panel[name="%s"]', panelName); 
+		
+		eleTab.delete();
+		elePanel.delete();
+	}
 	
 	adjustStrip(ltOwner);
 	return true;

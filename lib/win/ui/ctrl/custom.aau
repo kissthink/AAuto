@@ -3,7 +3,7 @@ namespace win.ui.ctrl;
 class custom { 
 	ctor(parent,tParam){
 /*DSG{{*/
-this = ..win.form(right=233;bottom=87;border="none";exmode="none";mode="child";parent=parent;tParam=tParam)
+this = ..win.form(border="none";exmode="none";mode="child";parent=parent;tParam=tParam)
 this.add()
 /*}}*/
 

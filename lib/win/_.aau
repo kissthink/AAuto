@@ -157,6 +157,7 @@ getRootOwner = function(hwnd){
 
 setOwner = function(hwnd,hOwner){
 	if( !getStyle(hwnd,0x40000000/*_WS_CHILD*/) ){
+		if( getStyleEx(hOwner,0x8/*_WS_EX_TOPMOST*/) ) setTopmost(hwnd,true);
 		return SetWindowLong(hwnd, 0xFFFFFFF8/*_GWL_HWNDPARENT*/,hOwner)
 	}
 }
