@@ -48,4 +48,4 @@ vm.setCdecl(
 vm.run();
  
 vm.close();
-
+execute("pause")

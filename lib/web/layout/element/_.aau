@@ -3,7 +3,7 @@ assert(web.layout);
 import util.registry;
 namespace web.layout;
 
-var dll = _dll;
+var dll = ::HTMLayout;
 
 class element{
 	ctor (he,addref = true ) {
@@ -24,7 +24,6 @@ class element{
 
 import web.layout.element.state;
 import web.layout.element.style;
-//import web.layout.element.range;
 
 var element_t =  element;
 var valueObject_t = valueObject;
@@ -217,7 +216,7 @@ namespace element{
       	updateWindow = function(root){
       		var re,hwnd = GetElementHwnd(owner[["handle"]],0,root)
       		if( re == 0 && hwnd )
-      			return HTMLayoutUpdateWindow(hwnd);
+      			return ::HTMLayout.HTMLayoutUpdateWindow(hwnd);
       	};
       	isVisible = function(){
       		var re,v = IsElementVisible( owner[["handle"]] );
@@ -977,6 +976,7 @@ namespace element{
 	SetElementHtml = dll.api("HTMLayoutSetElementHtml","int(POINTER he,pointer html,INT htmlLength,INT where)");
 	DeleteElement = dll.api("HTMLayoutDeleteElement","int(POINTER he)");
 	GetElementUID = dll.api("HTMLayoutGetElementUID","int(POINTER he,INT& puid)");
+	GetElementByUID = dll.api("HTMLayoutGetElementByUID","int(int hwnd,INT uid,pointer& phe)"); 
 	GetElementState = dll.api("HTMLayoutGetElementState","int(POINTER he,INT& pstateBits)");
 	SetElementState = dll.api("HTMLayoutSetElementState","int(POINTER he,INT stateBitsToSet,INT stateBitsToClear,bool updateView)");
 	

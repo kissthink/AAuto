@@ -5,9 +5,14 @@ namespace win.ui.ctrl;
 class richedit{
     ctor(parent,tParam){ 
         if( tParam ){
-			if( (  _STUDIO_INVOKED != "thread" ) && ( !_dll ) ) _dll = ..raw.loadDll("RICHED20.DLL"); 
-			
-			tParam.cls = "RichEdit20A";
+			if( tParam.className != "RichEdit20A" ){
+				if( !_dll ) _dll = ..raw.loadDll("msftedit.dll"); 
+				tParam.cls = "RICHEDIT50W"
+			}
+			else{
+				if( !_dll ) _dll = ..raw.loadDll("RICHED20.DLL"); 
+				tParam.cls = "RichEdit20A"	
+			}
 			
 			if( tParam.multiline ) 
 					tParam.style |= 0x4/*_ES_MULTILINE*/  
@@ -212,6 +217,7 @@ richedit._metaProperty = editDecorateMeta ( metaProperty(
     	return null,edstream.err;
     } 
     getTextObjectModel = function(){
+    	//About TOM: http://msdn.microsoft.com/en-us/library/windows/desktop/bb787607%28v=vs.85%29.aspx
     	var out = {pointer ptr}
 		if( ::SendMessageByStruct(owner.hwnd,0x43C/*_EM_GETOLEINTERFACE*/,0,out) ){
 			var textDocument = ..com.QueryObject(out.ptr);
@@ -226,7 +232,7 @@ richedit._metaProperty = editDecorateMeta ( metaProperty(
 win.ui.ctrl.richedit = 多功能文本框控件支持库
 win.ui.ctrl.richedit() = 多功能文本框控件\n!richedit.
 ?win.ui.ctrl.richedit  =!richedit.
-!richedit.color = 获取或修改字体颜色数值
+!richedit.color = RICHEDIT控件忽略该属性
 !richedit.bgcolor= 获取或修改景颜色数值
 !richedit.cls = 设计时类名
 !richedit.className = 运行时类名
@@ -320,10 +326,29 @@ win.ui.ctrl.richedit() = 多功能文本框控件\n!richedit.
 !richedit.streamIn(格式,输入函数) = @.streamIn( ,function(format,buf,len){  \n	return 0,file.readMemory(buf,len);__\n} )
 !richedit.streamOut(格式,输出函数) = @.streamOut( ,function(format,buf,len){  \n	var ok,bytes = file.writeMemory(buf,len);__ \n	return 0,bytes;\n} )
 !richedit.orphanWindow() = 使控件脱离原来的窗口,可以显示在父窗口外面，\n但仍然显示在原来的位置，继续如影随形的跟随父窗口移动或改变大小,\n控件原来的固定边距等参数仍然有效
-!richedit.getTextObjectModel() = 返回COM对象TextDocument
-!TextDocument.Range(.(0,0) = 返回区块对象,\n参数为开始索引,结束索引
-!TextDocument.Range() = !TextDocumentRange.
-!TextDocumentRange.
+!richedit.getTextObjectModel() = 返回COM对象\n!TextDocument.
+!TextDocument.tomTrue = 真值
+!TextDocument.tomFalse = 假值
+!TextDocument.tomToggle = 切换原来的值
+!TextDocument.tomUndefined = 未定义值
+!TextDocument.Name = 文件名
+!TextDocument.Saved  = 是否保存 
+!TextDocument.DefaultTabStop = 制表符宽度
+!TextDocument.New() = 新建文件
+!TextDocument.Open(.(filename,flags,codepage) = 打开文档
+!TextDocument.Save(.(filename,flags,codepage) = 保存文档 
+!TextDocument.BeginEditCollection() = 开始编辑
+!TextDocument.EndEditCollection() = 结束编辑
+!TextDocument.Undo(.(number) = 撤消
+!TextDocument.Redo(.(number) = 重做
+!TextDocument.Range(.(first,lim) = 返回选区
+!TextDocument.RangeFromPoint(.(x,y) = 指定坐标返回选区
+!TextDocument.Selection = 选区对象 
+!TextDocument.Selection.Font = 字体\n!TomTextFont.
+!TomTextFont.Name = 字体名
+!TomTextFont.Bold = 是否粗体,\n可使用tomTrue，tomFalse等值
+!TomTextFont.Size = 字体大小
+!TomTextFont.ForeColor = 字体颜色
 _ENM_NONE=@0x0/*_ENM_NONE*/
 _ENM_CHANGE=@0x1/*_ENM_CHANGE*/
 _ENM_UPDATE=@0x2/*_ENM_UPDATE*/

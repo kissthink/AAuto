@@ -63,3 +63,5 @@ var ret = func_c("测试一下")
 io.print( "C函数返回值", ret )
 
 vm.close();
+
+execute("pause")

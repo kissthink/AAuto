@@ -79,3 +79,5 @@ namespace CSNET2ClassLibrary
     }
 }
 ****/
+
+console.pause()

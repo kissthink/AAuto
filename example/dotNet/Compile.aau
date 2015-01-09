@@ -68,3 +68,5 @@ var ret = cSharpObject.Hello( {
         loadcode(code)(); 
     } 
 } );  
+
+console.pause()

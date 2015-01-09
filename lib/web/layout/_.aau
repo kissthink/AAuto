@@ -77,7 +77,8 @@ namespace layout {
 	else {
 		_dll = ..raw.loadDll( $"~/lib/web/layout/.res/HTMLayout.dll","HTMLayout.dll" ); 
 	}
-	dll = _dll; 
+	dll = _dll;
+	::HTMLayout = _dll;
 	
 	namespace ..global{ 
 		import web.layout.valueObject;
@@ -336,10 +337,9 @@ namespace layout {
 			var ele = doc ? doc.getElementById(id);
 			if(ele)return owner._contrls[ele.handle];
 		};
-		getEleByUid = function (uid=0) {
-			var re,he = GetElementByUID(owner.hwnd,uid) ;
-			if( re == 0/*_HLDOM_OK*/ )
-				return element(he)
+		getEleByUid = function (uid) {
+			var doc = owner.documentElement;
+			return doc ? doc.getElementByUid(uid:0) ;
 		}; 
 		getFocus = function() {
 			var re,he = GetFocusElement(owner.hwnd) ;
@@ -381,7 +381,7 @@ namespace layout {
 			AppendMasterCSS(css,#css);
 		};
 		updateWindow = function(){
-			return HTMLayoutUpdateWindow(owner.hwnd);
+			return ::HTMLayout.HTMLayoutUpdateWindow(owner.hwnd);
 		}; 
 		setMode = function(mode){
 			SetMode(owner.hwnd,mode)
@@ -391,7 +391,7 @@ namespace layout {
 		}; 
 		addHeaders = {
 			_set = function(v){
-				return SetHttpHeaders(owner.hwnd,v,#v);
+				return ::HTMLayout.HTMLayoutSetHttpHeaders(owner.hwnd,v,#v);
 			}
 		};
 		enumRes = function(func){
@@ -400,7 +400,7 @@ namespace layout {
 				function(u,t,i,s){
 		 			return false !== func( fromUnicode(u,,true),t,i,s); 
 				} ,"bool(pointer resUri,string resType,pointer imgData,pointer imgSize)");
-			EnumResources(owner.hwnd,callBack);
+			::HTMLayout.HTMLayoutEnumResources(owner.hwnd,callBack);
 		};
 		combineUrl = function(url){
 			var doc = owner.documentElement;
@@ -479,28 +479,17 @@ namespace layout {
 	}
 	 
 	SetOption = dll.api("HTMLayoutSetOption", "bool(int hWnd,INT option,INT value)");  
-	DataReady = dll.api("HTMLayoutDataReady","int(int hwnd,pointer uri,pointer data,INT len)");
-	
-	EnumResources = dll.api("HTMLayoutEnumResources","INT(int hWnd,POINTER cb)");
-	GetMinHeight = dll.api("HTMLayoutGetMinHeight","INT(int hWnd,INT width)");
-	GetMinWidth = dll.api("HTMLayoutGetMinWidth","INT(int hWnd)");
-	
+	DataReady = dll.api("HTMLayoutDataReady","int(int hwnd,pointer uri,pointer data,INT len)");  
+ 
 	LoadFile = dll.api("HTMLayoutLoadFile","int(int hWnd,pointer filename)");
 	LoadHtmlEx = dll.api("HTMLayoutLoadHtmlEx","int(int hWnd,pointer html,INT size,pointer baseUrl)");
-	ProcND = dll.api("HTMLayoutProcND","INT(int hwnd,INT msg,INT wParam,int lParam,bool& pbHandled)");
-	HTMLayoutUpdateWindow = dll.api("HTMLayoutUpdateWindow","bool(int hwnd)"); 
-	element.HTMLayoutUpdateWindow = HTMLayoutUpdateWindow;
-	
-	SetCallback = dll.api("HTMLayoutSetCallback","void(int hWnd,pointer cb,pointer cbParam)");
-	 
-	SetHttpHeaders = dll.api("HTMLayoutSetHttpHeaders","bool(int hWnd,STRING Headers,INT len)");
-	SetMediaType = dll.api("HTMLayoutSetMediaType","bool(int hWnd,pointer mediaType)");
+	ProcND = dll.api("HTMLayoutProcND","INT(int hwnd,INT msg,INT wParam,int lParam,bool& pbHandled)"); 
+	SetCallback = dll.api("HTMLayoutSetCallback","void(int hWnd,pointer cb,pointer cbParam)"); 
+ 
 	SetMode = dll.api("HTMLayoutSetMode","void(int hWnd,int mode)");  
 	GetRootElement = dll.api("HTMLayoutGetRootElement","int(int hwnd,pointer& phe)");
 	GetFocusElement = dll.api("HTMLayoutGetFocusElement","int(int hwnd,pointer& phe)");
-	FindElement = dll.api("HTMLayoutFindElement","int(int hwnd,int x,int y,pointer& phe)");
-	GetElementByUID = dll.api("HTMLayoutGetElementByUID","int(int hwnd,INT uid,pointer& phe)"); 
-	element.GetElementByUID = GetElementByUID;
+	FindElement = dll.api("HTMLayoutFindElement","int(int hwnd,int x,int y,pointer& phe)"); 
 	
 	SetCSS = dll.api("HTMLayoutSetCSS","bool(int hWnd,str utf8,INT numBytes,string baseUrl,string mediaType)");
 	SetMasterCSS = dll.api("HTMLayoutSetMasterCSS","bool(str utf8,INT numBytes)");
@@ -514,9 +503,12 @@ namespace layout {
 鸣谢：
 http://terrainformatica.com
 http://bbs.aau.cn/forum.php?mod=viewthread&tid=3789
-http://bbs.aau.cn/forum.php?mod=viewthread&tid=10180
 */
- 
+
+/**intellisense(::)
+::HTMLayout=HTMLayout.dll\n!dllModule.
+end intellisense**/
+
 /*****intellisense()
 web.layout(.(窗口对象,捕获事件) = 从窗口对象创建HTMLayout窗口\n 参数二默认为 _HL_HANDLE_LITE - 仅允许捕获按钮命令等基本交互事件
 web.layout._dll = dll;
@@ -603,7 +595,6 @@ _HL_HANDLE_BEHAVIOR_EVENT=@0x100/*_HL_HANDLE_BEHAVIOR_EVENT*/
 _HL_HANDLE_LITE=@0x80000100/*_HL_HANDLE_LITE*/
 _HL_HANDLE_INPUT=@0x80000007/*_HL_HANDLE_INPUT*/
 _HL_DISABLE_INITIALIZATION=@0x80000000/*_HL_DISABLE_INITIALIZATION*/
-
 _HLN_CREATE_CONTROL=@0xB00/*_HLN_CREATE_CONTROL*/
 _HLN_DESTROY_CONTROL=@0xB06/*_HLN_DESTROY_CONTROL*/
 _HLN_LOAD_DATA=@0xB01/*_HLN_LOAD_DATA*/
@@ -618,46 +609,38 @@ _HWND_TRY_DEFAULT=@0/*_HWND_TRY_DEFAULT*/
 _HWND_DISCARD_CREATION=@1/*_HWND_DISCARD_CREATION*/
 _LOAD_OK=@0/*_LOAD_OK*/
 _LOAD_DISCARD=@1/*_LOAD_DISCARD*/
-
 _HLRT_DATA_HTML=@0/*_HLRT_DATA_HTML*/
 _HLRT_DATA_IMAGE=@1/*_.HLRT_DATA_IMAGE*/
 _HLRT_DATA_STYLE=@2/*_HLRT_DATA_STYLE*/
 _HLRT_DATA_CURSOR=@3/*_HLRT_DATA_CURSOR*/
 _HLRT_DATA_SCRIPT=@4/*_HLRT_DATA_SCRIPT*/
-
 _HLM_LAYOUT_ONLY=@0/*_HLM_LAYOUT_ONLY*/
 _HLM_SHOW_SELECTION=@1/*_HLM_SHOW_SELECTION*/
-
 _DATA_ELEMENT=@0/*_DATA_ELEMENT*/
 _INLINE_TEXT_ELEMENT=@1/*_INLINE_TEXT_ELEMENT*/
 _INLINE_BLOCK_ELEMENT=@2/*_INLINE_BLOCK_ELEMENT*/
 _BLOCK_TEXT_ELEMENT=@3/*_BLOCK_TEXT_ELEMENT*/
 _BLOCK_BLOCK_ELEMENT=@4/*_BLOCK_BLOCK_ELEMENT*/
-
 _HL_SMOOTH_SCROLL=@1/*_HL_SMOOTH_SCROLL*/
 _HL_CONNECTION_TIMEOUT=@2/*_HL_CONNECTION_TIMEOUT*/
 _HL_HTTPS_ERROR=@3/*_HL_HTTPS_ERROR*/
 _HL_FONT_SMOOTHING=@4/*_HL_FONT_SMOOTHING*/
 _HL_ANIMATION_THREAD=@5/*_HL_ANIMATION_THREAD*/
 _HL_TRANSPARENT_WINDOW=@6/*_HL_TRANSPARENT_WINDOW*/
-
 _SIH_REPLACE_CONTENT=@0/*_SIH_REPLACE_CONTENT*/
 _SIH_INSERT_AT_START=@1/*_SIH_INSERT_AT_START*/
 _SIH_APPEND_AFTER_LAST=@2/*_SIH_APPEND_AFTER_LAST*/
 _SOH_REPLACE=@3/*_SOH_REPLACE*/
 _SOH_INSERT_BEFORE=@4/*_SOH_INSERT_BEFORE*/
 _SOH_INSERT_AFTER=@5/*_SOH_INSERT_AFTER*/
-
 _HL_OPTIONS_SMOOTH_SCROLL=@1/*_HL_OPTIONS_SMOOTH_SCROLL*/
 _HL_OPTIONS_CONNECTION_TIMEOUT=@2/*_HL_OPTIONS_CONNECTION_TIMEOUT*/
 _HL_OPTIONS_HTTPS_ERROR=@3/*_HL_OPTIONS_HTTPS_ERROR*/
 _HL_OPTIONS_FONT_SMOOTHING=@4/*_HL_OPTIONS_FONT_SMOOTHING*/
 _HL_OPTIONS_ANIMATION_THREAD=@5/*_HL_OPTIONS_ANIMATION_THREAD*/
 _HL_OPTIONS_TRANSPARENT_WINDOW=@6/*_HL_OPTIONS_TRANSPARENT_WINDOW*/ 
-
 _HLM_LAYOUT_ONLY=@0/*_HLM_LAYOUT_ONLY*/
 _HLM_SHOW_SELECTION=@1/*_HLM_SHOW_SELECTION*/ 
-
 _HLRT_DATA_HTML=@0/*_HLRT_DATA_HTML*/
 _HLRT_DATA_IMAGE=@1/*_HLRT_DATA_IMAGE*/
 _HLRT_DATA_STYLE=@2/*_HLRT_DATA_STYLE*/

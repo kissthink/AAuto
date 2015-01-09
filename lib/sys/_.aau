@@ -20,11 +20,18 @@ logoff = function(){
 	return shutdown(4/*EWX_LOGOFF|_EWX_FORCE*/)	
 }
 
-self["standby"] = function(){
-	::User32.SetSystemPowerState(1,1);
+standby = function(){
+	if(! setprivilege("SeShutdownPrivilege",true) ) return false;
+	::Kernel32.SetSystemPowerState(1,1);
 }
+
 self["sleep"] = function(){
-	::User32.SetSystemPowerState(0,0);
+	if(! setprivilege("SeShutdownPrivilege",true) ) return false;
+	::Kernel32.SetSystemPowerState(0,0);
+}
+
+getStartTime = function(){
+	return ..time().addsecond(-(..time.tick()/1000)); 
 }
 
 ::Advapi32 := ..raw.loadDll("Advapi32.dll") 
@@ -55,4 +62,5 @@ lock()=锁定计算机
 getUserName() = 返回当前登录用户名
 getComputerName() = 返回计算机名
 setComputerName(.("计算机名") = 修改计算机名,重启后生效
+getStartTime() = 返回系统启动时间\n!time.
 end intellisense**/
