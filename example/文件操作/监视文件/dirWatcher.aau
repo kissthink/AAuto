@@ -1,10 +1,10 @@
 //临视文件 fsys.dirWatcher
 import win.ui;
 /*DSG{{*/
-var winform = ..win.form( bottom=399;parent=...;right=599;text="AAuto Form" )
-winform.add( 
-btnWatch={ dr=1;bottom=380;text="监视目录";left=354;dt=1;top=342;z=1;right=526;cls="button" };
-editChange={ dr=1;dl=1;bottom=322;vscroll=1;right=564;left=23;dt=1;top=21;multiline=1;z=2;db=1;hscroll=1;edge=1;cls="edit" }
+var winform = ..win.form(text="临视文件 fsys.dirWatcher";right=599;bottom=399;parent=...)
+winform.add(
+btnWatch={cls="button";text="监视目录";left=354;top=342;right=526;bottom=380;dr=1;dt=1;z=1};
+editChange={cls="edit";left=23;top=21;right=564;bottom=322;db=1;dl=1;dr=1;dt=1;edge=1;hscroll=1;multiline=1;vscroll=1;z=2}
 )
 /*}}*/
 
@@ -38,7 +38,7 @@ winform.btnWatch.oncommand = function(id,event){
 	winform.watchDir = fsys.dlg.opendir(,winform.hwnd,"请选择要监视的目录");
 	if( winform.watchDir ) {
 		winform.btnWatch.disabled = true;
-		thread.create( watch_t,winform.watchDir  ) //创建监视线程
+		thread.invoke( watch_t,winform.watchDir  ) //创建监视线程
 		process.explore( winform.watchDir )
 	}
 }

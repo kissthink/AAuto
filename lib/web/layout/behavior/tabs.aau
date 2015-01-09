@@ -237,8 +237,11 @@ self.select = function(ltOwner /*our tabs container*/,panelName){
 		error("²ÎÊý´íÎó",1);
 			
     var eleTab = ltOwner.querySelector( ':root>.strip>[panel="%s"]', panelName );
-    eleTab.style.display = "block";
+    var preVisible = eleTab.isVisible();
+    if(!preVisible) eleTab.style.display = "block";
+    
     selectTab(ltOwner, eleTab);
+    if(!preVisible) adjustStrip(ltOwner);
 }
 
 isVertical = function(ltOwner){
@@ -343,10 +346,14 @@ close = function(ltOwner,panelName){
 		eleTab = panelName.queryParent("[panel]",0)
 	}
 	if(!eleTab) return true;
-	if( eleTab.previous() ) selectTab(ltOwner,eleTab.previous());
+	var ltPrevious =  eleTab.previous(); 
+	var current = eleTab.state.current;
 	
 	if(!eleTab.closeable){
-		eleTab.style.display = "none";
+		var ltStrip = ltOwner.querySelector(":root>.strip");
+		eleTab.style.display = "none"; 
+		if(!current) eleTab.updateHTML();
+		ltStrip.updateWindow();
 	}
 	else{
 		panelName = eleTab.panel;
@@ -356,6 +363,7 @@ close = function(ltOwner,panelName){
 		elePanel.delete();
 	}
 	
+	if( current && ltPrevious ) selectTab(ltOwner,ltPrevious);
 	adjustStrip(ltOwner);
 	return true;
 } 

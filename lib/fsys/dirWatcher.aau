@@ -8,7 +8,7 @@ class dirWatcher{
 			error("请指定正确的目录参数",2);
 			
 		this = ..fsys.file(dir,0x1/*_FILE_LIST_DIRECTORY*/
-			,7/*_FILE_SHARE_READ | _FILE_SHARE_WRITE | _FILE_SHARE_DELETE*/ //允许其他进程删除、重命名该目录下的文件
+			,7/*_FILE_SHARE_READ | _FILE_SHARE_WRITE | _FILE_SHARE_DELETE*/
 			,0x3/*_OPEN_EXISTING*/
 			,0x2000000/*_FILE_FLAG_BACKUP_SEMANTICS*/ );
 		
@@ -29,11 +29,12 @@ class dirWatcher{
 			var convert = ..raw.convert;
 			var push = ..table.push;
 			do{
+				
 				convert( buffer, entry,offset);  
 				var path = ..raw.tostring(buffer,offset + 13,offset + 12 + entry.FileNameLength );  
-				push(changes,{filename = ..string.fromUnicode(path);action=entry.Action});
-				offset = entry.NextEntryOffset;  
-			}while(offset ? ( offset + 16 < bufLen ) ) 
+				push(changes,{filename = ..string.fromUnicode(path);filenameW = path; action=entry.Action;actionText = ACTION_TEXT[entry.Action]});
+				offset = offset + entry.NextEntryOffset;
+			}while(entry.NextEntryOffset ? ( offset + 16 < size ) )
 			return changes;
 		}  	
 	}; 
@@ -47,36 +48,20 @@ class dirWatcher{
 				changes = this.readDirectoryChanges();
 				item =  shift(changes);
 			}
-			action = item.action;
-			return item.filename,action,ACTION_TEXT[action]
+			return item.filename,item.action,item.actionText,item
 		} 	
 	};
 }
  
 namespace dirWatcher{
-	//setprivilege('SeBackupPrivilege',true);
-	//setprivilege('SeRestorePrivilege',true); 
-	ReadDirectoryChangesW = ::Kernel32.api( "ReadDirectoryChangesW", "bool(pointer hDir,pointer buf,INT len,bool subtree,INT filter,INT& bytesRet,  struct overlapped, pointer completionRoutine)");
+	ReadDirectoryChangesW = ::Kernel32.api( "ReadDirectoryChangesW", "bool(pointer hDir,pointer buf,INT len,bool subtree,INT filter,INT& bytesRet,struct overlapped, pointer completionRoutine)");
  
 	class FILE_NOTIFY_INFORMATION{
     	INT NextEntryOffset;
     	INT Action;
     	INT FileNameLength;
 	} 
-		
-	class OVERLAPPED {
-    	INT Internal;
-    	INT InternalHigh;
-    	union offset = {
-        	struct Number = {
-            	INT Offset;
-            	INT OffsetHigh;
-            };
-        	pointer Pointer;
-        };
-    	poiter hEvent;
-    } 
-    
+	
     ACTION_TEXT = {
 		[ 1/*_FILE_ACTION_ADDED*/ ] = "添加文件";
 		[ 2/*_FILE_ACTION_REMOVED*/ ] = "移除文件";
@@ -94,7 +79,12 @@ fsys.dirWatcher() = !dirWatcher.
 	io.print( filename,actionText,action & 0x10/*_FILE_NOTIFY_CHANGE_LAST_WRITE*/ ) 
 }
 !dirWatcher.readDirectoryChanges(.(选项,是否监控子目录) = 读取目录发生的变更\n返回值为数组,数组成员为一个table对象\nfilename字段表明变更的目录,action字段表明变更类型\naction为 _FILE_NOTIFY_CHANGE_ 前缀的常量标志
-
+!dirWatcher.readDirectoryChanges() = !dirWatcherEntry.
+!dirWatcher.close() = 关闭
+!dirWatcherEntry.filename = 文件名
+!dirWatcherEntry.filenameW = Unicode文件名
+!dirWatcherEntry.action = 变更类型
+!dirWatcherEntry.actionText = 变更类型说明
 _FILE_ACTION_ADDED=@1/*_FILE_ACTION_ADDED*/
 _FILE_ACTION_REMOVED=@2/*_FILE_ACTION_REMOVED*/
 _FILE_ACTION_MODIFIED=@3/*_FILE_ACTION_MODIFIED*/

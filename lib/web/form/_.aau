@@ -13,11 +13,6 @@ class form {
 		this.dlControl = dlControl;
 		this.agent = agent;
 		this.securityTrusted = securityTrusted;
-	
-		//默认是有滚动条的，没有才需要设置
-		if( not winform[["scroll"]]){ 
-			hostflag = hostflag?(hostflag|0x8/*_UIFLAG_SCROLL_NO*/) : hostflag/*_UIFLAG_SCROLL_NO*/ 
-		} 
  		this._hostflag = hostflag; 
  		
  		//响应默认DISPID的Invoke调用
