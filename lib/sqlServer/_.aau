@@ -119,7 +119,7 @@ class sqlServer {
 	exec = function(sql,...){ 
 		if( ... )sql = formatSqlParameters(sql,...); 
 		var ret,err = call(conn.Execute,conn,sql );
-		..io.print( sql );
+		//..io.print( sql );
 		if(!ret) error(err,2);
 		return ret;
 	}; 

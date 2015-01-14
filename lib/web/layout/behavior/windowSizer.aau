@@ -7,10 +7,10 @@ onAttach = function( ltOwner ){
 		ltOwner.style.display = "none";
 		return true;
 	}
-	if( form.initHtmlayoutWindowSizer){
+	if( ltOwner.root().initHtmlayoutWindowSizer ){
 		return true;;
 	}
-	form.initHtmlayoutWindowSizer = true;
+	ltOwner.root().initHtmlayoutWindowSizer  = "true";
 	
 	var border = ltOwner.getCustomAttribute("border") or "4px";
 	var corner = ltOwner.getCustomAttribute("corner") or "8px"; 

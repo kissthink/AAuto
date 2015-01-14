@@ -2,31 +2,15 @@
 import win.ui.minmax;
 import web.layout.behavior.windowSizer;
 namespace web.layout.behavior.windowCommand;
-
+ 
 onAttach = function( ltOwner ){
 	var form = ltOwner.getForm();
 	if( !form.initHtmlayoutWindowCommand ){
 		form.initHtmlayoutWindowCommand = true;
 		
-		begin
-			var elMax = ltOwner.root().querySelector('[command="window-max"],[command="window-restore"]');
-			if(!..win.getStyle(form.hwnd,0x10000/*_WS_MAXIMIZEBOX*/) ){ 
-				if( elMax ) elMax.style.display = "none";
-				
-			}
-			elseif(elMax){
-				var ltBody = ltOwner.root().querySelector("body");
-				if( ltBody ) ltBody.insertAdjacentHTML("beforeEnd",'<div style="behavior:windowSizer"/>')
-			}
-	
-			if(!..win.getStyle(form.hwnd,0x20000/*_WS_MINIMIZEBOX*/) ){
-				var elMin = ltOwner.root().querySelector('[command="window-min"]') ;
-				if( elMin ) elMin.style.display = "none";
-			}
-		end;
-		
+		var wbLayout = ltOwner.getLayout();
 		form.adjust = function( cx,cy,wParam ) {
-		 	var ltRoot = ltOwner.root();	
+		 	var ltRoot = wbLayout.documentElement;	
 		 	var ltBody = ltRoot.querySelector("body"); 
 		 	if( wParam == 0x2/*_SIZE_MAXIMIZED*/ ){
 		 		var elMax = ltRoot.querySelector('[command="window-max"]')
@@ -43,7 +27,7 @@ onAttach = function( ltOwner ){
 				)
 		 	}
 		 	elseif( wParam == 0x0/*_SIZE_RESTORED*/ ){
-		 		var elRestore = ltOwner.root().querySelector('[command="window-restore"]')
+		 		var elRestore = ltRoot.querySelector('[command="window-restore"]')
 				if( elRestore ) {
 					elRestore.command = "window-max"; 
 					if( ..string.cmp( elRestore.style["font-family"],"Marlett") == 0 ) elRestore.innerText = "1";
@@ -58,6 +42,24 @@ onAttach = function( ltOwner ){
 		};
 		if( form.onGetMinMaxInfo === null ){
 			..win.ui.minmax( form ); 
+		}
+	}
+	
+	if( ! ltOwner.root().initHtmlayoutWindowCommand ){
+		ltOwner.root().initHtmlayoutWindowCommand = "true"; 
+		var elMax = ltOwner.root().querySelector('[command="window-max"],[command="window-restore"]');
+		if(!..win.getStyle(form.hwnd,0x10000/*_WS_MAXIMIZEBOX*/) ){ 
+			if( elMax ) elMax.style.display = "none";
+			
+		}
+		elseif(elMax){
+			var ltBody = ltOwner.root().querySelector("body");
+			if( ltBody ) ltBody.insertAdjacentHTML("beforeEnd",'<div style="behavior:windowSizer"/>') 
+		}
+
+		if(!..win.getStyle(form.hwnd,0x20000/*_WS_MINIMIZEBOX*/) ){
+			var elMin = ltOwner.root().querySelector('[command="window-min"]') ;
+			if( elMin ) elMin.style.display = "none";
 		}
 	}
 	return true;
