@@ -31,3 +31,4 @@ manage.waitClose();
 io.print("---------------")
 io.print("万里长征终于走完了.......")
 
+execute("pause")

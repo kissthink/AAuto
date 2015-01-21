@@ -39,3 +39,4 @@ evt.set()
 evt.wait();
 
 io.print("完了完了............")
+execute("pause")

@@ -35,3 +35,4 @@ reg.close();
 
 reg = win.reg("HKEY_CURRENT_USER\Software\ECranesoft\nofound",true) //仅打开已存在的路径
 assert(reg,"HKEY_CURRENT_USER\Software\ECranesoft\nofound不存在")
+execute("pause")

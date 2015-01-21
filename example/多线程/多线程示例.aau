@@ -35,3 +35,4 @@ hander2,id2  = thread.create(f,{int=456;str="大家好"} )
 io.print("thread.waitAll开始等待所有线程")
 thread.waitAll(hander,hander2);
 io.print("thread.waitAll函数返回")
+execute("pause")

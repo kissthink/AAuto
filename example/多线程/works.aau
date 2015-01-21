@@ -25,3 +25,4 @@ works.waitClose(
 ) 
    
 io.print("OK")
+execute("pause")

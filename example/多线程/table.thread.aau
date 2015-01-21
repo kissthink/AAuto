@@ -35,3 +35,5 @@ io.print("--------------")
 for( k,v in tab.each() ){
 	io.print(k,v) 
 }
+
+execute("pause")

@@ -1,9 +1,4 @@
  
-import win;
-
-//导入控制主板发声的WINAPI函数
-Beep = ::Kernel32.api("Beep","int(int,int)")
-
 /*
  
 第一个参数指定声音频率(从37Hz到32767Hz)
@@ -14,4 +9,4 @@ Beep = ::Kernel32.api("Beep","int(int,int)")
  
 
 //调用函数示例
-Beep(1566,1000);
+::Kernel32.Beep(1566,1000);

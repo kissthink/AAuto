@@ -1,8 +1,6 @@
 //判断是否64位系统
 import process;
-
-IsWow64Process = ::Kernel32.api( "IsWow64Process", "bool(pointer hProcess,bool &Wow64Process)");
-var ok,Wow64Process = IsWow64Process( process.getHandle() );
-
-io.open()
-io.print( "是否64位",ok && Wow64Process )
+import console;
+ 
+console.log( "是否64位", process().isWow64() )
+console.pause()

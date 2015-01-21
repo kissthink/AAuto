@@ -30,3 +30,4 @@ manage.create(func,"线程3")
 
 manage.waitClose()
 io.print("全部退出")
+execute("pause")
