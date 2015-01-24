@@ -12,6 +12,10 @@ CloseClipboard = User32.api("CloseClipboard","int()" )
 RegisterClipboardFormat = ::User32.api("RegisterClipboardFormat","INT(str format)")
 /*end intellisense*/
 
+readUnicode = function(){
+	return read(0xD/*_CF_UNICODETEXT*/); 
+}
+
 read = function(format){ 
 	var txt;
 	if(!OpenClipboard(0))
@@ -22,7 +26,7 @@ read = function(format){
 	if(hClip){
 		var p = ::GlobalLock(hClip)
 		if(p){
-			txt = ..raw.tostring( p )
+			txt = ..raw.str(p,format == 0xD/*_CF_UNICODETEXT*/); 
 			::GlobalUnlock(hClip)
 		}
 	} 
@@ -72,6 +76,7 @@ readBitmap = function(){
 }
 
 /**intellisense(win.clip)
+readUnicode() = 读取剪贴板UNICODE文本
 read() = 读取剪贴板文本
 write(__) = 写入文本到剪贴板
 writeBitmap(__/*位图句柄*/) = 写入位图到剪贴板
