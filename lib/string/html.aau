@@ -22,7 +22,7 @@ toText = function(html){
 
 	//清除无效标记
 	html = removeTag(html,"head","style","script");
-	..io.print( html )
+
 	//转换所有空格换行
 	html = rep(html, 
     	"\<\s*pre[^\>]*?\s*\>(.*?)\<\s*/pre\s*>",

@@ -133,10 +133,11 @@ class hotkey{
 		var root = {}
 		var node = this.actions 
 		var vk ;
+		 
 		for(i=1;#tab-2;1){
+			if(!tab[i]) error("按键不能为空值,参数位置:@"+i,2)
 			vk =   ..key.getCode(tab[i] ) ;
-			if(!vk)
-				error("指定了错误的按键,位置:"+i,2)
+			if(!vk) error("指定了错误的按键,参数位置:@"+i,2)
 			if( ! node[ vk ] ){
 				node[ vk ] = {}; 
 			}   
@@ -144,18 +145,22 @@ class hotkey{
 		}
 		 
 		vk = tab[#tab-1];
+		if(!vk) error("按键不能为空值,参数位置:@"+#tab-1,2)
 		vk = (vk != '\0' )? ( ..key.getCode(vk) ): 0 
 		
 		if( type(func) == type.string ){
 			func = loadcode(func) : func; 
 		} 
-		if(!node[ vk ])
+		if( !node[ vk ] )
 			node[ vk ] = {};
 			
 		node[ vk ].event = func; 
 	} 
 	
 	regStr = function(str,proc){
+		if(type(str)!=type.string ) error("参数@1必须是字符串",2);
+		if(!#str) error("参数@1不能为空字符串",2);
+		
 		str = ..string.upper(str);
 		var t = ..string.split(str);
 		..table.push(t,proc);
@@ -167,7 +172,7 @@ class hotkey{
 	} 
 	
 	clear = function(){
-		..table.pop(catchKeys,#catchKeys) 
+		if(#catchKeys)..table.pop(catchKeys,#catchKeys) 
 	} 
 	
 	close = function(){

@@ -1,0 +1,27 @@
+/* 
+本人每次提供一个开源代码都冒出一大堆追求完美又自己不肯动手
+的伸手党提出更多无理要求，所求不得就对本人围攻辱骂。
+
+本人分享源码的目的不是给自己找更多不必要的麻烦！！！ 
+因此郑重声明：
+excel,word本身对嵌入控件就支持的不好，就连微软自己开发的控件都不完美。
+要求高忍受不了一点缺陷和不如意的玻璃心 - 请您自己到网上下载DsoFramer控件源码自己改，
+本人平时不使用excel没有兴趣深入研究，因此不对该控件的使用提供任何技术支持。
+*/
+import win.ui;
+/*DSG{{*/
+mainForm = ..win.form(text="dsoFrame控件测试";right=599;bottom=399)
+mainForm.add()
+/*}}*/
+
+mainForm.show(0x3/*_SW_MAXIMIZE*/) 
+
+import com.dsoFramer;
+var dsoFrame = com.dsoFramer(mainForm) 
+dsoFrame.menubar = false //去掉菜单栏  
+ 
+dsoFrame.createNewExcel();
+var excelDoc = dsoFrame.activeDocument;
+excelDoc.Sheets(1).Cells(1,1).Value2 = "测试一下"; 
+ 
+return win.loopMessage(); 

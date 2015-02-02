@@ -1,0 +1,27 @@
+/* 
+本人每次提供一个开源代码都冒出一大堆追求完美又自己不肯动手
+的伸手党提出更多无理要求，所求不得就对本人围攻辱骂。
+
+本人分享源码的目的不是给自己找更多不必要的麻烦！！！ 
+因此郑重声明：
+
+Chromium非常大，压缩15MB，解压后几十MB，
+如果希望体积小建议使用web.kit支持库。Chromium原本就不是为嵌入式控件而生，
+要求高忍受不了一点缺陷和不如意的玻璃心 - 本控件所有源码开源请您自己改，
+本人不对该控件的使用提供任何技术支持。 
+*/
+
+import win.ui;
+/*DSG{{*/
+mainForm = ..win.form(text="AAuto Form";right=561;bottom=379)
+mainForm.add()
+/*}}*/
+
+//建议先显示窗口创建创建网页控件
+mainForm.show(0x3/*_SW_MAXIMIZE*/); 
+
+import web.cef1;
+var webkitx = web.cef1( mainForm ); 
+webkitx.go("http://bbs.aau.cn"); 
+
+return win.loopMessage(); 

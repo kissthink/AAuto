@@ -1,0 +1,15 @@
+import ide;
+import fsys;
+
+var publisDir = ide.getPublisDir();
+if(!#publisDir)return; 
+
+var wkePubDir =  fsys.joinpath(publisDir,"\lib\web\cef1\.dll\" ); 
+if( ! io.exist(wkePubDir) ){ 
+	var libPath,libDir = io.libpath("web.cef1")
+	
+	var pubDllDir = fsys.joinpath(publisDir,"\lib\web\cef1\.dll\" ); 
+	..fsys.createDir(pubDllDir);
+	..fsys.copy( fsys.joinpath(libDir,"\.dll\*") ,pubDllDir,0x10/*_FOF_NOCONFIRMATION*/  | 0x200/*_FOF_NOCONFIRMMKDIR*/); 
+  
+}

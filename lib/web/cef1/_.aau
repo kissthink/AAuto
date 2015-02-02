@@ -1,0 +1,233 @@
+import com.activeX;
+import util.metaProperty;
+
+namespace web; 
+class cef1{
+	ctor( winform ){
+		winform.createEmbed("{D9EA077F-4E5F-4BBD-9ACD-02E7021CDEFE}",this); 
+		if( winform.isForm ? winform.onEraseBkgnd === null ){
+			winform.onEraseBkgnd  = function(hwnd,message,wParam,lParam){
+    			return 0;
+			}
+		}
+		this._eventHandler  = {} ;
+		this._eventHandlerInterface  = ..com.ImplInterface( this._eventHandler ); 
+	}; 
+	@_metaProperty;
+}
+
+namespace cef1 {
+
+	::Kernel32.SetDllDirectory(..io.fullpath("~\lib\web\cef1\.dll\"));
+	if( ..io.exist( "~\lib\web\cef1\.dll\WebKitX.ocx" ) ){
+		..com.activeX.regsvr32("~\lib\web\cef1\.dll\WebKitX.ocx",true); 
+	}
+  	::Kernel32.SetDllDirectory(null);
+  	
+	_metaProperty = ..util.metaProperty(
+		_waitCreated = function(){ 
+			var this = owner;
+			if( ..win.isVisible( this._form.hwnd) ){
+				..win.wait(  function(){ if(this.created){ return this.created; } } ,this._form.hwnd );
+			}
+			else {
+				error("请在网页窗口显示以后再调用此函数",3)
+			} 	
+		};
+		wait = function(){ 
+			return owner._wait();
+		}
+		go = function(url){  
+			if( !owner.created ){ owner._waitCreated(); }
+			owner._object.OpenURL(url); 
+		};
+		write = function(html,url){ 
+			if( !owner.created ){ owner._waitCreated(); }
+			owner._object.LoadHTML(html,url : "about:blank");
+		};
+		doScript = function(js){  
+			return owner._object.ExecJavaScript(js);
+		};
+		execCommand = function(cmdId,value){  
+			return owner._object.ExecCommand(cmdId,value);
+		}; 
+		cleanHTML = function(html){ 
+			return owner._object.CleanHTML(html);
+		};
+		tidyHTML = function(html){ 
+			return owner._object.TidyHTML(html);
+		};  
+		reload = function(){ 
+			owner._object.Reload();
+		};
+		repaint = function(){ 
+			owner._object.Repaint();
+		};
+		edit = function(url){ 
+			owner._object.Edit(url);
+		};
+		preview = function(url){ 
+			owner._object.Preview(url);
+		}; 
+		selectedHTML = function(fullHtml){
+			return owner._object.SelectedHTML(fullHtml);
+		};
+		selectElement = function(selector,moveCaret,selectContents){
+			return owner._object.SelectElement(selector,moveCaret,selectContents);
+		};
+		addEventListenerEx = function(id,eventType,listener,functionName,useCapture){
+			return owner._object.addEventListenerEx(id,eventType,listener,functionName,useCapture);
+		}; 
+		addEventListener = function(id,eventType,listener,useCapture){
+			if( type(eventType) != type.string || !#eventType ) error("参数@2请指定事件名",2);
+			if( type(id) == type.table ) {
+				var eventHandler = id;
+				var eventHandlerInterface = ..com.ImplInterface(eventHandler);
+				for id,listener in ..table.eachName(eventHandler){
+					owner._object.addEventListenerEx(id,eventType,eventHandlerInterface,id,useCapture);
+				}
+			}
+			else{
+				if( type(id) != type.string || !#id ) error("参数@1请指定ID",2);
+				if( type(listener) != type.function  )error("参数@3请指定事件回调函数",2);
+				
+				var eventFunctionName = "on_" ++ id + "_" + eventType;
+				owner._eventHandler[ eventFunctionName ] = listener;
+				return owner._object.addEventListenerEx(id,eventType,owner._eventHandlerInterface,eventFunctionName,useCapture);
+			}
+		};
+		find = function(regularExpression){ 
+			return owner._object.Find(regularExpression);
+		};
+		created = {
+			_get = function(){ 
+				return owner._object.Created();
+			} 	
+		};
+		modified = {
+			_get = function(){ 
+				return owner._object.Modified();
+			} 	
+		}; 
+		editable = {
+			_get = function(){ 
+				return owner._object.Editable();
+			} 	
+		};
+		hwnd = {
+			_get = function(){ 
+				return owner._object.hWnd;
+			} 	
+		};
+		hwndBrowser  = {
+			_get = function(){ 
+				return owner._object.hBrowserHWND;
+			} 	
+		};
+		html = {
+			_get = function(){ 
+				return owner._object.HTML;
+			} 
+			_set = function(value){ 
+				if( !owner.created ){ owner._waitCreated(); }
+				owner._object.LoadHTML( value,"about:blank" );//owner._object.HTML 赋值有时候会报选择性参数错
+				owner.repaint();
+			}	
+		};  
+	)
+}
+
+/*
+about WebKitX;
+https://github.com/mobileFX/WebKitX/blob/master/LICENSE
+*/
+
+/**intellisense()
+web.cef1 =  嵌入式Chromium框架
+web.cef1(.(winform) = 创建Chromium网页控件窗口
+web.cef1() = !webkitxcef.
+!webkitxcef.go(.(url) = 打开网页\n该函数应当窗口显示以后调用
+!webkitxcef.write(.(html,url) = 载入HTML,url为可选参数\n\n注意使用此属性写入HTML时触发的是OnCreate事件
+!webkitxcef.doScript(.(js) = 运行JS脚本
+!webkitxcef.execCommand(_CEF_EDIT_CMD__) = 执行命令,参数@2可选指定附加值
+!webkitxcef.cleanHTML(.(html) = 清理HTML代码
+!webkitxcef.tidyHTML(.(html) = 格式化HTML，返回HTML
+!webkitxcef.reload() = 重新载入页面
+!webkitxcef.repaint() = 重绘
+!webkitxcef.edit() = 切换到网页编辑模式
+!webkitxcef.preview() = 切换到网页显示模式
+!webkitxcef.selectedHTML(.(fullHtml) = 选定HTML
+!webkitxcef.selectElement(.(selector,moveCaret,selectContents) = 选定节点
+!webkitxcef.addEventListenerEx(.(selector,eventType,listener,functionName,useCapture) = 添加事件
+!webkitxcef.addEventListener(id,type,listener,useCapture) = @.addEventListener("__/*节点ID*/", "click",\n    function(){\n        \n    }  \n);
+!webkitxcef.find(.(正则表达式) = 在页面上查找
+!webkitxcef.created = 控件是否已创建完成
+!webkitxcef.modified = 页面是否已修改
+!webkitxcef.editable = 是否可编辑状态
+!webkitxcef.hwnd =  网页窗口句柄
+!webkitxcef.hwndBrowser  =  控件窗口句柄
+!webkitxcef.html =  HTML代码\n注意使用此属性写入HTML时触发的是OnCreate事件
+!webkitxcef.OnReady = @.OnReady = function(){
+	__/*网页已加载*/
+} 
+!webkitxcef.OnCreate = @.OnCreate = function(){
+	__/*网页控件已创建*/ 
+}
+!webkitxcef.OnFocus = @.OnFocus = function(nodePath,selectionHTML){
+	__/*获取焦点，仅编辑模式有效*/
+}
+!webkitxcef.OnSelectionChanged = @.OnSelectionChanged = function(documentHTML,selectionHTML){
+	__/*选区改变，仅编辑模式有效*/
+} 
+!webkitxcef.MouseDown = @.MouseDown = function(button,shift,x,y){
+	__/*鼠标按下，仅编辑模式有效*/
+}
+ 
+_CEF_EDIT_CMD_BACKCOLOR=@0/*_CEF_EDIT_CMD_BACKCOLOR*/
+_CEF_EDIT_CMD_BOLD=@1/*_CEF_EDIT_CMD_BOLD*/
+_CEF_EDIT_CMD_CONTENTREADONLY=@2/*_CEF_EDIT_CMD_CONTENTREADONLY*/
+_CEF_EDIT_CMD_COPY=@3/*_CEF_EDIT_CMD_COPY*/
+_CEF_EDIT_CMD_CREATELINK=@4/*_CEF_EDIT_CMD_CREATELINK*/
+_CEF_EDIT_CMD_CUT=@5/*_CEF_EDIT_CMD_CUT*/
+_CEF_EDIT_CMD_DECREASEFONTSIZE=@6/*_CEF_EDIT_CMD_DECREASEFONTSIZE*/
+_CEF_EDIT_CMD_DELETE=@7/*_CEF_EDIT_CMD_DELETE*/
+_CEF_EDIT_CMD_ENABLEINLINETABLEEDITING=@8/*_CEF_EDIT_CMD_ENABLEINLINETABLEEDITING*/
+_CEF_EDIT_CMD_ENABLEOBJECTRESIZING=@9/*_CEF_EDIT_CMD_ENABLEOBJECTRESIZING*/
+_CEF_EDIT_CMD_FONTNAME=@0xA/*_CEF_EDIT_CMD_FONTNAME*/
+_CEF_EDIT_CMD_FONTSIZE=@0xB/*_CEF_EDIT_CMD_FONTSIZE*/
+_CEF_EDIT_CMD_FORECOLOR=@0xC/*_CEF_EDIT_CMD_FORECOLOR*/
+_CEF_EDIT_CMD_FORMATBLOCK=@0xD/*_CEF_EDIT_CMD_FORMATBLOCK*/
+_CEF_EDIT_CMD_FORWARDDELETE=@0xE/*_CEF_EDIT_CMD_FORWARDDELETE*/
+_CEF_EDIT_CMD_HEADING=@0xF/*_CEF_EDIT_CMD_HEADING*/
+_CEF_EDIT_CMD_HILITECOLOR=@0x10/*_CEF_EDIT_CMD_HILITECOLOR*/
+_CEF_EDIT_CMD_INCREASEFONTSIZE=@0x11/*_CEF_EDIT_CMD_INCREASEFONTSIZE*/
+_CEF_EDIT_CMD_INDENT=@0x12/*_CEF_EDIT_CMD_INDENT*/
+_CEF_EDIT_CMD_INSERTBRONRETURN=@0x13/*_CEF_EDIT_CMD_INSERTBRONRETURN*/
+_CEF_EDIT_CMD_INSERTHORIZONTALRULE=@0x14/*_CEF_EDIT_CMD_INSERTHORIZONTALRULE*/
+_CEF_EDIT_CMD_INSERTHTML=@0x15/*_CEF_EDIT_CMD_INSERTHTML*/
+_CEF_EDIT_CMD_INSERTIMAGE=@0x16/*_CEF_EDIT_CMD_INSERTIMAGE*/
+_CEF_EDIT_CMD_INSERTORDEREDLIST=@0x17/*_CEF_EDIT_CMD_INSERTORDEREDLIST*/
+_CEF_EDIT_CMD_INSERTUNORDEREDLIST=@0x18/*_CEF_EDIT_CMD_INSERTUNORDEREDLIST*/
+_CEF_EDIT_CMD_INSERTPARAGRAPH=@0x19/*_CEF_EDIT_CMD_INSERTPARAGRAPH*/
+_CEF_EDIT_CMD_INSERTTEXT=@0x1A/*_CEF_EDIT_CMD_INSERTTEXT*/
+_CEF_EDIT_CMD_ITALIC=@0x1B/*_CEF_EDIT_CMD_ITALIC*/
+_CEF_EDIT_CMD_JUSTIFYCENTER=@0x1C/*_CEF_EDIT_CMD_JUSTIFYCENTER*/
+_CEF_EDIT_CMD_JUSTIFYFULL=@0x1D/*_CEF_EDIT_CMD_JUSTIFYFULL*/
+_CEF_EDIT_CMD_JUSTIFYLEFT=@0x1E/*_CEF_EDIT_CMD_JUSTIFYLEFT*/
+_CEF_EDIT_CMD_JUSTIFYRIGHT=@0x1F/*_CEF_EDIT_CMD_JUSTIFYRIGHT*/
+_CEF_EDIT_CMD_OUTDENT=@0x20/*_CEF_EDIT_CMD_OUTDENT*/
+_CEF_EDIT_CMD_PASTE=@0x21/*_CEF_EDIT_CMD_PASTE*/
+_CEF_EDIT_CMD_REDO=@0x22/*_CEF_EDIT_CMD_REDO*/
+_CEF_EDIT_CMD_REMOVEFORMAT=@0x23/*_CEF_EDIT_CMD_REMOVEFORMAT*/
+_CEF_EDIT_CMD_SELECTALL=@0x24/*_CEF_EDIT_CMD_SELECTALL*/
+_CEF_EDIT_CMD_STRIKETHROUGH=@0x25/*_CEF_EDIT_CMD_STRIKETHROUGH*/
+_CEF_EDIT_CMD_SUBSCRIPT=@0x26/*_CEF_EDIT_CMD_SUBSCRIPT*/
+_CEF_EDIT_CMD_SUPERSCRIPT=@0x27/*_CEF_EDIT_CMD_SUPERSCRIPT*/
+_CEF_EDIT_CMD_UNDERLINE=@0x28/*_CEF_EDIT_CMD_UNDERLINE*/
+_CEF_EDIT_CMD_UNDO=@0x29/*_CEF_EDIT_CMD_UNDO*/
+_CEF_EDIT_CMD_UNLINK=@0x2A/*_CEF_EDIT_CMD_UNLINK*/
+_CEF_EDIT_CMD_USECSS=@0x2B/*_CEF_EDIT_CMD_USECSS*/
+_CEF_EDIT_CMD_STYLEWITHCSS=@0x2C/*_CEF_EDIT_CMD_STYLEWITHCSS*/
+end intellisense**/
+ 
+  

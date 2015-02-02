@@ -76,4 +76,4 @@ onReplaceSel = @onSetValue = function(  ltOwner,value ){\n	__\n	return true\n}
 onGetCaretPos = @onSetValue = function(  ltOwner,value ){\n	__\n	return true\n}
 onIsEmpty = @onSetValue = function(  ltOwner,value ){\n	__\n	return true\n}
 onDetach = @onDetach = function( ltOwner ){\n	\n	__/*节点注销behavior时触发此事件*/	\n}
-onAttach = @onAttach = function( ltOwner ){\n	__\n	__/*节点附加behavior时触发此事件*/	\n}
+onAttach = @onAttach = function( ltOwner ){\n	\n	__/*节点附加behavior时触发此事件*/	\n}

@@ -75,6 +75,11 @@ namespace element{
 			var re,v = GetAttributeByName(owner[["handle"]], n );
 			if ( re==0 && v) return fromUnicode(v,0,true) : "";  
 		};
+		getUnicodeAttribute = function(n){ 
+			if( n[1] > 0x80 )n = fromto(n,0,65001);
+			var re,v = GetAttributeByName(owner[["handle"]], n );
+			if ( re==0 && v) return ..raw.str(v,true);
+		};
 		getCustomAttribute = function(n){ 
 			var v = owner.getAttribute(n)
 			if(!v) v = owner.style["-" + n];
@@ -108,7 +113,7 @@ namespace element{
 					return ..raw.str(p);
 			}
 		};
-		innerUnicodeText = {
+		innerTextUnicode = {
 			_set = function (v) {
 				v = fromto(v, 0, 65001) : "";
 				SetElementInnerText(owner[["handle"]], v, #v);
@@ -126,6 +131,16 @@ namespace element{
 			_get = function () {
 				var re, p = GetElementInnerText(owner[["handle"]]); 
 				return fromto(p,,,true);
+			}
+		};
+		innerHTMLUnicode = {
+			_set = function (html) {
+				html = fromto(html, 0, 65001); if(!#html) html = " ";
+				SetElementHtml(owner[["handle"]], html, #html, 0/*_SIH_REPLACE_CONTENT*/);
+			}
+			_get = function () {
+				var re, p = GetElementHtml(owner[["handle"]], , false); 
+				return toUnicode(p,65001,true,true); 
 			}
 		};
 		innerHTML = {
@@ -615,22 +630,6 @@ namespace element{
 				return charParam.char_pos;
 			}
 		};
-/**
-		text = { 
-			_get = function(){  
-				var p = { INT methodID = 1/*_HL_GET_TEXT_VALUE*/;
-				 pointer text;INT length;}
-				if(  owner._callMethod( p ) ){ 
-					return fromUnicode( ..raw.tostring( p.text,1,p.length*2) )  
-				}
-			} 
-			_set = function( v ){ 
-				v = toUnicode( tostring(v) );
-				owner._callMethod({ INT methodID = 2/*_HL_SET_TEXT_VALUE*/;
-					string text= toUnicode(v);INT length=#v/2;} ) 
-			} 		
-		};
-**/
 		delayMeasure = function(){
 			return 0 == EnqueueMeasure(owner[["handle"]]); 
 		};
@@ -1056,6 +1055,7 @@ web.layout.element() = !layoutEle.
 !layoutEle.setsel(.(起始位置,结束位置) = 设置文本框控件文本选区 
 !layoutEle.outerHTML = 节点HTML源码
 !layoutEle.innerHTML = 节点内部HTML源码
+!layoutEle.innerHTMLUnicode = 节点内部HTML源码,\nUnicode编码
 !layoutEle.write(.(html,->->->) = 写入HTML并替换节点内部HTML,\n参数可以是数值,字符串,unicode字符串
 !layoutEle.printf(.("格式化串",其他参数) = 格式化并写入HTML代码到节点尾部
 !layoutEle.insertAdjacentHTML("beforeBegin",__/*HTML代码*/) = 在节点之前插入HTML\n可添加多个HTML参数,可使用Unicode字面值
@@ -1069,7 +1069,7 @@ web.layout.element() = !layoutEle.
 !layoutEle.cls = 自定义控件类名
 !layoutEle.capture = 设为true开始捕获鼠标消息,设为false取消捕获
 !layoutEle.innerText = 设置或者获取文本
-!layoutEle.innerUnicodeText = 设置或者获取Unicode文本
+!layoutEle.innerTextUnicode = 设置或者获取Unicode文本
 !layoutEle.modifyState(.(要增加的状态,要取消的状态,是否更新) = 设置状态，以 _HL_STATE_ 开头的常量表示指定状态\n所有参数可省略,参数三默认为true
 !layoutEle.getState(htmlayout.ELEMENT_STATE_BITS.__) = 是否有某个状态，以 _HL_STATE_ 开头的常量表示指定状态　
 !layoutEle.visitElement(.(节点类型,属性名,属性值,深度) = 查找第一个符合的节点，所有参数都可空
@@ -1092,6 +1092,7 @@ web.layout.element() = !layoutEle.
 !layoutEle.getElementByUid(.(UID) = 根据唯一ID在该节点所属窗口范围内查找节点
 !layoutEle.setAttribute("hide","true")  = 修改属性,属性值只能是字符串或null\n也可以直接写 ele.属性名字 = "值"
 !layoutEle.getAttribute("hide")  = 获取属性,返回值为字符串或null\n也可以直接写 var 返回值=ele.属性名字
+!layoutEle.getUnicodeAttribute("__") = 获取HTML属性\n返回Unicode编码文本
 !layoutEle.getCustomAttribute("__") = 获取HTML属性,\n如果失败,则在名字前添加横线查找style自定义属性
 !layoutEle.eachAttribute() = @for( i,name,value in ??.eachAttribute() ){
 			 

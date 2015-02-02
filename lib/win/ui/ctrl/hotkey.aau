@@ -17,6 +17,16 @@ class hotkey{
 
 
 hotkey._metaProperty = metaProperty(
+
+	value = {
+		_get = function(){
+			return { owner.gethotkey() };
+		}
+		_set = function(v){
+			if( type(v) != "table" ) error("属性必须是一个数组",2);
+			owner.sethotkey( v[1],v[2] );
+		} 
+	};
  
 	gethotkey = function(){
 		var hk = ::SendMessageInt(owner[["hwnd"]],   0x400/*_WM_USER*/+2 /*_HKM_GETHOTKEY*/,0,0) & 0xFFFF
@@ -88,6 +98,7 @@ hotkey._metaProperty = metaProperty(
 !hotkey.invalidate(__/*可选使用::RECT()对象指定客户区*/) = 使窗口绘图区无效
 !hotkey.invalidate(__/*可选使用::RECT()对象指定客户区*/,0) = 使窗口绘图区无效\n不刷新背景
 !hotkey.update() = 重绘invalidate函数指定的区块 
+!hotkey.value = 控制键码,按键码组成的数组值
 !hotkey.gethotkey() = 返回两个值: 控制键码,按键码
 !hotkey.sethotkey(__,) = 参数(控制键码,按键码)
 !hotkey.setFocus() = 设置焦点 
