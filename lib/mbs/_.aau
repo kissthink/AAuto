@@ -1,18 +1,21 @@
 namespace mbs;
-	
-var raw_tostring = ..raw.tostring;
-var push = ..table.push;
 
-::Msvcrt = ..raw.loadDll("Msvcrt.dll")
-span  = Msvcrt.api("_mbsspn","INT(STR s,STR charset)" ,"cdecl");
-cspan  = Msvcrt.api("_mbscspn","INT(STR s,STR charset)" ,"cdecl"); 
-reverse =  Msvcrt.api("_mbsrev","void(STR& s)" ,"cdecl");
+::Msvcrt := ..raw.loadDll("Msvcrt.dll",,"cdecl")
+span  = Msvcrt.api("_mbsspn","INT(STR s,STR charset)");
+cspan  = Msvcrt.api("_mbscspn","INT(STR s,STR charset)"); 
+reverse =  Msvcrt.api("_mbsrev","void(STR& s)");
+_mbstok  = Msvcrt.api("_mbstok","str(pointer s,STR delimit)")
+_mbspbrk  = Msvcrt.api("_mbspbrk","pointer(STR s,STR charset)" ,"cdecl");
+var raw_tostring = ..raw.tostring;
+var table_push = ..table.push;
+var string_indexOf = ..string.indexOf;
 
 trimright = function(s,set){
 	if(!set) set='\t\n\r\v\x20\xA1\xA1\0'; 
 	var pl = span(reverse(s),set); 
 	return pl == 0 ? s : ..string.left(s,-( pl  + 1 ));
 }
+
 trimleft = function(s,set){
 	if(!set) set='\t\n\r\v\x20\xA1\xA1\0'; 
 	var pl = span(s,set); 
@@ -26,7 +29,6 @@ trim = function(s,set){
 	return (pr || pl) ? ..string.sub(s,pl+1,-( pr  + 1 ) ) : s;
 }
 
-_mbstok  = Msvcrt.api("_mbstok","str(pointer s,STR delimit)" ,"cdecl")
 tokenize = function(s,delimit){
 	if(!s) error("参数@1错误")
 	if(!delimit) delimit='\t\n\r\v\x20\xA1\xA1\0';
@@ -40,30 +42,6 @@ tokenize = function(s,delimit){
 	} 
 } 
 
-replace = function(s,f,n){
-	return ..string.replace(s,"@@"+f,n);
-}
-
-_mbspbrk  = Msvcrt.api("_mbspbrk","pointer(STR s,STR charset)" ,"cdecl");
-
-breakAny = function(s,set){
-	var p = _mbspbrk(s,set);
-	if(p) return raw_tostring(p);
-}
-
-indexAny = function(s,set){
-	var p = _mbspbrk(s,set);
-	if(p){ 
-		var r = ..raw.convert( {pointer s = s;pointer d = p},{addr s;addr d});
-		return r.d - r.s + 1; 
-	}
-}
-
-lastIndexAny = function(str,set){
-	var idx = indexAny( reverse(str),set); 
-	if( idx ) return #str - idx +1; 
-}
-
 split = function(str,sep,limit){ 
 	if(!sep) sep ='\t\n\r\v\x20\xA1\xA1\0';
 	  
@@ -76,8 +54,8 @@ split = function(str,sep,limit){
 		sp = span(s,sep);
 		s = topointer(s,sp);
 		
-		push( sparr, sp );   
-		push( arr, s ); 
+		table_push( sparr, sp );   
+		table_push( arr, s ); 
 	 	s = _mbspbrk( s,sep); 
 	}
 
@@ -119,14 +97,32 @@ split = function(str,sep,limit){
 	return arr; 
 } 
 
-indexOf = ..string.indexOf;
+breakAny = function(s,set){
+	var p = _mbspbrk(s,set);
+	if(p) return raw_tostring(p);
+}
+
+indexAny = function(s,set){
+	var p = _mbspbrk(s,set);
+	if(p){ 
+		var r = ..raw.convert( {pointer s = s;pointer d = p},{addr s;addr d});
+		return r.d - r.s + 1; 
+	}
+}
+
+lastIndexAny = function(str,set){
+	var idx = indexAny( reverse(str),set); 
+	if( idx ) return #str - idx +1; 
+}
+
 eachIndexOf = function(s,p){
 	var i,j  = 0,0;
 	return function(){ 
-		i,j = indexOf(s,p,j+1); 
+		i,j = string_indexOf(s,p,j+1); 
 		return i,j
 	};
 };
+
 lastIndexOf = function(s,p){
 	var a,b;
 	for i,j in eachIndexOf(s,p){
@@ -135,9 +131,43 @@ lastIndexOf = function(s,p){
 	return a,b;
 };
 
+left = function(s,n){
+	return ..string.left(s,n,true);
+}
+
+right = function(s,n){
+	return ..string.right(s,n,true);
+}
+
+sub = function(s,i,j){
+	return ..string.sub(s,i,j,true);
+}
+
+endWith = function(s,e){
+	return ..string.endWith(s,e,true);
+}
+
+startWith = function(s,b){
+	return ..string.startWith(s,b,true);
+}
+
+find = function(s,p,start){
+	return ..string.find(s,p,start,true);
+}
+
+replace = function(s,f,n){
+	return ..string.replace(s,"@@"+f,n);
+}
+
 /**intellisense(mbs)
-reverse(.("字符串") = 反转字符串
+left(.(str__,n) =  从字符串左侧截取n个字符\n按字符计数,汉字为一个字符
+right(.(str__,n ) =  从字符串右侧截取n个字符\n按字符计数,汉字为一个字符
+sub(.(str__,i,j ) =  从字符串中截取位置i开始的字符串,\n如果i为负数则从右侧倒数计数\n按字符计数,汉字为一个字符
+startWith(.("字符串","开始串") = 判断开始串是否位于字符串开始处。\n基于文本模式,忽略大小写,不会截断双字节字符
+endWith(.("字符串","结束串") = 判断结束串是否位于字符串结束处。\n基于文本模式,忽略大小写,不会截断双字节字符
+find(.("字符串","模式",开始位置) =  开始位置为可选参数,默认为1\n函数返回匹配结果的起始,结束位置,以及所有捕获分组\n一个英汉字符都是一个计数单位
 replace(.("字符串","查找字符串","替换字符串") = 替换 
+reverse(.("字符串") = 反转字符串
 tokenize("字符串","分隔符") = @for(tok in mbs.tokenize(,"__/*分隔符,默认为空白字符*/")){
 	..io.print( tok );
 }

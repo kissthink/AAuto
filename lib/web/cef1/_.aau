@@ -43,7 +43,7 @@ namespace cef1 {
 		};
 		write = function(html,url){ 
 			if( !owner.created ){ owner._waitCreated(); }
-			owner._object.LoadHTML(html,url : "about:blank");
+			owner._object.LoadHTML(html,url : "http://localhost");
 		};
 		doScript = function(js){  
 			return owner._object.ExecJavaScript(js);
@@ -128,10 +128,9 @@ namespace cef1 {
 			_get = function(){ 
 				return owner._object.HTML;
 			} 
-			_set = function(value){ 
-				if( !owner.created ){ owner._waitCreated(); }
-				owner._object.LoadHTML( value,"about:blank" );//owner._object.HTML 赋值有时候会报选择性参数错
-				owner.repaint();
+			_set = function(value){
+				if( !owner.created ){ owner._waitCreated(); }  
+				owner._object.setHTML( value ); 
 			}	
 		};  
 	)
@@ -142,12 +141,12 @@ about WebKitX;
 https://github.com/mobileFX/WebKitX/blob/master/LICENSE
 */
 
-/**intellisense()
+/***intellisense()
 web.cef1 =  嵌入式Chromium框架
 web.cef1(.(winform) = 创建Chromium网页控件窗口
 web.cef1() = !webkitxcef.
 !webkitxcef.go(.(url) = 打开网页\n该函数应当窗口显示以后调用
-!webkitxcef.write(.(html,url) = 载入HTML,url为可选参数\n\n注意使用此属性写入HTML时触发的是OnCreate事件
+!webkitxcef.write(.(html,url) = 载入HTML代码并清除脚本,url为可选参数\nurl不要指定为"about:blank",这会导触发OnCreate而非OnReady事件
 !webkitxcef.doScript(.(js) = 运行JS脚本
 !webkitxcef.execCommand(_CEF_EDIT_CMD__) = 执行命令,参数@2可选指定附加值
 !webkitxcef.cleanHTML(.(html) = 清理HTML代码
@@ -165,13 +164,13 @@ web.cef1() = !webkitxcef.
 !webkitxcef.modified = 页面是否已修改
 !webkitxcef.editable = 是否可编辑状态
 !webkitxcef.hwnd =  网页窗口句柄
-!webkitxcef.hwndBrowser  =  控件窗口句柄
-!webkitxcef.html =  HTML代码\n注意使用此属性写入HTML时触发的是OnCreate事件
+!webkitxcef.hwndBrowser  =  控件窗口句柄 
+!webkitxcef.html = @.html = /**\n<!doctype html>\n<html>\n<head>\n    <meta charset="gb2312">\n    <style type="text/css">\n    html,body{ height:100%; margin:0; } __\n    </style>\n    <script type="text/javascript"></script>\n</head>\n<body>\n    <div id="header"></div>\n    <div id="container"> \n        <div class="lside"> </div> \n        <div class="rside"> </div>  \n    </div>\n</body>\n</html>\n**/
 !webkitxcef.OnReady = @.OnReady = function(){
-	__/*网页已加载*/
+	__/*网页已加载,\n此事件应避免被重入调用，例如打开其他网页*/
 } 
 !webkitxcef.OnCreate = @.OnCreate = function(){
-	__/*网页控件已创建*/ 
+	__/*网页控件已创建,\n此事件应避免被重入调用，例如调用 loadHTML(,"about:blank")*/ 
 }
 !webkitxcef.OnFocus = @.OnFocus = function(nodePath,selectionHTML){
 	__/*获取焦点，仅编辑模式有效*/
@@ -228,6 +227,6 @@ _CEF_EDIT_CMD_UNDO=@0x29/*_CEF_EDIT_CMD_UNDO*/
 _CEF_EDIT_CMD_UNLINK=@0x2A/*_CEF_EDIT_CMD_UNLINK*/
 _CEF_EDIT_CMD_USECSS=@0x2B/*_CEF_EDIT_CMD_USECSS*/
 _CEF_EDIT_CMD_STYLEWITHCSS=@0x2C/*_CEF_EDIT_CMD_STYLEWITHCSS*/
-end intellisense**/
+end intellisense***/
  
   

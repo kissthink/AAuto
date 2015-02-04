@@ -46,15 +46,13 @@ namespace mbcs{
 			return  ret; 
 		} 
 		sub = function(i,j){  
-			return  join( ..table.slice(owner,i,j) ); 
+			return  join( owner,,i,j); 
 		} 
-		left = function(len){ 
-			var subtab = { ..table.left(owner,len) }
-			return join( subtab); 
+		left = function(len){  
+			return join( owner,,1,len  ); 
 		} 
-		right = function(len){
-			var subtab = { ..table.right(owner,len) }
-			return join( subtab);  
+		right = function(len){ 
+			return join( owner,,-len,-1 );  
 		} 
 		reset = function(str){
 			var wstr = str : tostring(owner)

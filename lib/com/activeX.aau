@@ -181,8 +181,7 @@ namespace com.activeX{
 			}
 		);	
 		
-		if( succeeded ) return true;
-		..process.admin.runas_wait("regsvr32", "/s "  + ( reg? "" : "/u " ) + '"' + filepath + '"' );
+		if( succeeded ) return true; 
 	} 
 	
 	install = function( filepath,i,... ){
@@ -198,8 +197,8 @@ namespace com.activeX{
 !com_activeX.main() = 该函数检测传入参数并执行相应操作\n/r 注册控件 /u卸载控件 /Automation 运行
 !com_activeX.start() = 运行控件 
 com.activeX.install() = 尝试用普通权限安装控件\n如果失败则申请管理权限注册控件
-com.activeX.regsvr32("__") = 尝试用普通权限注册控件\n如果失败则申请管理权限注册控件
-com.activeX.regsvr32("__",false) = 尝试用普通权限卸载外部控件\n如果失败则申请管理权限卸载控件
+com.activeX.regsvr32("__") = 尝试用普通权限注册控件
+com.activeX.regsvr32("__",false) = 尝试用普通权限卸载外部控件
 com.activeX.regsvr32As("__") = 注册外部控件,\n如果需要管理权限则申请管理权限
 com.activeX.regsvr32As("__",false) = 卸载外部控件,\n如果需要管理权限则申请管理权限
 com.activeX.install("__",true,->->->) = 安装控件,可添加任意个命令行参数,\n如果需要管理权限则申请管理权限

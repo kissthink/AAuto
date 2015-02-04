@@ -159,10 +159,6 @@ namespace table{
 		var a,b = range(t);a=0;
 		return function(){ if( a < b ){ a++; return a,t[a] } } ;
 	};
-	slice = function(t,i=1,j){  
-		if(!t) error("无效参数@1",2) 
-  		return { unpack(t,i,j) };
-	};
 	mixr = function(a,b,...){
 		for(k,v in b) if( ( a[[k]] === null ) || (type(k)!="string") || (k[1]!='_'#) ) {
 			if( type(a[k]) == "table" && type(v) == "table" ) mixr( a[k],v ); else a[k] = v; 
