@@ -1,37 +1,24 @@
 //函数扩展
-import util;
 
-io.open() 
+import util;
+import console;
 
 //util.bind可用于修改函数的默认实参,并生成新的函数
 string.findMail = util.bind( string.match, ,"\w+[\w\-\.]+\w@\w+[\w\-]*\w\.[\w\-\.]*\w{2,}" )
 string.endWith = util.bind( string.endWith, , ,true)
 
-io.print( 
+console.log( 
 	string.findMail("aaaaaaaaaa web@aau.cn "),
 	string.endWith( "a abc","ABC" )
 )
- 
-//===================================================
-
-("")@ = {
-	_get = function(k){
-		return util.bind(string[k],owner);
-	} 
-}
-
-str  = "12345"
-
-io.open()
-io.print( str.left(2) );
 
 //===================================================
- 
 func = function(){
-	io.print("a") 
+	console.log("a") 
 }
+
 proc = function(){
-	io.print("b") 
+	console.log("b") 
 }
  
 //在调用一个函数时触发钩子函数,钩子函数返回任意非空值可中止目标函数执行
@@ -39,11 +26,10 @@ func = util.connect(func,proc);
 func()
 
 //===================================================
-
 tab = {
 	name = "名字";
 	func = function(){
-		io.print( owner[["name"]] )
+		console.log( owner[["name"]] )
 	} 
 }
 
@@ -52,3 +38,5 @@ func() //调用失败
 
 var func = util.hitch(tab,"func");
 func() //owner对象不再受前缀影响
+
+console.pause()

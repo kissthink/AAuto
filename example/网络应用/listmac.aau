@@ -1,6 +1,10 @@
 //列出所有网卡MAC地址
 import win.reg;
-import fsys.file;
+import inet.mac;
+import console;
+
+console.log("当前联网MAC",inet.mac.getAddress("www.aau.cn") )
+console.more(1)
 
 DeviceIoControlByString = ::Kernel32.api("DeviceIoControl","int(pointer hDevice,int dwIoControlCode,struct& lpInBuffer,
 	int nInBufferSize,string& lpOutBuffer,
@@ -49,10 +53,9 @@ getCardSeviceNames = function(){
 }
 
 var cards = getCardSeviceNames()
-
-io.open()
 for(k,v in cards){
 	//列出所有MAC地址
-	io.print( getMacByServiceName(v) )
-
+	console.log( getMacByServiceName(v) ) 
 }
+
+console.pause();

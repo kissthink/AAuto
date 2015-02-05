@@ -9,3 +9,5 @@ for adptInfo in inet.adapter.each() {
 	io.print(adptInfo.adapterName);
 	io.print(adptInfo.ipAddressList.ipAddress )
 }
+
+execute("pause")

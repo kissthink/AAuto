@@ -1,28 +1,19 @@
 //remote call Api调用
 //直接调用外部EXE进程中的函数,就是一种通用的CALL，这样可以在外部进程中做很多的事，例如枚举一个外部EXE窗体中的一个树形控件中所有的项，比鼠标键盘模拟更加快、直接。*/
  
+import process;
+var prcs = process( "notepad.exe" )  
 
-import winex; //引用winex库
- 
+//在目标进程内声明一个函数，加载user.dll，并获取user.dll中的MessageBoxA函数指针
+var messageBox_call = prcs.remoteApi("void ( int hWnd, string &lpText,string &lpCaption ,INT uType )","User32.dll","MessageBoxA");
 
-//遍历桌面所有窗口
-for hwnd,title,theadId,processId in winex.each() {
-	if(title!="" && win.isVisible(hwnd) /*不然下面的看不到了*/) //如果窗口标题不为空
-	{ 
-		
-	     //在目标进程内声明一个函数，加载user.dll，并获取user.dll中的MessageBoxA函数指针
-	     var messageBox_call = raw.remoteApi(processId,"void ( int hWnd, string &lpText,string &lpCaption ,INT uType )","User32.dll","MessageBoxA");
-         
-         //象普通函数一样使用
-		 messageBox_call(0,"这是一个外部进程！在此进程加载了User32.dll，并获取执行了MessageBoxA函数指针","AAuto Call",0)
-		 
-		 //将外部进程的函数地址直接转换为普通函数
-		 //RemoteMessageBox = raw.remoteApi(processId,"void ( int hWnd, string &lpText,string &lpCaption ,INT uType )",0x7e4507ea);
-			
-		//象普通函数一样使用
-		 //RemoteMessageBox(0,"这是一个外部进程，我直接使用该进程的函数地址调用了该函数","AAuto Call",0)
+//象普通函数一样使用
+messageBox_call(0,"这是一个外部进程！在此进程加载了User32.dll，并获取执行了MessageBoxA函数指针","AAuto Call",0)
 
-		 break ;
-	} 
-}
-  
+prcs.terminate();
+
+//将外部进程的函数地址直接转换为普通函数
+//RemoteMessageBox =  prcs.remoteApi( "void ( int hWnd, string &lpText,string &lpCaption ,INT uType )",0x7e4507ea);
+
+//象普通函数一样使用
+//RemoteMessageBox(0,"这是一个外部进程，我直接使用该进程的函数地址调用了该函数","AAuto Call",0)

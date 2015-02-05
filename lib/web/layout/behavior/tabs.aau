@@ -308,7 +308,9 @@ create = function(ltOwner,title,panelName,innerHtml){
 }
 
 open = function(ltOwner,title,url,panelName){
-	if(!panelName || panelName=="_blank") panelName = url;
+	if(!panelName || panelName=="_blank") {
+		panelName =  ..string.replace(url,"@@\","/");//防止在CSS选择器双引号中被理解为转义符
+	}
 	
   	var elePanel = ltOwner.querySelector(':root>.panel[name="%s"]',panelName);  
   	if( !elePanel ) {
