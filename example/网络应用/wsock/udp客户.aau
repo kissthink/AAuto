@@ -1,40 +1,17 @@
-import wsock
-import raw
-import wsock.err
-io.open()
-	
-if(! ..wsock.open() ){return;}
-	
-var sSocket= wsock.socket(0x2/*_AF_INET*/,0x2,0x11 )
-var 本地连接=false
-if( sSocket= _INVALID_SOCKET ){return false;}
+import console;
+import wsock.udp.client;
 
-var service = wsock.sockaddr_in();
-service.sin_family = 0x2/*_AF_INET*/
-service.sin_addr.S_un.S_addr = wsock.inet_addr("127.0.0.1")
-service.sin_port = wsock.htons(50)
+var udpClient = wsock.udp.client();
+udpClient.sendto("test","127.0.0.1",50);
 
-if(!sSocket){
-	io.print("未连接成功"）
-	wsock.close()
-	return ; 
-}
-io.print("对方端口",service.sin_port)
-//普通的sendto和recvfrom的方法
-wsock.sendto(sSocket,"test",4,0,service,raw.sizeof(service))
-reads,str=wsock.recvfrom(sSocket,1024,1024,0,service,raw.sizeof(service))
-io.print("收到服务器的反馈1",reads,string.left(str,reads))
-io.print("对方端口改为",service.sin_port)//注意这里的端口改变，如果一开始就使用connect方法会造成接收不到数据！
-//使用connetct方法简化的连接
-wsock.connect(sSocket,service,raw.sizeof(service))
-//wsock.send(sSocket,"test",4,0)
-reads,str=wsock.recv(sSocket,1024,1024,0)
-sleep(100)
-io.print("收到服务器的反馈2",reads,string.left(str,reads))
-	
-wsock.closesocket(hSocket)
-wsock.closesocket(sc1)
-wsock.close()
-io.print("发送完毕")
-execute("pause") //按任意键继续
-io.close();//关闭控制台
+var str = udpClient.recvfrom( )
+console.log("收到服务器的反馈1",str)
+console.log("对方端口", wsock.ntohs( udpClient.lastAddr.sin_port : 0 ) )
+
+//得到对方端口以后也可以connect
+udpClient.connect();
+var str= udpClient.recvfrom( )
+console.log("收到服务器的反馈2",str)
+
+console.log("发送完毕")
+console.pause();

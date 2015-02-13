@@ -245,6 +245,11 @@ self.select = function(ltOwner /*our tabs container*/,panelName){
 }
 
 isVertical = function(ltOwner){
+	var v = ltOwner.vertical;
+	if( v) {
+		return v == "true";
+	}
+	
 	var eleFirst = ltOwner.querySelector(":root>.strip>[panel]:first-child" );
 	var eleNext = eleFirst.next();
 	
@@ -253,9 +258,11 @@ isVertical = function(ltOwner){
 		var rcNext = eleNext.getRect(3/*_HL_CONTAINER_RELATIVE*/ | 0x30/*_HL_MARGIN_BOX*/)
 
   		if( (rcPrev.left == rcNext.left) || (rcPrev.right == rcNext.right) || ( rcNext.top >= rcPrev.bottom - (rcPrev.height()/2) ) ){
+  			ltOwner.vertical = "true";
   			return true;
   		}
 	}
+	ltOwner.vertical = "false";
 	return false;
 }
 
@@ -320,18 +327,19 @@ open = function(ltOwner,title,url,panelName){
     	elePanel.class = "panel";
   	} 
   	
-  	var ltStrip = ltOwner.querySelector(":root>.strip");
-  	var ltLastFixed = ltOwner.querySelector(":root>.strip>[panel][closeable]" );  
-  	if( ltLastFixed ) ltLastFixed = ltLastFixed.previous();
-  	if(!ltLastFixed) ltLastFixed = ltOwner.querySelector(":root>.strip>[panel]:last-child" );
+  	var ltStrip = ltOwner.querySelector(":root>.strip"); 
   	var eleTab = ltOwner.querySelector(':root>.strip>[panel="%s"]',panelName); 
   	if( !eleTab ) {
+  		var ltLastFixed = ltOwner.querySelector(":root>.strip>[panel][closeable]" );  
+  		if( ltLastFixed ) ltLastFixed = ltLastFixed.previous();
+  		if(!ltLastFixed) ltLastFixed = ltOwner.querySelector(":root>.strip>[panel]:last-child" );
+  	
   		eleTab = ltLastFixed.clone(ltLastFixed.index()+1); 
     	eleTab.panel = panelName;  
-  	}
+    	eleTab.innerHTML =  "<a .close-panel style='behavior:clickable;'></a><span>" + title + "</span>";
+    	eleTab["closeable"] = "true";
+  	};
   	
-  	eleTab.innerHTML =  "<a .close-panel style='behavior:clickable;'></a><span>" + title + "</span>";
-  	eleTab["closeable"] = "true";
   	selectTab(ltOwner,eleTab);
   	adjustStrip(ltOwner);
   	
@@ -340,6 +348,7 @@ open = function(ltOwner,title,url,panelName){
   	if( #url )elePanel.xcall("load",url);
   	return true;
 }
+
 close = function(ltOwner,panelName){
 	var eleTab;
 	if( type(panelName) == type.string) 

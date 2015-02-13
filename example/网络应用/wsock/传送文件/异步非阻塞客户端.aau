@@ -1,25 +1,14 @@
-
 import win.ui;
-import win.ui.menu;
-import com.picture;
+import win.ui.menu; 
 /*DSG{{*/
-var winform = win.form(parent=...; min=1;bottom=249;max=1;right=349;text="AAuto Form" )
-winform.add( 
-button={ bottom=227;text="button";left=173;right=293;top=189;z=0;cls="button" }
+var winform = ..win.form(text="AAuto Form";right=349;bottom=249;parent=...)
+winform.add(
+button={cls="button";text="button";left=173;top=189;right=293;bottom=227;z=1}
 )
 /*}}*/
 
-winform.button.oncommand = function(id,event){
-	//win.msgbox( winform.button.text );
-	
-	
-}//endproc
-
-
-import win;
 import wsock;
 import wsock.err;
-
 // 初始化 Winsock.	
 if(! wsock.open() ){
 	io.print("打开wsock错误", wsock.err.lasterr() );
@@ -29,7 +18,7 @@ if(! wsock.open() ){
 
 //建立 socket 
 var hSocket= wsock.socket(0x2/*_AF_INET*/,0x1/*_SOCK_STREAM 建立流式套接口*/,0x6/*_IPPROTO_TCP*/ )
-if( hSocket= _INVALID_SOCKET ){
+if( hSocket = _INVALID_SOCKET ){
 	io.print("客户端创建套接字错误");
 	wsock.close() //关闭wsock
 	return;
@@ -37,11 +26,9 @@ if( hSocket= _INVALID_SOCKET ){
 
 
 UM_SOCK = 0x400/*_WM_USER*/ + 1971;
-
 async_select = function (  hwnd, lEvent)
 {
-	if (wsock.WSAAsyncSelect(hSocket, hwnd,  UM_SOCK, lEvent) == -1/*_SOCKET_ERROR*/)
-	{
+	if (wsock.WSAAsyncSelect(hSocket, hwnd,  UM_SOCK, lEvent) == -1/*_SOCKET_ERROR*/) {
 		win.msgbox(  "WSAAsyncSelect Failure.0");
 		return false;
 	}
@@ -50,12 +37,8 @@ async_select = function (  hwnd, lEvent)
 
 if (!async_select(winform.hwnd, 0x10/*_FD_CONNECT*/))
 	return false;
-	
- 
-var service = wsock.sockaddr_in();
-service.sin_family = 0x2/*_AF_INET*/
-service.sin_addr.S_un.S_addr = wsock.inet_addr( "127.0.0.1" )
-service.sin_port = wsock.htons(7510)
+	 
+var service = wsock.sockaddr_in("127.0.0.1",7510,0x2/*_AF_INET*/); 
 
 //之后服务端就调用accept( )来接收连接.客户端在建立套接口后就可调用connect()和服务器建立连接
 wsock.connect( hSocket,service,raw.sizeof(service))  //因为是异步套接字，这里不需要检查返回值

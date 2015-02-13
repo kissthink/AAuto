@@ -1,0 +1,80 @@
+//client 客户端
+import wsock; 
+import wsock.err;
+namespace wsock.udp
+
+class client {
+
+	ctor(){ 
+		if(! ..wsock.open() ){ 
+			error( ( wsock.err.lasterr() ),2 ) 
+		}
+		 
+		var hSocket= ..wsock.socket(0x2/*_AF_INET*/,0x2/*_SOCK_DGRAM*/,0x11/*_IPPROTO_UDP*/)
+		if( hSocket= _INVALID_SOCKET ){ 
+			wsock.close() //关闭wsock
+			error( ( wsock.err.lasterr() ),2 ) 
+		} 
+		..table.gc(this,"close"); 
+		this.lastAddr = ..wsock.sockaddr_in()
+	};
+	sendto = function(str,ip,port,flags){ 
+		var addr = ip === null ? this.lastAddr : ..wsock.sockaddr_in( ip,port,0x2/*_AF_INET*/);
+		if(!addr) return;
+		
+		if ..wsock.sendto( hSocket,str,#str,flags : 0,addr,..raw.sizeof(addr)) =-1/*_SOCKET_ERROR*/	{  
+			this.lastAddr = addr;
+			return null,"发送数据失败"
+		} 
+		 
+		return true;
+	};
+	recvfrom = function(len,ip,port,flags){ 
+		if(!len) len = 1024;
+		var addr = ip === null ? this.lastAddr : ..wsock.sockaddr_in( ip,port,0x2/*_AF_INET*/);
+		if(!addr) return;  
+		
+		var reads,str = ..wsock.recvfrom( hSocket,len,len,flags : 0,addr,..raw.sizeof(addr))
+		if(reads) {
+			this.lastAddr = addr;
+			return ..string.left(str,reads);
+		}
+	};
+	connect = function(ip,port){
+		var addr = ip === null ? this.lastAddr : ..wsock.sockaddr_in( ip,port,0x2/*_AF_INET*/)
+		if(!addr) error("请指定IP或端口地址",2); 
+		
+		if ..wsock.connect( hSocket,addr,..raw.sizeof(addr)) =-1/*_SOCKET_ERROR*/	{  
+			return null,"连接服务端失败"
+		} 
+		this.lastAddr = addr;
+		return true;
+	};
+	setBroadcast = function(val){ 
+		return ( ..wsock.setsockoptByInt(hSocket,0xFFFF/*_SOL_SOCKET*/,0x20/*_SO_BROADCAST*/,{byte v = val},1) == 0 )
+	}; 
+	setTimeouts = function(send=30000,receive=30000){
+		return ( ..wsock.setsockoptByInt(hSocket,0xFFFF/*_SOL_SOCKET*/,0x1005/*_SO_SNDTIMEO*/,send,4) == 0 )
+			&& ( ..wsock.setsockoptByInt(hSocket,0xFFFF/*_SOL_SOCKET*/,0x1006/*_SO_RCVTIMEO*/,receive,4)  == 0 ) 
+	};
+	close = function(){
+		if( hSocket ){ 
+			..wsock.closesocket(hSocket)
+			..wsock.close();
+			hSocket = null;
+		}  
+	}
+}
+
+/**intellisense()
+wsock.udp.client = udp客户端支持库
+wsock.udp.client() = 创建udp客户端\n!udp_client.
+!udp_client.lastAddr = 最后使用的sockaddr_in结构体\n!sockaddr_in.
+!udp_client.sendto(.(发送数据,IP或域名,端口号) = 发送数据,IP端口号为可选参数,\n成功返回true
+!udp_client.recvfrom(.(缓冲区长度,IP或域名,端口号) = 接收并返回数据,IP端口号为可选参数
+!udp_client.connect(.(IP或域名,端口号) = 连接IP以及端口号\n省略参数则使用lastAddr
+!udp_client.close() = 关闭udp客户端\n如果未显式调用此函数\n在对象析构时,将会自动调用.
+!udp_client.setTimeouts(.(发送超时,接收超时) = 设置超时,以亳秒为单位(1秒为1000毫秒)
+!udp_client.getLocalIp() = 返回连接的本地IP
+!udp_client.getRemoteIp() = 返回连接的远程IP
+end intellisense**/

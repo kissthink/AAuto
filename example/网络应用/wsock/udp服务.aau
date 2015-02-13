@@ -1,9 +1,8 @@
-import wsock
-import wsock.err
-import raw
+import wsock;
+import wsock.err;
+import console;
 
-io.open()
-
+console.log("UDP服务端已启动")
 if(! ..wsock.open() ){
 	return;
 }
@@ -11,38 +10,28 @@ if(! ..wsock.open() ){
 var hSocket= wsock.socket(0x2/*_AF_INET*/,0x2/*_SOCK_DGRAM*/,0x11/*_IPPROTO_UDP*/ )
 if( hSocket= _INVALID_SOCKET ){return false;}
 
-var service = wsock.sockaddr_in();
-
-service.sin_family = 0x2/*_AF_INET*/
-var err=false
-service.sin_addr.S_un.S_addr = wsock.inet_addr("127.0.0.1")
-service.sin_port = wsock.htons(50)
-
-//二、后调用bind()将该套接口和 本地网络地址联系在一起
+var service = wsock.sockaddr_in("127.0.0.1",50,0x2/*_AF_INET*/)
+//调用bind()将该套接口和 本地网络地址联系在一起
 if wsock.bind( hSocket,service,raw.sizeof(service)) =-1/*_SOCKET_ERROR*/ {
 	wsock.closesocket(hSocket)
+	console.log("未监听成功"）
 	return false;
 }
 
-if(!hSocket){
-	io.print("未监听成功"）
-	wsock.close()
-	return ; 
-}
+var reads,str,newaddress,addresslen=wsock.recvfrom(hSocket,1024,1024,0,service,raw.sizeof(service))
+console.log("服务器收到:",string.left(str,reads))
 
-reads,str,newaddress,addresslen=wsock.recvfrom(hSocket,1024,1024,0,service,raw.sizeof(service))
-io.print("服务器收到:",string.left(str,reads))
-
-sc=wsock.socket(0x2/*_AF_INET*/,0x2/*_SOCK_DGRAM*/,0x11/*_IPPROTO_UDP*/ )
+import wsock.udp.client;
+var udpClient = wsock.udp.client()
+udpClient.lastAddr = newaddress;
 
 sleep(1000)
-wsock.sendto(sc,"ok1",3,0,newaddress,addresslen)
+udpClient.sendto("ok1");
+ 
 sleep(1000)
-wsock.sendto(sc,"ok2",3,0,newaddress,addresslen)
+udpClient.sendto("ok2"); 
+
+udpClient.close();
 
 wsock.closesocket(hSocket)
-wsock.closesocket(sc2)
-wsock.close()
-io.print("退出")
-execute("pause") //按任意键继续
-io.close();//关闭控制台
+execute("pause")

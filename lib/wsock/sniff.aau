@@ -1,4 +1,5 @@
 //sniff 抓包
+//使用原始套接字抓包,这种抓包方式虽然使用简单、但可能丢包或在某些环境下抓不到包
 import wsock; 
 namespace wsock
  
@@ -294,7 +295,7 @@ end intellisense*/
 wsock.decodeHttpPack(.(tcpdata) = 解析HTTP数据包
 wsock.decodeHttpPack()  = !httpinfo.
 
-wsock.sniff = 抓包支持库
+wsock.sniff = 使用原始套接字抓包\n这种抓包方式使用简单、但可能丢包或在某些环境下抓不到包
 wsock.sniff() = @for sockdata in wsock.sniff() {
   if ( sockdata.ok ){
   	if( sockdata.tcpheader )

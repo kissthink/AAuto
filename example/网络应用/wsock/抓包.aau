@@ -1,3 +1,8 @@
+import process.admin;
+if(process.admin.isLeastPrivileges()){
+	error("本示例需要管理中权限",2)
+}
+
 import win.ui;
 /*DSG{{*/
 var winform = ..win.form(text="抓包测试程序";right=399;bottom=120;max=false;parent=...)
@@ -5,7 +10,7 @@ winform.add(
 btnSniff={cls="button";text="抓包";left=64;top=37;right=196;bottom=77;z=1};
 btnStop={cls="button";text="停止";left=210;top=37;right=342;bottom=77;disabled=1;z=2}
 )
-/*}}*/
+/*}}*/ 
 
 import thread.event;
 var eventCtrl = thread.event("wsock.sniff.给我抓");

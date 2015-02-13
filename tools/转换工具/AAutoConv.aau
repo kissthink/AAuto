@@ -1,17 +1,14 @@
 //AAuto代码转换工具
-
 import win.ui; 
 import win.ui.menu; 
 import string.list;
 import win.clip;
 /*DSG{{*/
-var winform = ..win.form( bgcolor=14215660;bottom=513;parent=...;text="AAuto 代码转换工具";left=0;exmode="";top=0;style=0;right=845;cls="AFORM" )
-winform.add( 
-btnJavaScripToAAuto={ dr=1;bottom=508;color=0;right=833;left=607;multiline=1;top=476;text="JavaScript转换为AAuto";tabstop=1;db=1;z=1;transparent=1;cls="button" };
-btnVB2AAuto={ dl=1;bottom=34;text="vb winapi声明转AAuto";left=17;dt=1;top=2;z=5;right=199;cls="button" };
-txtCode={ dr=1;dl=1;vscroll=1;color=0;right=835;left=10;dt=1;db=1;cls="richedit";bottom=467;text="请输入要转换的代码......";multiline=1;top=35;z=3;hscroll=1;edge=1;tabstop=1 };
-btnStruct2AAuto={ dl=1;bottom=34;text="WINAPI\C\C++结构体、函数声明转换为AAuto";left=208;dt=1;top=2;z=2;right=547;cls="button" };
-btnLascriptToAAuto={ dr=1;bottom=508;color=0;text="LAScript转换为AAuto";left=372;multiline=1;top=476;right=598;z=4;db=1;tabstop=1;transparent=1;cls="button" }
+var winform = ..win.form(cls="AFORM";text="AAuto 代码转换工具";left=0;top=0;right=845;bottom=513;bgcolor=14215660;parent=...;style=0)
+winform.add(
+btnStruct2AAuto={cls="button";text="WINAPI\C\C++结构体、函数声明转换为AAuto";left=208;top=2;right=547;bottom=34;dl=1;dt=1;z=1};
+btnVB2AAuto={cls="button";text="vb winapi声明转AAuto";left=17;top=2;right=199;bottom=34;dl=1;dt=1;z=3};
+txtCode={cls="richedit";text="请输入要转换的代码......";left=10;top=35;right=835;bottom=501;db=1;dl=1;dr=1;dt=1;edge=1;hscroll=1;multiline=1;tabstop=1;vscroll=1;z=2}
 )
 /*}}*/
 
@@ -752,94 +749,6 @@ PBOOLEAN=BYTE
 	
 	winform.txtCode.text = struct2aau( winform.txtCode.text); 
 } 
-
-winform.btnJavaScripToAAuto.oncommand = function(id,event){ 
-	var str = winform.txtCode.text; 
  
-	str = string.replace(str,"\.\.\.", " ");
-	str = string.replace(str,"for\s*\(\s*<var>?(\s*[\w_]+\s*\=\s*[^;]+\;)\s*[\w_]+\s*\>(\s*[^;]+\s*)\;(\s*[\w_]+\s*)\-\-", "for (\1\2+1;-1");
-	str = string.replace(str,"for\s*\(\s*<var>?(\s*[\w_]+\s*\=\s*[^;]+\;)\s*[\w_]+\s*\<(\s*[^;]+\s*)\;(\s*[\w_]+\s*)\+\+", "for (\1\2-1;1");
-	str = string.replace(str,"for\s*\(\s*<var>?(\s*[\w_]+\s*\=\s*[^;]+\;)\s*[\w_]+\s*\<(\s*[^;]+\s*)\;\s*[\w_]+\s*\+\=\s*(\d+)", "for (\1\2-1;\3");
-	str = string.replace(str,"for\s*\(\s*<var>?(\s*[\w_]+\s*\=\s*[^;]+\;)\s*[\w_]+\s*\>(\s*[^;]+\s*)\;\s*[\w_]+\s*\-\=\s*(\d+)", "for (\1\2+1;-\3");
-	str = string.replace(str,"\[\s*\]", "{}");
-	str = string.replace(str,"([^\n]+)([\w_]+)\+\+", "\2++;\1\2"); //x++提取为独立语句
-	str = string.replace(str,"([\w_]+)\.length", "#\1");  
-	str = string.replace(str,".charCodeAt\(([^)]+)\)", "[\1+1]");
-	str = string.replace(str,"String\.fromCharCode", "..string.pack");
-	str = string.replace(str,"String\.", "string.");
-	str = string.replace(str,"([\w_]+)\.join\(", "..string.join(\1,"); 
-	str = string.replace(str,"(\W)switch(\W)", "\1select\2")
-	str = string.replace(str,"\s*\:\s*case\s*", ",")
-	str = string.replace(str,"\:", "") 
-	str = string.replace(str,"new\s*Array\s*\(([^)]+)\)",function(c){
-	    return "{" + string.replace(c,"\,",";") + "}";
-	} )
-	str = string.replace(str,"new Date()", "time.now()") 
-	str = string.replace(str,"typeof\s+([\w\[\]\.]+)", "type(\1)") 
-	
-	str = string.replace(str,"([\w_]+)\.push\(", "table.push(\1,");  
-    str = string.replace(str,"([\w_]+)\.pop\(", "table.pop(\1,");  
-    str = string.replace(str,"([\w_]+)\.concat\(", "table.concat(\1,"); 
-    str = string.replace(str,"([\w_]+)\.slice\(", "table.unpack(\1,");  
-    str = string.replace(str,"(\W)print(\W)", "\1io.print\2") 
- 
-	winform.txtCode.text =str; 
-} 
-
-winform.btnLascriptToAAuto.oncommand = function(id,event) { 
-	var str = winform.txtCode.text;
-	
-	str = string.replace(str,"%{}",function(c){
-	    return  string.replace(c,"\,",";") ;
-	} )
-	str = string.replace(str,"--\[\[", "/*")
-	str = string.replace(str,"\]\]", "*/")
-	
-	str = string.replace(str,"\[\[", "/*")
-	str = string.replace(str,"\]\]", "*/")
-	
-	str = string.replace(str,"--","//")
-	str = string.replace(str,"//-","///")
-	str = string.replace(str,"(\W)local(\W)", "\1var\2")
-	str = string.replace(str,"(\W)then(\W)", "\1begin\2")
-	str = string.replace(str,"(\W)else(\W)", "\1end;else begin\2")
-	str = string.replace(str,"(\Wfunction\W[^)]*\))", "\1 begin ")
-	str = string.replace(str,"(\W)do(\W)", "\1begin\2")
-	str = string.replace(str,"(for[^,\n]+),([^,\n ]+),", "\1;\2;")   
-	str = string.replace(str,"(for[^,\n]+),([^,\n ]+)", "\1;\2") 
-	str = string.replace(str,"(\W)repeat(\W)", "\1do{\2")
-	str = string.replace(str,"(\W)until(\W)", "\1}while not \2")
-	str = string.replace(str,"\~\=", "!=")
-	str = string.replace(str,"\.\.", "++")
-	str = string.replace(str,"(\W)begin(\W)", "\1{\2")
-	str = string.replace(str,"(\W)end(\W)", "\1}\2")
-    str = string.replace(str,"\:", "\.")
-    str = string.replace(str,"_G\.","..");
-    str = string.replace(str,"win\.consoleOpen\s*\(\s*\)\s*\;?","io.open();");
-    str = string.replace(str,"win\.messageBox","win.msgbox");
-    str = string.replace(str,"pairs\("," ");
-    str = string.replace(str,"(\W)print(\W)", "\1io.print\2")
-    str = string.replace(str,"(\W)delay(\W)", "\1win.delay\2")
-    str = string.replace(str,"(\W)string.len(\W)", "\1#\2")
-    str = string.replace(str,"(\W)string.char(\W)", "\1string.pack\2")
-    str = string.replace(str,"(\W)string.byte(\W)", "\1string.unpack\2")
-    str = string.replace(str,"(\W)string.len(\W)", "\1#\2")
-    str = string.replace(str,"(\W)string.len(\W)", "\1#\2")
-    
-    str = string.replace(str,"([^\\])""", "\1'") 
-    str = string.replace(str,"([^\\])""", "\1'") 
-    
-    str = string.replace(str,"'\s*\+\+", "'+") 
-    str = string.replace(str,"\+\+\s*'", "+'") 
-    str = string.replace(str,'"\\s*\\+\\+', """+") 
-    str = string.replace(str,'\\+\\+\\s*"', "+""") 
-    
-    str = string.replace(str,"io\.read", "io\.stdin\.read") 
-    str = string.replace(str,"io\.write", "io\.stdout\.write") 
-    str = string.replace(str,"math\.mod", "math.fmod")  
-    
-	winform.txtCode.text ='import win;\n' + str; 
-}
-
 winform.show(true) 
 win.loopMessage( winform );

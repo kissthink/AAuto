@@ -109,18 +109,32 @@ sockprotoT= class{
 /*end intellisense*/
 
 class sockaddr_in {
-	ctor(ip,port){
+	ctor(ip,port,family){
 		this.sin_addr = in_addr();
 		if( ip ){
-			if( ..string.find(ip,"\w+") ){
-				ip = ..wsock.getIp(ip);
-				if(!ip)return;
+			var t = type(ip);
+			if( t == "string" ) {
+				if( ..string.find(ip,"\w+") ){
+					ip = ..wsock.getIp(ip);
+					if(!ip)return;
+				}
+				ip = ..wsock.inet_addr( ip );
+				this.sin_addr.S_un.S_addr = ip;
 			}
-			this.sin_addr.S_un.S_addr = ..wsock.inet_addr( ip )
+			elseif( t == "number" ){
+				this.sin_addr.S_un.S_addr = ip;
+			}
+			elseif( ip[["sin_addr"]] ){
+				return ip;
+			}
+			else{
+				return null;
+			}
 		}
 		if( port ){
 			this.sin_port = ..wsock.htons(port) 
 		}
+		this.sin_family = family;
 	}
     word sin_family;   
     WORD sin_port;
@@ -214,19 +228,19 @@ wsock.acceptAddr() = !wsock_accept_addr.
 !wsock_accept_addr.sock = 连接成功，就返回新创建的套接字句柄
 !wsock_accept_addr.sad = !.
 !wsock_accept_addr.sadLen = !客户端返回信息总长度
-!in_addr.S_un.S_addr = 
-!in_addr.S_un.S_un_b.s_b1 = 
-!in_addr.S_un.S_un_b.s_b2 = 
-!in_addr.S_un.S_un_b.s_b4 = 
-!in_addr.S_un.S_un_w.s_w1 = 
-!in_addr.S_un.S_un_w.s_w2 =  
+!in_addr.S_un.S_addr = S_addr
+!in_addr.S_un.S_un_b.s_b1 = s_b1
+!in_addr.S_un.S_un_b.s_b2 = s_b2
+!in_addr.S_un.S_un_b.s_b4 = s_b4
+!in_addr.S_un.S_un_w.s_w1 = s_w1
+!in_addr.S_un.S_un_w.s_w2 =  s_w2
 ?wsock.in_addr  = !in_addr.
-!.sin_family = 
-!.sin_port =  
-!.sin_addr = !in_addr.
-!.sin_zero
+!sockaddr_in.sin_family = AF_INET(地址族) \nPF_INET(协议族)
+!sockaddr_in.sin_port =  端口
+!sockaddr_in.sin_addr = 地址\n!in_addr.
+!sockaddr_in.sin_zero = 对齐数据
 wsock.sockaddr_in() = !sockaddr_in.
-wsock.sockaddr_in(.("主机",端口) = 返回sockaddr_in结构体\n参数可选,主机可以使用域名或IP\n域名无法解析返回null
+wsock.sockaddr_in(.("主机",端口) = 返回sockaddr_in结构体,所有参数可选\n参数@1可以使用域名、IP、数值,\n如果参数@1传入sockaddr_in则直接返回该结构体\n参数错误返回null
 _AF_INET6=@23/*_AF_INET6*/
 _FD_SETSIZE=@0x40/*_FD_SETSIZE*/
 _IOCPARM_MASK=@0x7F/*_IOCPARM_MASK*/

@@ -242,7 +242,8 @@ isAlive = function(){
 /**intellisense(inet.ras)
 lasterr(.(错误代码) = 返回错误信息,错误代码
 getEntry(参数表) = @.getEntry(\n	entryName = "连接名"\n)
-setEntry(连接属性表) = @.setEntry(\n	type = 2/*_RASET_Vpn*/; \n	fOptions =  0x10/*_RASEO_RemoteDefaultGateway*/ | 0x100/*_RASEO_ModemLights*/ | 0x200/*_RASEO_SwCompression*/ | 0x800/*_RASEO_RequireMsEncryptedPw*/ | 0x1000000/*_RASEO_PreviewUserPw*/ | 0x400/*_RASEO_RequireEncryptedPw*/ | 0x20000000/*_RASEO_RequireMsCHAP2*/;\n	fOptions2 = 0x2000000/*_RASEO2_CacheCredentials*/;\n	vpnStrategy = 2/*_VS_PptpFirst*/;\n	deviceType = "VPN";\n	deviceName = "VPN"; \n	localPhoneNumber = "服务器地址__";\n	entryName = "VPN连接"\n)  
+setEntry(VPN连接参数) = @.setEntry(\n	type = 2/*_RASET_Vpn*/; \n	fOptions =  0x10/*_RASEO_RemoteDefaultGateway*/ | 0x100/*_RASEO_ModemLights*/ | 0x200/*_RASEO_SwCompression*/ | 0x800/*_RASEO_RequireMsEncryptedPw*/ | 0x1000000/*_RASEO_PreviewUserPw*/ | 0x400/*_RASEO_RequireEncryptedPw*/ | 0x20000000/*_RASEO_RequireMsCHAP2*/;\n	fOptions2 = 0x2000000/*_RASEO2_CacheCredentials*/;\n	vpnStrategy = 2/*_VS_PptpFirst*/;\n	deviceType = "VPN";\n	deviceName = "VPN"; \n	localPhoneNumber = "服务器地址__";\n	entryName = "VPN连接"\n)  
+setEntry(宽带连接参数) = @.setEntry(\n	type = 5/*_RASET_Broadband*/; \n	fOptions = 0x10/*_RASEO_RemoteDefaultGateway*/\n		| 0x1000000/*_RASEO_PreviewUserPw*/\n		| 0x4000000/*_RASEO_ShowDialingProgress*/\n		| 0x100/*_RASEO_ModemLights*/\n		| 0x100/*_RASEO2_ReconnectIfDropped*/ ;\n	fOptions2 = 0x2000000/*_RASEO2_CacheCredentials*/ \n		| 4/*_RASEO2_DontNegotiateMultilink*/;\n	deviceType = "PPPoE";\n	deviceName = "WAN 微型端口 (PPPOE)";  \n	entryName = "ADSL宽带连接__"\n)
 setCredentials(登录信息) = @.setCredentials(\n	entryName = "连接名"; \n	userName = "用户名"; \n	password = "密码"; \n)
 dial(连接参数) = @.dial( \n	entryName =  "拔号连接名";\n	user =  "拔号用户名";\n	password = "拔号密码"\n)
 getEntries() = 返回所有拔号连接
@@ -324,6 +325,7 @@ _RASEO2_CacheCredentials=@0x2000000/*_RASEO2_CacheCredentials*/
 _RASFP_Ppp=@1/*_RASFP_Ppp*/
 _RASFP_Slip=@2/*_RASFP_Slip*/
 _RASFP_Ras=@4/*_RASFP_Ras*/
+_RASET_Broadband=@5/*_RASET_Broadband*/;
 _VS_Default=@0/*_VS_Default*/
 _VS_PptpOnly=@1/*_VS_PptpOnly*/
 _VS_PptpFirst=@2/*_VS_PptpFirst*/
