@@ -1,21 +1,25 @@
-import time.ole
+import console;
+import time.ole;
 
 //我们试一下创建一个时间对象
-tm = time.ole(); 
+var tm = time.ole(); 
 
 //给他1970年以前的时间
-tm.year = 1932;
-
-io.open()
+tm.year = 1932; 
 
 //正确出现数值
-io.print(  tonumber( tm )  ) 
+console.log(  tonumber( tm )  ) 
 
 tm.year = 3010;//年
 
 //再把他转换回来，仍然正确显示年份
-io.print( time.ole( tonumber( tm ) ) ) 
-  
-execute("pause") //按任意键继续
-io.close();//关闭控制台
+console.log( time.ole( tonumber( tm ) ) ) 
 
+//time对象也支持1900年到9999年之间的时间
+var tm = time("1969/1/1 11:21:03","%Y/%m/%d %H:%M:%S")
+console.log(tm)
+
+//但是数值运行就不支持了
+console.log( tonumber(tm) )
+  
+console.pause()

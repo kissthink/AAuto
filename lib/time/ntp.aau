@@ -1,0 +1,94 @@
+//ntp 网络时间同步
+import wsock.udp.client;
+namespace time.ntp;
+
+class NtpTime {
+	INT seconds;
+	INT fraction;
+	@_metaProperty 
+}
+import util.metaProperty;
+namespace NtpTime{
+	_metaProperty = ..util.metaProperty( 
+		time = {
+			_get = function(){  
+				var tm = ..time( ..wsock.htonl(owner.seconds) - 2208988800 ); 
+				if(!tm) return;
+				tm.milliseconds = ( (owner.fraction /2) / 0x80000000 ) * 1000; 
+				return tm;
+			}
+			_set = function( value ){
+				if(!..time.istime(value)) error("属性值不是time对象",2);
+				owner.fraction = ( ( value.milliseconds / 1000 ) * 0x80000000 ) * 2; 
+				owner.seconds = ..wsock.ntohl( tonumber(value) + 2208988800 ); 
+			} 	
+		}; 
+		_tostring = function(){
+			return tostring(owner.time)
+		} 
+	)
+}
+var NtpTime = NtpTime;
+
+class NTPData{
+    byte header = 2#00011011;
+    byte stratum = 1; 
+    byte poll = 1;  
+    byte precision = 1; 
+    INT rootDelay;
+    INT rootDispersion;
+    INT referenceIdentifier; 
+    struct referenceTimestamp = NtpTime();
+    struct originateTimestamp = NtpTime();
+    struct receiveTimestamp = NtpTime();
+    struct transmitTimestamp = NtpTime();
+}
+
+getData = function(server,port,timeout){
+	var udpClient = ..wsock.udp.client();
+	udpClient.setTimeouts( timeout : 3000,timeout : 3000);
+	
+	if( !udpClient.connect(server : "time.nist.gov",port : 123) ){ 
+		return null,..wsock.err.lasterr();
+	}
+
+	var data = NTPData(); 
+	var tick = ..time.tick(); 
+	if( !udpClient.sendto( ..raw.tostring(data) ) ){
+		return null,wsock.err.lasterr();
+	} 
+	
+	var recvbuf = udpClient.recvfrom()
+	if( !recvbuf ){
+		return null,..wsock.err.lasterr();
+	}
+	udpClient.close();
+	
+	..raw.convert(recvbuf,data);
+	return data;
+}
+
+/**intellisense(!wsockntpdata)
+header = 报文头
+stratum = 取值范围为1～16，它定义了时钟的准确度 
+poll = 报文时间间隔 
+precision = 精度 
+rootDelay = 往返时间
+rootDispersion = 最大误差
+referenceIdentifier = 参考时钟源的标识
+referenceTimestamp = 最后一次更新的时间
+originateTimestamp = 发送端报文发送时间
+receiveTimestamp = 接收端接收报文时间
+transmitTimestamp = 应答端报文离开时间
+referenceIdentifier.time = !time.
+referenceTimestamp.time = !time.
+originateTimestamp.time = !time.
+receiveTimestamp.time = !time.
+transmitTimestamp.time = !time.
+end intellisense**/
+ 
+/**intellisense(time.ntp)
+getData(.("ntp服务器",端口,超时) = 除参数1之外所有参数可选
+getData() = !wsockntpdata.
+end intellisense**/
+ 

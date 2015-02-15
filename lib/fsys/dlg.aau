@@ -2,14 +2,13 @@
 import win; 
 import fsys;
 
-namespace fsys.dlg   
+namespace fsys.dlg;
 var dll = ..raw.loadDll("comdlg32.dll"); 
-var getOpenFileName = dll.api("GetOpenFileNameA","int(struct&)" )
-var getSaveFileName = dll.api("GetSaveFileNameA","int(struct&)" )
+var getOpenFileName = dll.api("GetOpenFileNameW","int(struct&)" )
+var getSaveFileName = dll.api("GetSaveFileNameW","int(struct&)" )
 
 OPENFILENAME = class{
-	ctor( bufSize = 260,file ){ 
-	}
+	ctor( bufSize = 260,file ){}
 	INT structSize = 0;
 	INT hwndOwner  = 0;
 	pointer instance ;
@@ -17,7 +16,7 @@ OPENFILENAME = class{
 	pointer customFilter;
 	INT maxCustFilter = 0;
 	INT filterIndex = 1;
-	pointer file = ..raw.malloc(bufSize,file); 
+	pointer file = ..raw.malloc(bufSize,..string.toUnicode(file) ); 
 	INT maxFile =  bufSize-1;
 	string fileTitle;
 	INT maxFileTitle = 0;
@@ -45,17 +44,25 @@ OPENFILENAME = class{
 			}
 		}
 		else{
-			this.filter = '所有文件\0*.*\0\0'; 
+			this.filter = '所有文件\0*.*\0\0'u; 
 		} 
 		this.maxFileTitle = #(this.title);
 		if( type(this.customFilter) == type.string ){
 			this.customFilter = ..raw.malloc( 40 + #this.customFilter,this.customFilter); 
 		}
 		this.maxCustFilter = #(this.customFilter);
+		this.filter = ..string.toUnicode(this.filter);
+		this.fileTitle = ..string.toUnicode(this.fileTitle);
+		this.initialDir = ..string.toUnicode(this.initialDir);
+		this.title = ..string.toUnicode(this.title);
+		this.defExt = ..string.toUnicode(this.defExt);
+		this.lpTemplateName = ..string.toUnicode(this.lpTemplateName);
 	};
 	_getFileName = function(){ 
-		var file = ..raw.tostring(this.file);
+		var file = ..raw.tostring( this.file );  
+		file = ..string.fromUnicode(file);
 		file = ..string.trimright(file,'\0');
+		
 		if( this.flags & 0x200/*_OFN_ALLOWMULTISELECT*/){  
 			var rawFiles = ..string.split(file,'\0');
 			if(#rawFiles>1){
@@ -87,7 +94,7 @@ OPENFILENAME = class{
 	} 
 } 
  
-openEx  = function(filter="所有文件|*.*||",title="打开文件",initialDir,hwndOwner,flag = 0,bufSize = 2600,defFile){ 
+openEx  = function(filter='所有文件|*.*||'u,title='打开文件'u,initialDir,hwndOwner,flag = 0,bufSize = 2600,defFile){ 
 	ofn = OPENFILENAME( bufSize,defFile ); 
   	ofn.initialDir = initialDir;
   	ofn.filter = filter; 
@@ -98,7 +105,7 @@ openEx  = function(filter="所有文件|*.*||",title="打开文件",initialDir,hwndOwner
 	return ofn.open(); 
 }
 
-open  = function(filter="所有文件|*.*||",title="打开文件",initialDir,hwndOwner,flag = 0,defFile){ 
+open  = function(filter='所有文件|*.*||'u,title='打开文件'u,initialDir,hwndOwner,flag = 0,defFile){ 
 	ofn = OPENFILENAME(  ,defFile ); 
   	ofn.initialDir = initialDir;
   	ofn.filter = filter; 
@@ -109,7 +116,7 @@ open  = function(filter="所有文件|*.*||",title="打开文件",initialDir,hwndOwner,f
 	return ofn.open(); 
 }
 
-save  = function(filter="所有文件|*.*||",title="保存文件",initialDir,hwndOwner,flag = 0,defFile){ 
+save  = function(filter='所有文件|*.*||'u,title='保存文件'u,initialDir,hwndOwner,flag = 0,defFile){ 
 	ofn = OPENFILENAME( bufSize,defFile ); 
   	ofn.initialDir = initialDir;
   	ofn.filter = filter; 
@@ -150,8 +157,8 @@ var BROWSEINFO = class {
 	int iImage;
 }
  
-SHBrowseForFolder = ::Shell32.api("SHBrowseForFolderA","pointer(struct lpbi)");   
-opendir = function( dir,hwnd,caption,title="请选择目录" ){
+SHBrowseForFolder = ::Shell32.api("SHBrowseForFolderW","pointer(struct lpbi)");   
+opendir = function( dir,hwnd,caption,title='请选择目录'u ){
     dir = ..io.exist(dir) 
 
 	var browseCallbackProc = function( hwnd, uMsg, lp, pData) {  
@@ -161,7 +168,7 @@ opendir = function( dir,hwnd,caption,title="请选择目录" ){
 					::SendMessage(hwnd,0x0400+102/*BFFM_SETSELECTIONA*/,topointer(1),dir);
 				}
 				if(caption){
-					..win.setText(hwnd,caption);
+					::User32.SetWindowTextW(hwnd,..string.toUnicode(caption) );
 				}
 			}
 			case 2/*_BFFM_SELCHANGED*/ {
@@ -174,15 +181,15 @@ opendir = function( dir,hwnd,caption,title="请选择目录" ){
 	bi = BROWSEINFO();
 	bi.pszDisplayName = ..raw.malloc(260);
 	bi.hwndOwner = hwnd;
-	bi.lpszTitle = title;
+	bi.lpszTitle = ..string.toUnicode(title);
 	bi.lpfn = ..raw.tostdcall( browseCallbackProc ,"int(int,int,pointer,pointer)"); 
 	var path = ..fsys.pathFromIdList(SHBrowseForFolder(bi),true);
 	return path; 
 }
 
 /*intellisense(fsys.dlg)
-opendir(.(目录__,父窗口,标题,窗口标题) = 打开目录浏览对话框,\n所有参数都是可选参数 
-opendir(.() = 打开目录浏览对话框
+opendir(.(目录__,父窗口,标题,窗口标题) = 打开目录浏览对话框,\n所有参数都是可选参数,支持unicode字符串
+opendir(.() = 打开目录浏览对话框\n参数支持unicode字符串
 end intellisense*/
 
 /**intellisense()

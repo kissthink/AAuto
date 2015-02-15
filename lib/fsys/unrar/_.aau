@@ -231,10 +231,11 @@ namespace unrar{
  	 		return null,errMessage,err
  	 	}
  	 	for( filename,rarHeader in unrar.eachHeader() ){
- 	 		if(  ! unrar.extractNext(opMode) ){
- 	 			return false;
+ 	 		var ok,errMsg,err = unrar.extractNext(opMode);
+ 	 		if(  ! ok){
+ 	 			unrar.close();
+ 	 			return false,errMsg,err ;
  	 		}
- 	 		
  	 	};
  	 	
     	unrar.close() 
@@ -243,8 +244,8 @@ namespace unrar{
 }
   
 /**intellisense(fsys.unrar)
-extract(.("rar压缩文件路径") = 解压文件到压缩包所在目录\n成功返回解压目录
-extract(.("rar压缩文件路径","解压目录","密码") = 解压文件\n不存在的目录自动创建\n成功返回解压目录
+extract(.("rar压缩文件路径") = 解压文件到压缩包所在目录\n成功返回解压目录\n成功返回解压目录,失败返回:false,错误信息,错误代码
+extract(.("rar压缩文件路径","解压目录","密码") = 解压文件\n不存在的目录自动创建\n成功返回解压目录,失败返回:false,错误信息,错误代码
 count(.("rar压缩文件路径","密码") = 以只读模式打开压缩包\n并计算压缩包内文件总数
 size64(.("rar压缩文件路径","密码") = 以只读模式打开压缩包\n并返回解压后文件大小
 size64() = !math_size64.
