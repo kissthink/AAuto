@@ -378,7 +378,7 @@ namespace element{
 		lastSibling = function(){
 			var ret,parent =  GetParentElement(owner[["handle"]] );
 			if( ret==0 && parent ){
-				var ret,count = GetChildrenCount(owner[["handle"]],0 );
+				var ret,count = GetChildrenCount(parent,0 );
 				if( ret==0 ){
 					var ret,child = GetNthChild(parent,count-1 );
 					if( ret==0 ) return element_t(child);
@@ -1314,7 +1314,6 @@ _HL_UPDATE_ELEMENT_FLAGS_RESET_STYLE_DEEP=@0x10/*_HL_UPDATE_ELEMENT_FLAGS_RESET_
 _HL_UPDATE_ELEMENT_FLAGS_MEASURE_INPLACE=@1/*_HL_UPDATE_ELEMENT_FLAGS_MEASURE_INPLACE*/
 _HL_UPDATE_ELEMENT_FLAGS_MEASURE_DEEP=@2/*_HL_UPDATE_ELEMENT_FLAGS_MEASURE_DEEP*/
 _HL_UPDATE_ELEMENT_FLAGS_REDRAW_NOW=@0x8000/*_HL_UPDATE_ELEMENT_FLAGS_REDRAW_NOW*/
-
 _HL_ROOT_RELATIVE=@1/*_HL_ROOT_RELATIVE*/
 _HL_SELF_RELATIVE=@2/*_HL_SELF_RELATIVE*/
 _HL_CONTAINER_RELATIVE=@3/*_HL_CONTAINER_RELATIVE*/
@@ -1326,7 +1325,6 @@ _HL_MARGIN_BOX=@0x30/*_HL_MARGIN_BOX*/
 _HL_BACK_IMAGE_AREA=@0x40/*_HL_BACK_IMAGE_AREA*/
 _HL_FORE_IMAGE_AREA=@0x50/*_HL_FORE_IMAGE_AREA*/
 _HL_SCROLLABLE_AREA=@0x60/*_HL_SCROLLABLE_AREA*/
-
 _HL_CTL_NO=@0/*_HL_CTL_NO*/
 _HL_CTL_UNKNOWN=@1/*_HL_CTL_UNKNOWN*/
 _HL_CTL_EDIT=@2/*_HL_CTL_EDIT*/

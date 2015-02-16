@@ -1,11 +1,6 @@
 //tabs 选项卡
 namespace web.layout.behavior.tabs;
 
-/*内部函数用var语句声明{{*/
-var isInFocus = function(ltEle) {
-    return ltEle.test(":focus",true) ;
-}
-
 var targetTab;
 targetTab = function( ele,tabsContainer) {
   if( !ele || (ele == tabsContainer) ) 
@@ -70,8 +65,8 @@ var selectTab = function( ltOwner,eleTab) {
   		will receive these notifications. Handle them if you need to change UI dependent from current tab. 
   		
   	NOTE #2: while handling this event in:
-  		onElementExpanded = function (ltTarget,ltOwner,keyCode, altState, keyParams)
-  		onElementCollapsed = function (ltTarget,ltOwner,keyCode, altState, keyParams)	 
+  		onElementExpanded = function (ltTarget,ltOwner,reason,behaviorParams) 
+  		onElementCollapsed = function (ltTarget,ltOwner,reason,behaviorParams)
   		ltTarget is the panel element being collapsed/expanded 
   	*/
   	return true;  
@@ -81,9 +76,9 @@ var findTab = function( ltEle, eleTab,direction ) {
   	var eleTabNew;
   	select( direction ) {
 		case -2{
-    		eleTabNew = ltEle.firstSibling(); 
+    		eleTabNew = eleTab.firstSibling(); 
     		while( eleTabNew ) {
-       		if( !layoutEle.state.disabled )
+       		if( !eleTabNew.state.disabled &&  ( eleTabNew.isVisible() || eleTabNew["closeable"] ) )
         		break;
         		
        		eleTabNew = eleTabNew.nextSibling();
@@ -92,7 +87,7 @@ var findTab = function( ltEle, eleTab,direction ) {
 		case -1{
     		eleTabNew = eleTab.previousSibling(); 
     		while( eleTabNew )  {
-        		if( !layoutEle.state.disabled )
+        		if( !eleTabNew.state.disabled && ( eleTabNew.isVisible() || eleTabNew["closeable"] ) )
            			break;
            			
         		eleTabNew = eleTabNew.previousSibling();
@@ -101,16 +96,16 @@ var findTab = function( ltEle, eleTab,direction ) {
 		case 1{
     		eleTabNew = eleTab.nextSibling(); 
     		while( eleTabNew )  {
-        		if( !layoutEle.state.disabled )
+        		if( !eleTabNew.state.disabled &&  ( eleTabNew.isVisible() || eleTabNew["closeable"] ) )
            			break;
            			
         		eleTabNew = eleTabNew.nextSibling();
     		}
 		}
-		case 2{  
-    		eleTabNew = eleTab.lastSibling(); 
+		case 2{
+    		eleTabNew = eleTab.lastSibling();
     		while( eleTabNew )  {
-        		if( !layoutEle.state.disabled )
+        		if( !eleTabNew.state.disabled &&  ( eleTabNew.isVisible() || eleTabNew["closeable"] ) )
            			break;
            			
         		eleTabNew = eleTabNew.previousSibling();
@@ -176,15 +171,20 @@ onMouseDblClick = function (ltTarget,ltOwner, x,y,mouseParams) {
 	return selectTab( ltOwner, eleTab )
 } 
 
-onKeyDown = function (ltTarget,ltOwner, keyCode, altState, keyParams) {
+var isInFocus = function(ltEle) {
+    return ltEle.test(":focus",true) ;
+}
+
+var catchKeys = {[0x9/*_VK_TAB*/]=1;[0x25/*_VK_LEFT*/]=1;[0x27/*_VK_RIGHT*/]=1;[0x24/*_VK_HOME*/]=1;[0x23/*_VK_END*/]=1}
+onKeyDown = function (ltTarget,ltOwner, keyCode, altState, ltKeyParams) {
+	if(!catchKeys[keyCode]) return;
 		
-  	var eleTab = ltOwner.querySelector(":root>.strip>[panel]:current"); // currently selected
-	
-  	select( code ) {
+  	var eleTab = ltOwner.querySelector(":root>.strip>[panel][selected]");
+  	select( keyCode ) {
     	case 0x9/*_VK_TAB*/ {
     		if( altState & 1/*_HL_CONTROL_KEY_PRESSED*/ )
                 return findTab( ltOwner, eleTab, 
-                             	keyboardStates & 2/*_HL_SHIFT_KEY_PRESSED*/? -1:1 );
+                             	(ltKeyParams.alt_state & 2/*_HL_SHIFT_KEY_PRESSED*/)? -1:1 );
         }
     	case 0x25/*_VK_LEFT*/ {
     		return isInFocus(eleTab)? findTab( ltOwner, eleTab, -1 ) ;
@@ -229,6 +229,32 @@ onVisualStateChanged = function (ltTarget,ltOwner,shown,behaviorParams) {
 onSize = function (ltOwner) {
 	adjustStrip(ltOwner);
 } 
+
+/*
+CSS定义 .tabs > .strip 的宽度为 width:calc( 100% - 下拉按钮宽度 ); 
+然后将下拉按钮的CSS类名指定为 tabs-menu，使用 position: absolute;绝对定位到选项卡右上角
+弹出菜单的name属性必须指定为 tabs-menu
+*/
+onMenuItemClick = {
+	["tabs-menu-item"] = function(ltTarget,ltOwner,reason,behaviorParams) {  
+		self.select(ltOwner,ltTarget.panelName);
+		return true;
+	}
+};
+
+onPopupRequest = {
+	["tabs-menu"] = function (ltTarget,ltOwner,reason,behaviorParams) {
+		var ltPopupOwner = ..web.layout.element( behaviorParams.he );
+		ltTarget.innerHTML = "";
+		var ltStrip = ltOwner.querySelector(':root>.strip');
+		for(i,eleChild in ltStrip.eachChild() ){
+			if(!eleChild.isVisible())
+				ltTarget.printf("<li panelName='%s' name='tabs-menu-item'>%s</li>",eleChild.panel,eleChild.innerText);
+		}
+		ltStrip.release();
+		return true;
+	}
+}
 /*}}*/
 	 
 /*其他成员函数可在CSS脚本中直接调用{{*/
@@ -272,7 +298,6 @@ adjustStrip = function(ltOwner){
 	var display = "block";
 	var rcStrip = ltStrip.getRect( 2/*_HL_SELF_RELATIVE*/ | 0/*_HL_CONTENT_BOX*/ )
 
-	
 	ltStrip.enumQuery(
   		function(ltEle){
   			if( ltEle.isVisible() ){
@@ -290,11 +315,13 @@ adjustStrip = function(ltOwner){
 
 	var vertical = isVertical(ltOwner);
   	 
+  	var showMenu = false;
   	ltStrip.enumQuery(
   		function(ltEle){
   			 var rc = ltEle.getRect(3/*_HL_CONTAINER_RELATIVE*/ | 0x30/*_HL_MARGIN_BOX*/)
   			 if( ( !vertical && ( rc.right > rcStrip.right ) ) || ( vertical && ( rc.bottom > rcStrip.bottom ) ) ){ 
   			 	ltEle.style.display = "none";
+  			 	showMenu = true;
   			 } 
   			 else {
   			 	ltEle.style.display = display;
@@ -303,6 +330,11 @@ adjustStrip = function(ltOwner){
   			 
   		},":root>[panel][closeable]"
   	)
+  	
+  	var ltMenus = ltOwner.querySelector(":root > .tabs-menu");
+  	if( ltMenus ){
+  		ltMenus.style.display = showMenu ? "block" : "none" ;
+  	}
 }
 
 create = function(ltOwner,title,panelName,innerHtml){

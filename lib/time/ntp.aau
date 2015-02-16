@@ -1,5 +1,8 @@
 //ntp 网络时间同步
+import time.performance;
 import wsock.udp.client;
+import util.metaProperty;
+
 namespace time.ntp;
 
 class NtpTime {
@@ -7,54 +10,55 @@ class NtpTime {
 	INT fraction;
 	@_metaProperty 
 }
-import util.metaProperty;
-namespace NtpTime{
-	_metaProperty = ..util.metaProperty( 
-		time = {
-			_get = function(){  
-				var tm = ..time( ..wsock.htonl(owner.seconds) - 2208988800 ); 
-				if(!tm) return;
-				tm.milliseconds = ( (owner.fraction /2) / 0x80000000 ) * 1000; 
-				return tm;
-			}
-			_set = function( value ){
-				if(!..time.istime(value)) error("属性值不是time对象",2);
-				owner.fraction = ( ( value.milliseconds / 1000 ) * 0x80000000 ) * 2; 
-				owner.seconds = ..wsock.ntohl( tonumber(value) + 2208988800 ); 
-			} 	
-		}; 
-		_tostring = function(){
-			return tostring(owner.time)
-		} 
-	)
-}
-var NtpTime = NtpTime;
+NtpTime._metaProperty = ..util.metaProperty( 
+	time = {
+		_get = function(){  
+			if( owner.seconds === null ) return;
+			var tm = ..time( ..wsock.htonl(owner.seconds) - 2208988800 ); 
+			if(!tm) return;
+			tm.milliseconds = ( ( ..wsock.htonl(owner.fraction) /2) / 0x80000000 ) * 1000; 
+			return tm;
+		}
+		_set = function( value ){
+			if(!..time.istime(value)) error("属性值不是time对象",2);
+			owner.fraction = ..wsock.ntohl( ( ( value.milliseconds / 1000 ) * 0x80000000 ) * 2 ); 
+			owner.seconds = ..wsock.ntohl( tonumber(value) + 2208988800 ); 
+		} 	
+	}; 
+	_tostring = function(){
+		return tostring(owner.time)
+	} 
+)
 
+var NtpTime = NtpTime;
 class NTPData{
-    byte header = 2#00011011;
-    byte stratum = 1; 
-    byte poll = 1;  
-    byte precision = 1; 
+    BYTE header = 2#00011011;
+    BYTE stratum = 1; 
+    BYTE poll = 1;  
+    BYTE precision = 1; 
     INT rootDelay;
     INT rootDispersion;
     INT referenceIdentifier; 
     struct referenceTimestamp = NtpTime();
     struct originateTimestamp = NtpTime();
     struct receiveTimestamp = NtpTime();
-    struct transmitTimestamp = NtpTime();
+    struct transmitTimestamp = NtpTime(); 
 }
 
-getData = function(server,port,timeout){
+getData = function(server,port,timeout,sendData){
 	var udpClient = ..wsock.udp.client();
 	udpClient.setTimeouts( timeout : 3000,timeout : 3000);
 	
+	var tick = ..time.performance.tick();
 	if( !udpClient.connect(server : "time.nist.gov",port : 123) ){ 
 		return null,..wsock.err.lasterr();
 	}
 
 	var data = NTPData(); 
+	if(sendData) ..table.mixin( data,sendData);
+	
 	var tick = ..time.tick(); 
-	if( !udpClient.sendto( ..raw.tostring(data) ) ){
+	if( !udpClient.sendto( ..string.concat(..raw.tostring(data),data[["authenticator"]]) ) ){
 		return null,wsock.err.lasterr();
 	} 
 	
@@ -65,10 +69,24 @@ getData = function(server,port,timeout){
 	udpClient.close();
 	
 	..raw.convert(recvbuf,data);
+	var r = data.receiveTimestamp.time;
+	var t = data.transmitTimestamp.time;
+	if(!(r&&t)) return null;
+	
+	var c = tonumber(r) - tonumber(t);
+	if(!c) c = t.milliseconds - r.milliseconds;
+	data.delayMilliseconds = ( ..time.performance.tick() - tick - c ) / 2;
+	
+	var s,ms = ..math.modf( ( (data.delayMilliseconds + t.milliseconds) / 1000)  ); 
+	t.milliseconds = 0;
+	
+	data.time = t.addsecond( s );
+	data.time.milliseconds = ms * 1000;
 	return data;
 }
 
 /**intellisense(!wsockntpdata)
+time = 报文返回后计算出的当前时间\n!time.
 header = 报文头
 stratum = 取值范围为1～16，它定义了时钟的准确度 
 poll = 报文时间间隔 
@@ -80,6 +98,7 @@ referenceTimestamp = 最后一次更新的时间
 originateTimestamp = 发送端报文发送时间
 receiveTimestamp = 接收端接收报文时间
 transmitTimestamp = 应答端报文离开时间
+delayMilliseconds = 服务端到客户端延时值\n毫秒
 referenceIdentifier.time = !time.
 referenceTimestamp.time = !time.
 originateTimestamp.time = !time.
@@ -88,7 +107,7 @@ transmitTimestamp.time = !time.
 end intellisense**/
  
 /**intellisense(time.ntp)
-getData(.("ntp服务器",端口,超时) = 除参数1之外所有参数可选
+getData(.("ntp服务器",端口,超时) = 除参数1之外所有参数可选\n因为网络的不稳定性，该函数可能失败返回null
 getData() = !wsockntpdata.
 end intellisense**/
  
