@@ -232,29 +232,29 @@ onSize = function (ltOwner) {
 
 /*
 CSS定义 .tabs > .strip 的宽度为 width:calc( 100% - 下拉按钮宽度 ); 
-然后将下拉按钮的CSS类名指定为 tabs-menu，使用 position: absolute;绝对定位到选项卡右上角
-弹出菜单的name属性必须指定为 tabs-menu
+然后将下拉按钮的CSS类名指定为 tabs-menu，使用 position: absolute; 绝对定位到选项卡右上角
 */
-onMenuItemClick = {
-	["tabs-menu-item"] = function(ltTarget,ltOwner,reason,behaviorParams) {  
-		self.select(ltOwner,ltTarget.panelName);
-		return true;
-	}
+onMenuItemClick = function(ltTarget,ltOwner,reason,behaviorParams) {  
+	var ltPopupOwner = ..web.layout.element( behaviorParams.he ); 
+	if( !ltPopupOwner.test(".tabs-menu" ) ) return;
+	
+	self.select(ltOwner,ltTarget["panel-name"]);
+	return true;
 };
 
-onPopupRequest = {
-	["tabs-menu"] = function (ltTarget,ltOwner,reason,behaviorParams) {
-		var ltPopupOwner = ..web.layout.element( behaviorParams.he );
-		ltTarget.innerHTML = "";
-		var ltStrip = ltOwner.querySelector(':root>.strip');
-		for(i,eleChild in ltStrip.eachChild() ){
-			if(!eleChild.isVisible())
-				ltTarget.printf("<li panelName='%s' name='tabs-menu-item'>%s</li>",eleChild.panel,eleChild.innerText);
-		}
-		ltStrip.release();
-		return true;
+onPopupRequest = function (ltTarget,ltOwner,reason,behaviorParams) {
+	var ltPopupOwner = ..web.layout.element( behaviorParams.he );
+	if( !ltPopupOwner.test(".tabs-menu" ) ) return;
+	
+	ltTarget.innerHTML = "";
+	var ltStrip = ltOwner.querySelector(':root>.strip');
+	for(i,eleChild in ltStrip.eachChild() ){
+		if(!eleChild.isVisible() && eleChild.closeable)
+			ltTarget.printf("<li panel-name='%s'>%s</li>",eleChild.panel,eleChild.innerText);
 	}
-}
+	ltStrip.release();
+	return true;
+} 
 /*}}*/
 	 
 /*其他成员函数可在CSS脚本中直接调用{{*/
@@ -333,7 +333,7 @@ adjustStrip = function(ltOwner){
   	
   	var ltMenus = ltOwner.querySelector(":root > .tabs-menu");
   	if( ltMenus ){
-  		ltMenus.style.display = showMenu ? "block" : "none" ;
+  		ltMenus.style.visibility = showMenu ? "visible" : "hidden" ;
   	}
 }
 

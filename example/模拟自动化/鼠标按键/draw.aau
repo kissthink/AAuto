@@ -1,9 +1,9 @@
 //鼠标画渐开线
 import win.ui;
 /*DSG{{*/
-var winform = win.form(parent=...; text="鼠标画线";right=349;bottom=249 )
-winform.add( 
-button={ bottom=108;text="运行范例";left=33;top=55;z=1;right=312;cls="button" }
+var winform = ..win.form(text="鼠标画线";right=349;bottom=249;parent=...)
+winform.add(
+button={cls="button";text="运行范例";left=33;top=55;right=312;bottom=108;z=1}
 )
 /*}}*/
 
@@ -42,7 +42,7 @@ winform.button.oncommand = function(id,event){
 	mouse.draw.involute(); 
  	
 	// 画方形仿渐开线，步进为5,中间忽略的正方形边长为50
-	mouse.draw.rect_inv(5,50); 
+	mouse.draw.rectInvolute(5,50); 
  	
 	//这是真正的渐开线,第三个参数指定基圆的半径
 	mouse.draw.involute2(1024/2,768/2,0.1,10); 
