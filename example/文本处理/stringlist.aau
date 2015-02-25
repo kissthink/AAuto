@@ -20,11 +20,11 @@ var str =
 ============================================*/
 console.log( str );
 
-var str ="
+var str = /*
 姓名 = 张三
 年龄 = 30
 住址 = 北京
-"
+*/
 
 //创建字符串列表
 var tstringlist = string.list(str)
@@ -46,3 +46,4 @@ str = tostring(tstringlist)
 //拼接成网址参数格式
 tstringlist.separator = '&' 
 console.log( tstringlist  )
+console.pause()

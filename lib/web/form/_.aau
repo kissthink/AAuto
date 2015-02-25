@@ -613,7 +613,7 @@ namespace form {
 			if( type(ele)==type.string)
 				ele = owner.waitEle(ele);
 				
-			var controlRange = ele.document.body.createControlRange(); 
+			var controlRange = ele.getOwnerDocument().getBody().createControlRange(); 
 			if(!controlRange)
 				return;
 				
