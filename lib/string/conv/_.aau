@@ -1,7 +1,6 @@
-//.. 字符串转换
-namespace string.conv
+namespace string.conv;
 
-LCMapString = ::Kernel32.api("LCMapStringA","int(int Locale,INT flags int,str src,int cchSrc,str &dest,int cchDest)") 
+LCMapString = ::Kernel32.api("LCMapStringA","int(int locale,INT flags,str src,int cchSrc,str &dest,int cchDest)") 
 mapString = function(str,locale,flags){
 	var len = LCMapString( locale,flags, str, #str, 0,0) 
 	if(len){
@@ -10,10 +9,10 @@ mapString = function(str,locale,flags){
 	}
 } 
 
-var defaultCodepage = ::Kernel32.GetACP();
+var codepage = ::Kernel32.GetACP();
 localized = function(str){
-	if( (_STUDIO_CODEPAGE === defaultCodepage) || (!#str) ) return str;
-	return defaultCodepage == 950 ? gbkToBig5(str) : big5ToGbk(str);
+	if( (_STUDIO_CODEPAGE === codepage) || (!#str) ) return str;
+	return codepage == 950 ? gbkToBig5(str) : big5ToGbk(str);
 }
 
 traditionalized = function(str,lcid){
@@ -63,13 +62,9 @@ toWide(__/*字符串*/) = 半角转全角
 fromWide(__/*字符串*/) = 全角转半角
 upper(__/*字符串*/) = 转大写
 lower(__/*字符串*/) = 转小写
-betyReverse(__/*字符串*/) = 每两个字节前后位置反转
 localized("__") = 简体繁体字以及内码运行时自动转换以适应当前环境,\n参数建议使用字面常量以避免错误转换
 traditionalized(.(简体字) = GBK编码繁体字转简体字\n参数二为可选参数
 simplized(.(繁体字) = GBK编码简体字转繁体字\n参数二为可选参数
 gbkToBig5(__/*GBK字符串*/) = GBK简体转BIG5繁体\n并转换台湾习惯用语
 big5ToGbk(__/*GBK字符串*/) = BIG5繁体转GBK简体\n并转换台湾习惯用语 
 end intellisense**/
-
-
- 

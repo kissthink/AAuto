@@ -200,7 +200,7 @@ namespace image {
 			return convert( item,buffer,size-item.length,item.length );  
 		};
 		removePropertyItem = function(id){
-			var e = RemovePropertyItem(owner[["pImage"]],id);
+			var e = gdip.RemovePropertyItem(owner[["pImage"]],id);
 			if( e ) return null,gdip.errMsg[e];
 			return true;
 		}; 
@@ -211,11 +211,12 @@ namespace image {
 			}
 			else {
 				if( !item.value[["_struct"]] ) error("value字段必须是一个结构体",2);
-				item = ..raw.malloc(item.value);
 				item = ..table.mixin( {int propId;int length;word type;pointer value},item);
+				item.value = ..raw.malloc(item.value);
 			}
+			item.length = #item.value;
 			
-			
+			owner.removePropertyItem(item.propId);
 			var ok,e = call(gdip.SetPropertyItem,gdip,owner[["pImage"]],item);
 			if(!ok) error(e,2);
 			if( e ) return null,gdip.errMsg[e];
@@ -318,7 +319,6 @@ namespace image {
     		if( e ) return null,gdip.errMsg[e]; 
     		return stream;
 		};
-		//自动转换为API指针
 		_topointer = function(){
 			return owner[["pImage"]];
 		}
@@ -334,7 +334,6 @@ namespace image {
 		[2] = function(i,b,of,len){
 			i.value = ..string.str( ..string.right(b,len) );
 			i.text = i.value;
-			i.length = 1;
 			return i;
 		}
 		[3] = function(i,b,of,len){
